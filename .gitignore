@@ -1,0 +1,13 @@
+# Node modules
+frontend/frontend/node_modules
+
+# Build files
+frontend/frontend/dist
+
+# Python
+backend/venv
+*.pyc
+__pycache__/
+
+# Environment variables
+.env
