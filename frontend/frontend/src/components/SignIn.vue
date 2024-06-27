@@ -12,7 +12,7 @@
       </div>
       <button type="submit" class="w-full py-2 px-4 bg-gray-800 text-white rounded-lg hover:bg-gray-600">Connexion</button>
     </form>
-    <p class="mt-4 text-center">Pas de compte? <router-link to="/signup" class="text-indigo-500 hover:underline">S'enregistrer</router-link></p>
+    <p class="mt-4 text-center">Pas de compte? <router-link to="/signup" class="text-indigo-600 hover:underline">S'enregistrer</router-link></p>
   </div>
 </template>
 
@@ -32,10 +32,9 @@ const data = ref({
 const signIn = async () => {
   const success = await authStore.login(data.value.email, data.value.password);
   if (success) {
-    await router.push('/');
+    router.push('/');
+  } else {
+    console.error('Login failed');
   }
 };
 </script>
-
-
-

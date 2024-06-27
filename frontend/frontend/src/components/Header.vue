@@ -8,16 +8,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const authStore = useAuthStore();
-
-onMounted(() => {
-  authStore.checkAuth();
-});
+authStore.checkAuth();
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 

@@ -6,6 +6,7 @@ from .serializers import UserSerializer
 import jwt, datetime
 from .models import User
 
+
 class LoginView(APIView):
     def post(self, request):
         email = request.data['email']
@@ -29,13 +30,8 @@ class LoginView(APIView):
 
         response = Response({
             'jwt': token,
+            'role': user.role 
         })
-
-        response.set_cookie(
-            key='jwt', 
-            value=token, 
-            httponly=True
-        )
 
         return response
 
@@ -43,14 +39,22 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            user = serializer.save()
+            payload = {
+                'id': user.id,
+                'exp': datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(minutes=60),
+                'iat': datetime.datetime.now(tz=datetime.timezone.utc)
+            }
+            token = jwt.encode(payload, 'secret', algorithm='HS256')
+            return Response({
+                'jwt': token,
+                'role': user.role
+            }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
     def post(self, request):
         response = Response()
-        response.delete_cookie('jwt')
         response.data = {
             'message': 'Déconnecté avec succès'
         }
@@ -58,8 +62,7 @@ class LogoutView(APIView):
 
 class UserView(APIView):
     def get(self, request):
-        token = request.COOKIES.get('jwt')
-
+        token = request.headers.get('Authorization').split(' ')[1]
         if not token:
             raise AuthenticationFailed('Non authentifié')
         

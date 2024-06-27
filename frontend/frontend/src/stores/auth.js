@@ -1,31 +1,35 @@
 import { defineStore } from 'pinia';
+import axios from 'axios';
+
+axios.defaults.withCredentials = true;
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     isAuthenticated: false,
+    userRole: null,
   }),
   actions: {
     async login(email, password) {
       try {
-        const response = await fetch('http://localhost:8000/api/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify({ email, password })
+        const response = await axios.post('http://localhost:8000/api/login', {
+          email,
+          password,
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error:', errorData);
-          return false;
-        } else {
+        if (response.data.jwt && response.data.role) {
           this.isAuthenticated = true;
-          return true;
+          this.userRole = response.data.role;
+          localStorage.setItem('jwt', response.data.jwt);
+          localStorage.setItem('userRole', response.data.role);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.jwt}`;
+          return true; 
+        } else {
+          return false; 
         }
       } catch (error) {
         console.error('Error:', error);
+        this.isAuthenticated = false;
+        this.userRole = null;
         return false;
       }
     },
@@ -37,50 +41,65 @@ export const useAuthStore = defineStore('auth', {
         password,
         role
       };
-
+      console.log('Sending registration data:', payload); // Log the payload
       try {
-        const response = await fetch('http://localhost:8000/api/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
+        const response = await axios.post('http://localhost:8000/api/register', payload);
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error:', errorData);
-          return false;
-        } else {
+        console.log('Register response:', response.data);
+        const token = response.data.jwt;
+        if (token) {
+          this.isAuthenticated = true;
+          this.userRole = role;
+          localStorage.setItem('jwt', token);
+          localStorage.setItem('userRole', role);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           return true;
+        } else {
+          return false;
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error:', error.response ? error.response.data : error);
         return false;
       }
     },
     async logout() {
       try {
-        const response = await fetch('http://localhost:8000/api/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          console.error('Error during logout');
-          return false;
-        } else {
-          this.isAuthenticated = false;
-          return true;
-        }
+        await axios.post('http://localhost:8000/api/logout');
+        this.isAuthenticated = false;
+        this.userRole = null;
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('userRole');
+        delete axios.defaults.headers.common['Authorization'];
+        return true;
       } catch (error) {
         console.error('Error:', error);
         return false;
       }
     },
+    async fetchUserRole() {
+      try {
+        const response = await axios.get('http://localhost:8000/api/user');
+        if (response.data.role) {
+          this.userRole = response.data.role;
+          localStorage.setItem('userRole', response.data.role);
+        } else {
+          console.error('Error: Unable to fetch user role');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    },
     checkAuth() {
-      this.isAuthenticated = true;
-    }
-  }
+      const token = localStorage.getItem('jwt');
+      const userRole = localStorage.getItem('userRole');
+      if (token) {
+        this.isAuthenticated = true;
+        this.userRole = userRole;
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      } else {
+        this.isAuthenticated = false;
+        this.userRole = null;
+      }
+    },
+  },
 });
