@@ -1,12 +1,36 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Home from '../views/Home.vue';
-import SignIn from '../components/SignIn.vue';
-import SignUp from '../components/SignUp.vue';
+import MainLayout from '@/components/MainLayout.vue';
+import Home from '@/views/Home.vue';
+import SignIn from '@/components/SignIn.vue';
+import SignUp from '@/components/SignUp.vue';
 
 const routes = [
-  { path: '/', component: Home, meta: { requiresAuth: true } },
-  { path: '/signin', component: SignIn },
-  { path: '/signup', component: SignUp },
+  {
+    path: '/',
+    component: MainLayout,
+    children: [
+      {
+        path: '',
+        name: 'Home',
+        component: Home,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'signin',
+        name: 'SignIn',
+        component: SignIn,
+      },
+      {
+        path: 'signup',
+        name: 'SignUp',
+        component: SignUp,
+      },
+    ],
+  },
+  {
+    path: '/:catchAll(.*)',
+    redirect: '/'
+  }
 ];
 
 const router = createRouter({
@@ -16,7 +40,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('jwt');
     if (!token) {
       next('/signin');
     } else {
