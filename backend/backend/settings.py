@@ -83,10 +83,10 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
+        'NAME': 'proagilis',
         'USER': 'postgres',
-        'PASSWORD': '5mppgl4zMFRx16kZ',
-        'HOST': 'effusively-popular-flycatcher.data-1.use1.tembo.io',
+        'PASSWORD': 'manager',
+        'HOST': 'localhost',
         'PORT': '5432',
     }
 }

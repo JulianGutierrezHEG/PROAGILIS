@@ -38,17 +38,4 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    const token = localStorage.getItem('jwt');
-    if (!token) {
-      next('/signin');
-    } else {
-      next();
-    }
-  } else {
-    next();
-  }
-});
-
 export default router;

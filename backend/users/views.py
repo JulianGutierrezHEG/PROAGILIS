@@ -2,26 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
-import jwt, datetime
 from .serializers import UserSerializer
+import jwt, datetime
 from .models import User
 
-
-
-"""
-View pour enregistrer un utilisateur
-"""
-class RegisterView(APIView):
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-"""
-View pour connecter un utilisateur
-"""
 class LoginView(APIView):
     def post(self, request):
         email = request.data['email']
@@ -43,18 +27,26 @@ class LoginView(APIView):
 
         token = jwt.encode(payload, 'secret', algorithm='HS256')
 
-        response = Response()
-        response.set_cookie(key='jwt', value=token, httponly=True)
+        response = Response({
+            'jwt': token,
+        })
 
-        response.data = {
-            'jwt': token
-        }
+        response.set_cookie(
+            key='jwt', 
+            value=token, 
+            httponly=True
+        )
 
         return response
 
-"""
-View pour déconnecter un utilisateur
-"""
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class LogoutView(APIView):
     def post(self, request):
         response = Response()
@@ -62,12 +54,8 @@ class LogoutView(APIView):
         response.data = {
             'message': 'Déconnecté avec succès'
         }
-
         return response
 
-"""
-View pour récupérer les informations d'un utilisateur
-"""
 class UserView(APIView):
     def get(self, request):
         token = request.COOKIES.get('jwt')
