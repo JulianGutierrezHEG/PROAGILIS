@@ -8,22 +8,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthService } from '@/services/authService';
 
-const router = useRouter();
-const authStore = useAuthStore();
-authStore.checkAuth();
-
-const isAuthenticated = computed(() => authStore.isAuthenticated);
-
-const logout = async () => {
-  const success = await authStore.logout();
-  if (success) {
-    await router.push('/signin');
-  }
-};
+const { logout, isAuthenticated } = useAuthService();
 </script>
 
   

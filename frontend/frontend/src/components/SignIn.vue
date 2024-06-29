@@ -17,24 +17,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthService } from '@/services/authService';
 
-const router = useRouter();
-const authStore = useAuthStore();
-
-const data = ref({
-  email: '',
-  password: ''
-});
-
-const signIn = async () => {
-  const success = await authStore.login(data.value.email, data.value.password);
-  if (success) {
-    router.push('/');
-  } else {
-    console.error('Login failed');
-  }
-};
+const { data, signIn } = useAuthService();
 </script>

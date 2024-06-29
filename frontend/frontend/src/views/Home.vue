@@ -125,8 +125,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { ref } from 'vue';
+import { computed, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/authStore';
 
 const authStore = useAuthStore();
 

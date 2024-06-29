@@ -60,18 +60,19 @@ class LogoutView(APIView):
         }
         return response
 
-class UserView(APIView):
+class AuthenticatedUserView(APIView):
     def get(self, request):
-        token = request.headers.get('Authorization').split(' ')[1]
-        if not token:
+        auth_header = request.headers.get('Authorization')
+        if auth_header is None:
             raise AuthenticationFailed('Non authentifié')
-        
         try:
+            token = auth_header.split(' ')[1]
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
+        except (IndexError, jwt.ExpiredSignatureError, jwt.InvalidTokenError):
             raise AuthenticationFailed('Non authentifié')
-        
         user = User.objects.filter(id=payload['id']).first()
+        if user is None:
+            raise AuthenticationFailed('Utilisateur non trouvé')
         serializer = UserSerializer(user)
-
         return Response(serializer.data)
+

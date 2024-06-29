@@ -25,24 +25,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthService } from '@/services/authService';
 
-const router = useRouter();
-const authStore = useAuthStore();
-
-const data = ref({
-  username: '',
-  email: '',
-  password: '',
-  isTeacher: false
-});
-
-const signUp = async () => {
-  const success = await authStore.register(data.value.username, data.value.email, data.value.password, data.value.isTeacher);
-  if (success) {
-    await router.push('/');
-  }
-};
+const { data, signUp } = useAuthService();
 </script>
