@@ -10,6 +10,7 @@
         <label for="password" class="block text-gray-700">Mot de Passe</label>
         <input v-model="data.password" type="password" id="password" class="w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-900" required />
       </div>
+      <div v-if="error" class="mb-4 text-red-600">{{ error }}</div>
       <button type="submit" class="w-full py-2 px-4 bg-gray-800 text-white rounded-lg hover:bg-gray-600">Connexion</button>
     </form>
     <p class="mt-4 text-center">Pas de compte? <router-link to="/signup" class="text-indigo-600 hover:underline">S'enregistrer</router-link></p>
@@ -19,5 +20,5 @@
 <script setup>
 import { useAuthService } from '@/services/authService';
 
-const { data, signIn } = useAuthService();
+const { data, signIn, error } = useAuthService();
 </script>

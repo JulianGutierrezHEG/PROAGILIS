@@ -5,7 +5,9 @@ from rest_framework.exceptions import AuthenticationFailed
 from .serializers import UserSerializer
 import jwt, datetime
 from .models import User
+import logging
 
+logger = logging.getLogger(__name__)
 
 class LoginView(APIView):
     def post(self, request):
@@ -15,10 +17,10 @@ class LoginView(APIView):
         user = User.objects.filter(email=email).first()
 
         if user is None:
-            raise AuthenticationFailed('Cet utilisateur n\'existe pas')
+            return Response({"detail": "L'email ou le mot de passe sont incorrect"}, status=401)
         
         if not user.check_password(password):
-            raise AuthenticationFailed('Mot de passe incorrect')
+            return Response({"detail": "L'email ou le mot de passe sont incorrect"}, status=401)
         
         payload = {
             'id': user.id,
@@ -38,6 +40,13 @@ class LoginView(APIView):
 class RegisterView(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)
+        # Check if username exists
+        if User.objects.filter(username=request.data['username']).exists():
+            return Response({"username": "Ce nom d'utilisateur existe déjà."}, status=status.HTTP_400_BAD_REQUEST)
+        # Check if email exists
+        if User.objects.filter(email=request.data['email']).exists():
+            return Response({"email": "Cette adresse email existe déjà."}, status=status.HTTP_400_BAD_REQUEST)
+        # Proceed if serializer is valid
         if serializer.is_valid():
             user = serializer.save()
             payload = {
@@ -50,6 +59,7 @@ class RegisterView(APIView):
                 'jwt': token,
                 'role': user.role
             }, status=status.HTTP_201_CREATED)
+        # Return serializer errors
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):

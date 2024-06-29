@@ -6,11 +6,11 @@
 
 <script setup>
 import { onMounted } from 'vue';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthService } from './services/authService';
 
-const authStore = useAuthStore();
+const authService = useAuthService();
 
 onMounted(() => {
-  authStore.checkAuthStatus();
+  authService.checkAuthStatus();
 });
 </script>

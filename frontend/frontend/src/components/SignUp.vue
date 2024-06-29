@@ -18,6 +18,7 @@
         <input v-model="data.isTeacher" type="checkbox" id="isTeacher" class="mr-2" />
         <label for="isTeacher" class="text-gray-700">Je suis un enseignant</label>
       </div>
+      <div v-if="error" class="text-red-500 text-sm mb-4">{{ error }}</div>
       <button type="submit" class="w-full py-2 px-4 bg-gray-800 text-white rounded-lg hover:bg-gray-600">Enregistrer</button>
     </form>
     <p class="mt-4 text-center">Déjà un compte? <router-link to="/signin" class="text-indigo-500 hover:underline">Se connecter</router-link></p>
@@ -27,5 +28,5 @@
 <script setup>
 import { useAuthService } from '@/services/authService';
 
-const { data, signUp } = useAuthService();
+const { data, error, signUp } = useAuthService();
 </script>

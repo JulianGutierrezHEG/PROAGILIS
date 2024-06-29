@@ -127,12 +127,14 @@
 <script setup>
 import { ref } from 'vue';
 import { computed, onMounted } from 'vue';
+import { useAuthService } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 
 const authStore = useAuthStore();
+const authService = useAuthService();
 
 onMounted(() => {
-  authStore.checkAuth();
+  authService.checkAuth();
 });
 
 const userRole = computed(() => authStore.userRole);
