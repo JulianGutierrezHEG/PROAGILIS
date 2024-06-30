@@ -5,12 +5,14 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
-import { useAuthService } from './services/authService';
+import { onBeforeMount, onMounted, onUnmounted } from 'vue';
+import { initializeAuth, watchAuthentication, getAccessAndUpdate } from '@/services/authService';
 
-const authService = useAuthService();
+onBeforeMount(initializeAuth);
 
 onMounted(() => {
-  authService.checkAuthStatus();
+  watchAuthentication();
+  getAccessAndUpdate(); 
 });
+
 </script>

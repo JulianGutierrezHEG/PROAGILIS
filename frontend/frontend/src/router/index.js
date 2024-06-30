@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import MainLayout from '@/components/MainLayout.vue';
 import Home from '@/views/Home.vue';
-import SignIn from '@/components/SignIn.vue';
-import SignUp from '@/components/SignUp.vue';
+import SignIn from '@/views/SignIn.vue';
+import SignUp from '@/views/SignUp.vue';
 
 const routes = [
   {
@@ -39,7 +39,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('jwt');
+  const token = localStorage.getItem('access');
 
   if (to.matched.some(record => record.meta.requiresAuth) && !token) {
     next('/signin');

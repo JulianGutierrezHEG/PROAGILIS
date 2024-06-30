@@ -1,38 +1,45 @@
+import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
-import axios from 'axios';
 
-axios.defaults.withCredentials = true;
+export const useAuthStore = defineStore('auth', () => {
+  const access = ref('');
+  const refresh = ref('');
+  const isAuthenticated = computed(() => !!access.value);
+  const role = ref('');
 
-export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    isAuthenticated: false,
-    userRole: null,
-  }),
-  actions: {
-    setAuthData(jwt, role) {
-      this.isAuthenticated = true;
-      this.userRole = role;
-      localStorage.setItem('jwt', jwt);
-      localStorage.setItem('userRole', role);
-    },
-    clearAuthData() {
-      this.isAuthenticated = false;
-      this.userRole = null;
-      localStorage.removeItem('jwt');
-      localStorage.removeItem('userRole');
-    },
-  },
-});
-
-axios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('jwt');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+  // Initialise le store avec les valeurs stockées dans le localStorage
+  function initializeStore() {
+    const storedAccess = localStorage.getItem('access');
+    const storedRefresh = localStorage.getItem('refresh');
+    const storedRole = localStorage.getItem('role');
+    if (storedAccess) {
+      access.value = storedAccess;
+      refresh.value = storedRefresh;
+      role.value = storedRole;
+    } else {
+      access.value = '';
+      refresh.value = '';
+      role.value = '';
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
   }
-);
+
+  function setAccess(newAccess) {
+    access.value = newAccess;
+  }
+
+  function setRefresh(newRefresh) {
+    refresh.value = newRefresh;
+  }
+
+  function removeAccess() {
+    access.value = '';
+    refresh.value = '';
+  }
+
+  function setUserRole(newRole) {
+    role.value = newRole;
+    localStorage.setItem('role', newRole);
+  }
+
+  return { access, refresh, isAuthenticated,role, initializeStore, setAccess, setRefresh, removeAccess,setUserRole };
+});
