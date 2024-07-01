@@ -7,11 +7,11 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!access.value);
   const role = ref('');
 
-  // Initialise le store avec les valeurs stockées dans le localStorage
+  // Initialise le store avec les valeurs stockées dans le sessionStorage
   function initializeStore() {
-    const storedAccess = localStorage.getItem('access');
-    const storedRefresh = localStorage.getItem('refresh');
-    const storedRole = localStorage.getItem('role');
+    const storedAccess = sessionStorage.getItem('access');
+    const storedRefresh = sessionStorage.getItem('refresh');
+    const storedRole = sessionStorage.getItem('role');
     if (storedAccess) {
       access.value = storedAccess;
       refresh.value = storedRefresh;
@@ -38,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setUserRole(newRole) {
     role.value = newRole;
-    localStorage.setItem('role', newRole);
+    sessionStorage.setItem('role', newRole);
   }
 
   return { access, refresh, isAuthenticated,role, initializeStore, setAccess, setRefresh, removeAccess,setUserRole };

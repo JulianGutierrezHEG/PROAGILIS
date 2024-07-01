@@ -2,7 +2,7 @@ import { watch } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
-// Initialise le store d'authentification avec les valeurs stockées dans le localStorage
+// Initialise le store d'authentification avec les valeurs stockées dans le sessionStorage
 export function initializeAuth() {
   const authStore = useAuthStore();
   authStore.initializeStore();
@@ -53,14 +53,14 @@ export function getAccessAndUpdate() {
   }
 
   const accessData = {
-    refresh: localStorage.getItem('refresh')
+    refresh: sessionStorage.getItem('refresh')
   };
 
   axios.post('/api/users/auth/jwt/refresh/', accessData)
     .then(response => {
       const access = response.data.access;
       authStore.setAccess(access);
-      localStorage.setItem('access', access);
+      sessionStorage.setItem('access', access);
       updateAuthorizationHeader();
     }).catch(error => {
       console.log(error);
@@ -83,8 +83,8 @@ export const signIn = async (formData) => {
     const response = await axios.post('/api/users/auth/jwt/create/', formData);
     const { access, refresh } = response.data;
     axios.defaults.headers.common['Authorization'] = "JWT " + access;
-    localStorage.setItem('access', access);
-    localStorage.setItem('refresh', refresh);
+    sessionStorage.setItem('access', access);
+    sessionStorage.setItem('refresh', refresh);
 
     const userDetailsResponse = await axios.get('/api/users/auth/users/me/', {
       headers: { Authorization: `JWT ${access}` },
@@ -103,8 +103,8 @@ export const signIn = async (formData) => {
 // Déconnecte un utilisateur
 export const logout = (authStore, router) => {
   authStore.removeAccess();
-  localStorage.removeItem('access');
-  localStorage.removeItem('refresh');
-  localStorage.removeItem('role');
+  sessionStorage.removeItem('access');
+  sessionStorage.removeItem('refresh');
+  sessionStorage.removeItem('role');
   router.push('/signin');
 };
