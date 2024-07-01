@@ -65,7 +65,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'djoser',
     'corsheaders',
-    'users'
+    'users',
+    'game_sessions'
 ]
 
 MIDDLEWARE = [
