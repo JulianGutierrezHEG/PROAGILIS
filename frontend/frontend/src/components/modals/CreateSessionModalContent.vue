@@ -51,13 +51,10 @@ const createSession = async () => {
   };
 
   try {
-    console.log('Sending request with data:', sessionData);
     const response = await sessionsService.createSession(sessionData);
-    console.log('Session created successfully:', response);
-    router.push('/dashboard');  // Redirect to the dashboard
+    router.push('/dashboard'); 
   } catch (error) {
     console.error('Error creating session:', error.message);
-    alert(error.message);
   }
 };
 </script>
