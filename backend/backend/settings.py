@@ -66,7 +66,8 @@ INSTALLED_APPS = [
     'djoser',
     'corsheaders',
     'users',
-    'game_sessions'
+    'games_sessions',
+    'games',
 ]
 
 MIDDLEWARE = [

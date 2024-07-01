@@ -1,9 +1,7 @@
 <template>
   <div class="flex flex-col min-h-screen">
     <Header class="sticky top-0" />
-    <main class="flex-grow overflow-auto flex items-center justify-center">
-      <router-view />
-    </main>
+    <router-view class="flex-grow" />
     <Footer class="sticky bottom-0" />
   </div>
 </template>

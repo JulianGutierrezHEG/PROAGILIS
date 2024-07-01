@@ -3,6 +3,7 @@ import MainLayout from '@/components/general/MainLayout.vue';
 import Home from '@/views/Home.vue';
 import SignIn from '@/views/SignIn.vue';
 import SignUp from '@/views/SignUp.vue';
+import Dashboard from '@/views/Dashboard.vue';  
 
 const routes = [
   {
@@ -24,6 +25,12 @@ const routes = [
         path: 'signup',
         name: 'SignUp',
         component: SignUp,
+      },
+      {
+        path: 'dashboard',  
+        name: 'Dashboard',
+        component: Dashboard,
+        meta: { requiresAuth: true }
       },
     ],
   },

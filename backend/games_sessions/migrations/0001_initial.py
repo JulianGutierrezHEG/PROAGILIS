@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=200)),
-                ('users', models.ManyToManyField(blank=True, related_name='game_sessions', to=settings.AUTH_USER_MODEL)),
+                ('users', models.ManyToManyField(blank=True, related_name='games_sessions', to=settings.AUTH_USER_MODEL)),
             ],
         ),
         migrations.CreateModel(
@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ('group_size', models.IntegerField()),
                 ('password', models.CharField(max_length=200)),
                 ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sessions', to=settings.AUTH_USER_MODEL)),
-                ('groups', models.ManyToManyField(blank=True, to='game_sessions.group')),
+                ('groups', models.ManyToManyField(blank=True, to='games_sessions.group')),
             ],
         ),
     ]
