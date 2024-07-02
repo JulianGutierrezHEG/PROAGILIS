@@ -8,16 +8,11 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ['id','users', 'current_phase']
+        fields = ['id','name','users', 'current_phase']
 
 class SessionSerializer(serializers.ModelSerializer):
+    groups = GroupSerializer(many=True, read_only=True)
+
     class Meta:
         model = Session
-        fields = '__all__'
-        extra_kwargs = {
-            'name': {'required': True},
-            'number_of_groups': {'required': True},
-            'group_size': {'required': True},
-            'password': {'required': True},
-            'created_by': {'required': True},
-        }
+        fields = ['id', 'name', 'start_date', 'created_by', 'groups', 'number_of_groups', 'group_size', 'password', 'status']

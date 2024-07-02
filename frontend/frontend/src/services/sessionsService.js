@@ -1,6 +1,7 @@
 import axios from 'axios';
 import userService from './usersService';
 
+
 const createSession = async (sessionData) => {
   try {
     const currentUser = await userService.getCurrentUser();
@@ -24,6 +25,16 @@ const getAllSessions = async () => {
   }
 };
 
+const getSessionDetails = async (sessionId) => {
+  try {
+    const response = await axios.get(`/api/sessions/${sessionId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching session details:', error.response);
+    throw new Error('Error fetching session details: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+  }
+};
+
 const getSessionsByUser = async (userId) => {
   try {
     const response = await axios.get(`api/sessions/?created_by=${userId}`);
@@ -44,16 +55,71 @@ const deleteSession = async (sessionId) => {
   }
 };
 
+const fetchSessions = async (userId) => {
+  try {
+    const sessions = await getSessionsByUser(userId);
+    return sessions;
+  } catch (error) {
+    console.error('Error fetching sessions:', error);
+    throw error;
+  }
+};
 
-  const  fetchSessions = async (userId) =>{
-    try {
-      const sessions = await getSessionsByUser(userId);
-      return sessions;
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-      throw error;
+const fetchGroups = async (sessionId) => {
+  try {
+    const response = await axios.get(`api/sessions/${sessionId}/groups/`);
+    console.log('Fetched groups:', response.data);  // Log the fetched data
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching groups:', error.response);
+    throw new Error('Error fetching groups: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+  }
+};
+
+const joinSession = async (sessionId, groupId, password) => {
+  try {
+    const response = await axios.post('/api/sessions/join/', { sessionId, groupId, password });
+    return response.data;
+  } catch (error) {
+    console.error('Error joining session:', error.response);
+    throw new Error('Error joining session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+  }
+};
+
+const leaveSession = async (sessionId, userId) => {
+  try {
+    const response = await axios.post(`/api/sessions/${sessionId}/leave/`, { userId });
+    return response.data;
+  } catch (error) {
+    console.error('Error leaving session:', error.response);
+    throw new Error('Error leaving session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+  }
+};
+
+const getJoinedSession = async (userId) => {
+  try {
+    const response = await axios.get(`/api/sessions/joined/?userId=${userId}`);
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      return null; 
+    } else {
+      console.error('Error fetching joined session:', error.response);
+      throw new Error('Error fetching joined session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
     }
-  };
+  }
+};
+
+const getUserSessionInfo = async (userId) => {
+  try {
+    const response = await axios.get(`/api/sessions/user-info/?userId=${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user session info:', error.response);
+    throw new Error('Error fetching user session info: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+  }
+};
+
 
 
 export default {
@@ -62,4 +128,10 @@ export default {
   getSessionsByUser,
   deleteSession,
   fetchSessions,
+  fetchGroups,
+  joinSession,
+  getJoinedSession,
+  getUserSessionInfo,
+  leaveSession,
+  getSessionDetails
 };

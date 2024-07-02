@@ -4,6 +4,9 @@ import Home from '@/views/Home.vue';
 import SignIn from '@/views/SignIn.vue';
 import SignUp from '@/views/SignUp.vue';
 import Dashboard from '@/views/Dashboard.vue';  
+import Game from '@/views/Game.vue';
+import userService from '@/services/usersService';
+import sessionsService from '@/services/sessionsService';
 
 const routes = [
   {
@@ -32,6 +35,12 @@ const routes = [
         component: Dashboard,
         meta: { requiresAuth: true }
       },
+      {
+        path: 'game/:sessionId',  
+        name: 'Game',
+        component: Game,
+        meta: { requiresAuth: true }
+      },
     ],
   },
   {
@@ -45,13 +54,29 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const token = sessionStorage.getItem('access');
 
   if (to.matched.some(record => record.meta.requiresAuth) && !token) {
     next('/signin');
   } else {
-    next();
+    if (to.path.startsWith('/game/')) {
+      try {
+        const user = await userService.getCurrentUser();
+        const session = await sessionsService.getJoinedSession(user.id);
+
+        if (session && session.id === parseInt(to.params.sessionId, 10)) {
+          next();
+        } else {
+          next({ name: 'Home' });
+        }
+      } catch (error) {
+        console.error('Error in route guard:', error);
+        next({ name: 'Home' });
+      }
+    } else {
+      next();
+    }
   }
 });
 

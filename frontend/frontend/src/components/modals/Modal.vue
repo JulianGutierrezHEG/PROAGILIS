@@ -9,7 +9,7 @@
   
   <script setup>
   import { shallowRef, ref, onUnmounted } from 'vue';
-  import EventBus from '@/services/eventBus';
+  import EventBus from '@/services/EventBus';
   import JoinSessionModalContent from '@/components/modals/JoinSessionModalContent.vue';
   import CreateSessionModalContent from '@/components/modals/CreateSessionModalContent.vue';
   
@@ -46,4 +46,4 @@
     EventBus.off('close-modal', closeModalHandler);
   });
   </script>
-  
+  @/services/EventBus
