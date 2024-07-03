@@ -15,6 +15,26 @@ const createSession = async (sessionData) => {
   }
 };
 
+const startSession = async (sessionId) => {
+  try {
+    const response = await axios.post(`/api/sessions/${sessionId}/start/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error starting session:', error.response);
+    throw new Error('Error starting session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+  }
+};
+
+const stopSession = async (sessionId) => {
+  try {
+    const response = await axios.post(`/api/sessions/${sessionId}/stop/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error stopping session:', error.response);
+    throw new Error('Error stopping session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+  }
+};
+
 const getAllSessions = async () => {
   try {
     const response = await axios.get('api/sessions/');
@@ -68,7 +88,7 @@ const fetchSessions = async (userId) => {
 const fetchGroups = async (sessionId) => {
   try {
     const response = await axios.get(`api/sessions/${sessionId}/groups/`);
-    console.log('Fetched groups:', response.data);  // Log the fetched data
+    console.log('Fetched groups:', response.data);  
     return response.data;
   } catch (error) {
     console.error('Error fetching groups:', error.response);
@@ -133,5 +153,7 @@ export default {
   getJoinedSession,
   getUserSessionInfo,
   leaveSession,
-  getSessionDetails
+  getSessionDetails,
+  startSession,
+  stopSession,
 };

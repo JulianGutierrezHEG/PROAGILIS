@@ -54,7 +54,7 @@ const handleSignUp = async () => {
     await signUp(formData);
     router.push('/signin');
   } catch (err) {
-    state.error = err.message;
+    state.error = 'Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule et un chiffre ou un utilisateur avec ces informations existe déjà.';
   }
 };
 

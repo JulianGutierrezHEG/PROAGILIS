@@ -53,6 +53,7 @@ const goToDashboard = () => {
 
 const goToGameSession = () => {
   if (joinedSession.value) {
+    console.log('Navigating to game session:', joinedSession.value.id);
     router.push(`/game/${joinedSession.value.id}`);
   }
 };
@@ -76,6 +77,7 @@ const fetchJoinedSession = async () => {
     const session = await sessionsService.getJoinedSession(currentUser.value.id);
     if (session) {
       joinedSession.value = session;
+      console.log('Joined session:', session);
     } else {
       joinedSession.value = null;
     }

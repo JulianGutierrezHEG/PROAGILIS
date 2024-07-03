@@ -50,7 +50,7 @@ const handleSignIn = async () => {
 
     router.push('/');
   } catch (signInError) {
-    state.error = signInError;
+    state.error = 'Email ou mot de passe incorrect';
   }
 };
 

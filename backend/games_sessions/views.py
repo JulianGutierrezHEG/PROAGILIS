@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .models import Session,Group,User
+from games.models import GamePhase
 from .serializers import SessionSerializer, GroupSerializer
 
 class SessionCreateView(generics.CreateAPIView):
@@ -108,3 +109,32 @@ class LeaveSessionView(APIView):
             group.users.remove(user)
             return Response({'success': True}, status=status.HTTP_200_OK)
         return Response({'detail': 'User not in any group of this session'}, status=status.HTTP_400_BAD_REQUEST)
+
+class StartSessionView(APIView):
+    def post(self, request, session_id):
+        session = get_object_or_404(Session, id=session_id)
+        session.status = 'active'
+        session.save()
+
+        print("Looking for Test phase in GamePhase table...")
+
+        test_phase = GamePhase.objects.filter(name__iexact="Test phase").first()
+        if not test_phase:
+            print("Test Phase not found.")
+            return Response({'error': 'Test Phase not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        print(f"Test Phase found: {test_phase.name}")
+
+        for group in session.groups.all():
+            print(f"Setting phase for group: {group.name}")
+            group.current_phase = test_phase.name
+            group.save()
+
+        return Response({'status': 'Session started successfully.'}, status=status.HTTP_200_OK)
+
+class StopSessionView(APIView):
+    def post(self, request, session_id, *args, **kwargs):
+        session = get_object_or_404(Session, id=session_id)
+        session.status = 'paused'
+        session.save()
+        return Response({'status': 'Session paused successfully.'}, status=status.HTTP_200_OK)

@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SessionCreateView,SessionListView,SessionDeleteView,GroupListView,JoinSessionView,GetJoinedSessionView,GetUserSessionInfoView,LeaveSessionView,SessionDetailView
+from .views import SessionCreateView,SessionListView,SessionDeleteView,GroupListView,JoinSessionView,GetJoinedSessionView,GetUserSessionInfoView,LeaveSessionView,SessionDetailView,StartSessionView,StopSessionView
 
 urlpatterns = [
     path('', SessionListView.as_view(), name='listSessions'),
@@ -11,4 +11,6 @@ urlpatterns = [
     path('<int:session_id>/groups/', GroupListView.as_view(), name='listGroups'),
     path('user-info/', GetUserSessionInfoView.as_view(), name='userSessionInfo'),
     path('<int:session_id>/leave/', LeaveSessionView.as_view(), name='leaveSession'),
+    path('<int:session_id>/start/', StartSessionView.as_view(), name='startSession'),
+    path('<int:session_id>/stop/', StopSessionView.as_view(), name='stopSession'),
 ]
