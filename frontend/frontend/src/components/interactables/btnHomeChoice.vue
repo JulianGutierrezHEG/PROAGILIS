@@ -27,7 +27,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
-import EventBus from '@/services/EventBus';
+import EventBus from '@/services/eventBus';
 import { useRouter } from 'vue-router';
 import Modal from '@/components/modals/Modal.vue';
 import sessionsService from '@/services/sessionsService';
@@ -92,3 +92,4 @@ onMounted(() => {
   }
 });
 </script>
+@/services/eventBus
