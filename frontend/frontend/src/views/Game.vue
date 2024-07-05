@@ -30,13 +30,15 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import userService from '@/services/usersService';
 import sessionsService from '@/services/sessionsService';
+import websocketService from '@/services/websocketService';
 import ToastComponent from '@/components/toasts/Toast.vue';
 import TestPhase from '@/views/TestPhase.vue';
 import WaitingScreen from '@/views/WaitingScreen.vue';
+import EventBus from '@/services/eventBus';
 
 const userInfo = ref(null);
 const sessionStatus = ref('not_started');
@@ -54,7 +56,7 @@ const fetchUserSessionInfo = async () => {
     userInfo.value = { ...userInfo.value, ...info };
     if (info && info.session_id) {
       fetchSessionStatus(info.session_id);
-      setInterval(() => fetchSessionStatus(info.session_id), 5000); // Polling every 5 seconds
+      websocketService.connectSessionStatus(info.session_id); // Connect to WebSocket for session status
     }
   } catch (error) {
     console.error('Error fetching user session info:', error);
@@ -84,11 +86,33 @@ const leaveSession = async () => {
         session_id: userInfo.value.session_id,
         user_id: userInfo.value.user_id
       });
+
+      websocketService.disconnectGroup(userInfo.value.groupname);
+      websocketService.sendMessage(userInfo.value.groupname, {
+        event: 'user_left_group',
+        user: userInfo.value.id,
+        group_id: userInfo.value.groupname
+      });
+
       await sessionsService.leaveSession(userInfo.value.session_id, userInfo.value.user_id);
       router.push('/');
     }
   } catch (error) {
     console.error('Error leaving session:', error);
+  }
+};
+
+const updateSessionStatus = (data) => {
+  console.log('Update session status event received:', data);
+  if (userInfo.value && userInfo.value.session_id === data.session_id) {
+    sessionStatus.value = data.status;
+  }
+};
+
+const handleSessionDeleted = (data) => {
+  console.log('Session deleted event received:', data);
+  if (userInfo.value && userInfo.value.session_id === data.session_id) {
+    router.push('/');
   }
 };
 
@@ -98,5 +122,19 @@ watch(sessionStatus, (newStatus) => {
 
 onMounted(() => {
   fetchUserSessionInfo();
+  EventBus.on('session_status_changed', updateSessionStatus);
+  EventBus.on('session_deleted', handleSessionDeleted);
+});
+
+onUnmounted(() => {
+  if (userInfo.value && userInfo.value.groupname) {
+    websocketService.disconnectGroup(userInfo.value.groupname);
+  }
+  EventBus.off('session_status_changed', updateSessionStatus);
+  EventBus.off('session_deleted', handleSessionDeleted);
 });
 </script>
+
+
+
+

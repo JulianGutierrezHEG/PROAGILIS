@@ -15,6 +15,16 @@ const createSession = async (sessionData) => {
   }
 };
 
+const deleteSession = async (sessionId) => {
+  try {
+    const response = await axios.delete(`api/sessions/${sessionId}/delete/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting session:', error.response);
+    throw new Error('Error deleting session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+  }
+};
+
 const startSession = async (sessionId) => {
   try {
     const response = await axios.post(`/api/sessions/${sessionId}/start/`);
@@ -65,15 +75,6 @@ const getSessionsByUser = async (userId) => {
   }
 };
 
-const deleteSession = async (sessionId) => {
-  try {
-    const response = await axios.delete(`api/sessions/${sessionId}/delete/`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting session:', error.response);
-    throw new Error('Error deleting session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
-  }
-};
 
 const fetchSessions = async (userId) => {
   try {

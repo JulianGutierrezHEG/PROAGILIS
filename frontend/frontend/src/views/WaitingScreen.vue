@@ -1,10 +1,8 @@
 <template>
     <div>
-      <h1>Waiting Screen</h1>
-      <!-- Waiting screen content here -->
+      <h1>En attente de validation ou discussion en cours..</h1>
     </div>
   </template>
   
   <script setup>
-  // No script needed for basic setup
   </script>

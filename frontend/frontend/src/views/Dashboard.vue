@@ -74,22 +74,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import sessionsService from '@/services/sessionsService';
+import usersService from '@/services/usersService';
 import { useAuthStore } from '@/stores/authStore';
 import GroupInfo from '@/components/dashboard/GroupInfo.vue';
+import EventBus from '@/services/eventBus';
+import websocketService from '@/services/websocketService';
 
 const sessions = ref([]);
 const selectedSession = ref(null);
 const selectedGroup = ref(null);
 const authStore = useAuthStore();
+const groups = ref([]);
 
-const fetchSessions = async () => {
+const { connectGroup, disconnectGroup, sendMessage, connectSessionStatus, disconnectSession } = websocketService;
+
+const fetchSessions = async (userId) => {
   try {
-    sessions.value = await sessionsService.fetchSessions(authStore.userId);
+    console.log('Fetching sessions for user:', userId);
+    sessions.value = await sessionsService.fetchSessions(userId);
     if (sessions.value.length > 0) {
       selectedSession.value = sessions.value[0];
       fetchGroups();
+      connectSessionStatus(selectedSession.value.id);
     }
   } catch (error) {
     console.error('Error fetching sessions:', error);
@@ -99,8 +107,12 @@ const fetchSessions = async () => {
 const fetchGroups = async () => {
   if (!selectedSession.value) return;
   try {
+    console.log('Fetching groups for session:', selectedSession.value.id);
     const session = await sessionsService.getSessionDetails(selectedSession.value.id);
     selectedSession.value.groups = session.groups;
+    session.groups.forEach(group => {
+      connectGroup(group.id);
+    });
   } catch (error) {
     console.error('Error fetching groups:', error);
   }
@@ -131,9 +143,19 @@ const handleStatusSession = async (action) => {
     if (action === 'start') {
       await sessionsService.startSession(selectedSession.value.id);
       selectedSession.value.status = 'active';
+      console.log(`Session ${selectedSession.value.id} started`);
+      selectedSession.value.groups.forEach(group => {
+        connectGroup(group.id);
+      });
+      sendMessage(selectedSession.value.id, { event: 'session_status_changed', status: 'active' });
     } else if (action === 'paused') {
       await sessionsService.stopSession(selectedSession.value.id);
       selectedSession.value.status = 'paused';
+      console.log(`Session ${selectedSession.value.id} paused`);
+      selectedSession.value.groups.forEach(group => {
+        disconnectGroup(group.id);
+      });
+      sendMessage(selectedSession.value.id, { event: 'session_status_changed', status: 'paused' });
     }
   } catch (error) {
     console.error(`Error ${action}ing session:`, error);
@@ -144,14 +166,85 @@ const selectGroup = (group) => {
   selectedGroup.value = group;
 };
 
-watch(selectedSession, () => {
-  selectedGroup.value = null;
-  if (selectedSession.value) {
-    fetchGroups();
+const updateGroupMembers = (data) => {
+  console.log('Update group members event received:', data);
+  if (!selectedSession.value || !selectedSession.value.groups) return;
+
+  const groupIndex = selectedSession.value.groups.findIndex(g => g.id === data.group_id);
+  if (groupIndex !== -1) {
+    const group = selectedSession.value.groups[groupIndex];
+    const userIndex = group.users.findIndex(user => user.id === data.user);
+
+    if (data.event === 'user_joined_group') {
+      if (userIndex === -1) { 
+        group.users.push({ id: data.user, username: data.username });
+      } else {
+        group.users[userIndex] = { ...group.users[userIndex], ...data };
+      }
+    } else if (data.event === 'user_left_group' && userIndex !== -1) {
+      group.users.splice(userIndex, 1); 
+    }
+    selectedSession.value.groups = [...selectedSession.value.groups];
+  }
+};
+
+const updateSessionStatus = (data) => {
+  console.log('Update session status event received:', data);
+  if (selectedSession.value && selectedSession.value.id === data.session_id) {
+    selectedSession.value.status = data.status;
+  }
+};
+
+const handleSessionDeleted = (data) => {
+  console.log('Session deleted event received:', data);
+  if (selectedSession.value && selectedSession.value.id === data.session_id) {
+    selectedSession.value = null;
+    sessions.value = sessions.value.filter(session => session.id !== data.session_id);
+  }
+};
+
+watch(selectedSession, (newSession, oldSession) => {
+  if (oldSession) {
+    oldSession.groups.forEach(group => {
+      console.log('Disconnecting WebSocket for group:', group.id);
+      disconnectGroup(group.id);
+    });
+    console.log('Disconnecting WebSocket for session:', oldSession.id);
+    disconnectSession(oldSession.id);
+  }
+  if (newSession) {
+    newSession.groups.forEach(group => {
+      console.log('Connecting WebSocket for group:', group.id);
+      connectGroup(group.id);
+    });
+    console.log('Connecting WebSocket for session:', newSession.id);
+    connectSessionStatus(newSession.id);
+  }
+}, { immediate: true });
+
+
+onMounted(async () => {
+  console.log('Component mounted');
+  const user = await usersService.getCurrentUser();
+  if (user && user.id) {
+    fetchSessions(user.id);
+    EventBus.on('user_joined_group', updateGroupMembers);
+    EventBus.on('user_left_group', updateGroupMembers);
+    EventBus.on('session_status_changed', updateSessionStatus);
+    EventBus.on('session_deleted', handleSessionDeleted);
+  } else {
+    console.error('User not found');
   }
 });
 
-onMounted(() => {
-  fetchSessions();
+onUnmounted(() => {
+  console.log('Component unmounted');
+  EventBus.off('user_joined_group', updateGroupMembers);
+  EventBus.off('user_left_group', updateGroupMembers);
+  EventBus.off('session_status_changed', updateSessionStatus);
+  EventBus.off('session_deleted', handleSessionDeleted);
 });
 </script>
+
+
+

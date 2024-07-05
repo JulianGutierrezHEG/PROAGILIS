@@ -2,6 +2,8 @@ from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from django.shortcuts import get_object_or_404
 from .models import Session,Group,User
 from games.models import GamePhase
@@ -12,7 +14,7 @@ class SessionCreateView(generics.CreateAPIView):
     serializer_class = SessionSerializer
 
     def perform_create(self, serializer):
-        session = serializer.save(created_by=self.request.user)
+        session = serializer.save(created_by=self.request.user, status='not_started')
     
         groups = []
         for i in range(1, session.number_of_groups + 1): 
@@ -21,6 +23,16 @@ class SessionCreateView(generics.CreateAPIView):
         
         session.groups.set(groups)
         session.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"session_{session.id}",
+            {
+                'type': 'session_status_update',
+                'session_id': session.id,
+                'status': 'not_started',
+            }
+        )
 
         return session
 
@@ -33,6 +45,57 @@ class SessionDeleteView(generics.DestroyAPIView):
         if obj.created_by != self.request.user:
             raise PermissionDenied("You do not have permission to delete this session.")
         return obj
+
+    def perform_destroy(self, instance):
+        session_id = instance.id
+        super().perform_destroy(instance)
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"session_{session_id}",
+            {
+                'type': 'session_deleted',
+                'session_id': session_id,
+            }
+        )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class StartSessionView(APIView):
+    def post(self, request, session_id):
+        session = get_object_or_404(Session, id=session_id)
+        session.status = 'active'
+        session.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"session_{session_id}",
+            {
+                'type': 'session_status_update',
+                'session_id': session_id,
+                'status': 'active'
+            }
+        )
+
+        return Response({'status': 'Session started successfully.'}, status=status.HTTP_200_OK)
+
+class StopSessionView(APIView):
+    def post(self, request, session_id, *args, **kwargs):
+        session = get_object_or_404(Session, id=session_id)
+        session.status = 'paused'
+        session.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"session_{session_id}",
+            {
+                'type': 'session_status_update',
+                'session_id': session_id,
+                'status': 'paused'
+            }
+        )
+
+        return Response({'status': 'Session paused successfully.'}, status=status.HTTP_200_OK)
 
 class SessionListView(generics.ListAPIView):
     queryset = Session.objects.all()
@@ -53,29 +116,13 @@ class GroupListView(generics.ListAPIView):
         print(f"Groups found: {groups}")  
         return groups
 
-class JoinSessionView(APIView):
-    def post(self, request):
-        session_id = request.data.get('sessionId')
-        group_id = request.data.get('groupId')
-        password = request.data.get('password')
-
-        session = get_object_or_404(Session, id=session_id)
-        if session.password != password:
-            return Response({'success': False, 'detail': 'Incorrect password'}, status=status.HTTP_403_FORBIDDEN)
-
-        group = get_object_or_404(Group, id=group_id)
-        group.users.add(request.user)
-        group.save()
-
-        return Response({'success': True})
-
 class GetJoinedSessionView(APIView):
     def get(self, request):
         user_id = request.query_params.get('userId')
         user = get_object_or_404(User, id=user_id)
         group = Group.objects.filter(users=user).first()
         if group:
-            session = group.session_set.first()
+            session = Session.objects.filter(groups=group).first()
             if session:
                 serializer = SessionSerializer(session)
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -98,7 +145,34 @@ class GetUserSessionInfoView(APIView):
                 }, status=status.HTTP_200_OK)
         return Response({'detail': 'No joined session found'}, status=status.HTTP_404_NOT_FOUND)
 
+class JoinSessionView(APIView):
+    def post(self, request):
+        session_id = request.data.get('sessionId')
+        group_id = request.data.get('groupId')
+        password = request.data.get('password')
 
+        session = get_object_or_404(Session, id=session_id)
+        if session.password != password:
+            return Response({'success': False, 'detail': 'Incorrect password'}, status=status.HTTP_403_FORBIDDEN)
+
+        group = get_object_or_404(Group, id=group_id)
+        group.users.add(request.user)
+        group.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"group_{group_id}",
+            {
+                'type': 'user_joined_group',
+                'event': 'user_joined_group',
+                'user': request.user.id,
+                'group_id': group_id,
+                'username': request.user.username
+            }
+        )
+
+        return Response({'success': True})
+    
 class LeaveSessionView(APIView):
     def post(self, request, session_id):
         user_id = request.data.get('userId')
@@ -107,34 +181,18 @@ class LeaveSessionView(APIView):
         group = Group.objects.filter(users=user, session=session).first()
         if group:
             group.users.remove(user)
+        
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"group_{group.id}",
+                {
+                    'type': 'user_left_group',
+                    'event': 'user_left_group',
+                    'user': user.id,
+                    'group_id': group.id,
+                    'username': user.username
+                }
+            )
             return Response({'success': True}, status=status.HTTP_200_OK)
         return Response({'detail': 'User not in any group of this session'}, status=status.HTTP_400_BAD_REQUEST)
 
-class StartSessionView(APIView):
-    def post(self, request, session_id):
-        session = get_object_or_404(Session, id=session_id)
-        session.status = 'active'
-        session.save()
-
-        print("Looking for Test phase in GamePhase table...")
-
-        test_phase = GamePhase.objects.filter(name__iexact="Test phase").first()
-        if not test_phase:
-            print("Test Phase not found.")
-            return Response({'error': 'Test Phase not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-        print(f"Test Phase found: {test_phase.name}")
-
-        for group in session.groups.all():
-            print(f"Setting phase for group: {group.name}")
-            group.current_phase = test_phase.name
-            group.save()
-
-        return Response({'status': 'Session started successfully.'}, status=status.HTTP_200_OK)
-
-class StopSessionView(APIView):
-    def post(self, request, session_id, *args, **kwargs):
-        session = get_object_or_404(Session, id=session_id)
-        session.status = 'paused'
-        session.save()
-        return Response({'status': 'Session paused successfully.'}, status=status.HTTP_200_OK)
