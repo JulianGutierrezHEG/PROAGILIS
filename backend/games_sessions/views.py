@@ -126,7 +126,7 @@ class GetJoinedSessionView(APIView):
             if session:
                 serializer = SessionSerializer(session)
                 return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({'detail': 'No joined session found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class GetUserSessionInfoView(APIView):
     def get(self, request):

@@ -4,7 +4,7 @@
     <form @submit.prevent="handleJoinSession">
       <div class="mb-6">
         <label for="session-dropdown" class="block text-gray-700 font-medium mb-2">Session</label>
-        <select id="session-dropdown" v-model="selectedSession" @change="fetchGroups" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
+        <select id="session-dropdown" v-model="selectedSessionId" @change="handleSessionChange" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
           <option disabled value="">Veuillez sélectionner une session</option>
           <option v-for="session in sessions" :key="session.id" :value="session.id">{{ session.name }}</option>
         </select>
@@ -14,7 +14,7 @@
         <label for="group-dropdown" class="block text-gray-700 font-medium mb-2">Groupe</label>
         <select id="group-dropdown" v-model="selectedGroup" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
           <option disabled value="">Veuillez sélectionner un groupe</option>
-          <option v-for="group in groups" :key="group.id" :value="group.id">{{ group.name }} {{ group.users.length }}/{{ groupSize }}</option>
+          <option v-for="group in groups" :key="group.id" :value="group">{{ group.name }} {{ group.users.length }}/{{ groupSize }}</option>
         </select>
       </div>
       <div class="mb-6">
@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSession } from '@/composables/useSession';
 
@@ -42,7 +42,7 @@ const {
   sessionPassword, 
   passwordError, 
   groupSize, 
-  fetchSessionsAndGroups, 
+  fetchUserSessions, 
   fetchGroups, 
   joinSession: joinSessionFromComposable, 
   setupEventListeners, 
@@ -50,9 +50,15 @@ const {
 } = useSession();
 
 const router = useRouter();
+const selectedSessionId = ref('');
+
+const handleSessionChange = async () => {
+  selectedSession.value = sessions.value.find(session => session.id === selectedSessionId.value);
+  await fetchGroups();
+};
 
 onMounted(() => {
-  fetchSessionsAndGroups();
+  fetchUserSessions();
   setupEventListeners();
 });
 
@@ -61,8 +67,8 @@ onUnmounted(() => {
 });
 
 const handleJoinSession = async () => {
+  console.log('Selected Session:', selectedSession.value);
+  console.log('Selected Group:', selectedGroup.value);
   await joinSessionFromComposable(router);
 };
 </script>
-
-

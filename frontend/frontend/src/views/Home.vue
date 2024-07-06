@@ -13,6 +13,5 @@
 
 <script setup>
 import BtnHomeChoice from '@/components/interactables/BtnHomeChoice.vue';
-
 </script>
 

@@ -111,13 +111,10 @@ const getJoinedSession = async (userId) => {
     const response = await axios.get(`/api/sessions/joined/?userId=${userId}`);
     return response.data;
   } catch (error) {
-    if (error.response && error.response.status === 404) {
-      return null; 
-    } else {
-      handleAxiosError(error);
-    }
+    handleAxiosError(error);
   }
 };
+
 
 const getUserSessionInfo = async (userId) => {
   try {
