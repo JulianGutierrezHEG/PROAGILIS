@@ -1,6 +1,10 @@
-import axios from 'axios';
-import userService from './usersService';
+import axios from '@/axiosConfig';
+import userService from '@/services/usersService';
 
+const handleAxiosError = (error) => {
+  const errorMessage = error.response?.data?.detail || 'Unknown error occurred';
+  throw new Error(errorMessage);
+};
 
 const createSession = async (sessionData) => {
   try {
@@ -9,9 +13,7 @@ const createSession = async (sessionData) => {
     const response = await axios.post('api/sessions/create/', sessionData);
     return response.data;
   } catch (error) {
-    console.error('Error creating session:', error.response);
-    const errorMessage = error.response?.data?.detail || 'Unknown error occurred';
-    throw new Error('Error creating session: ' + errorMessage);
+    handleAxiosError(error);
   }
 };
 
@@ -20,8 +22,7 @@ const deleteSession = async (sessionId) => {
     const response = await axios.delete(`api/sessions/${sessionId}/delete/`);
     return response.data;
   } catch (error) {
-    console.error('Error deleting session:', error.response);
-    throw new Error('Error deleting session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
@@ -30,8 +31,7 @@ const startSession = async (sessionId) => {
     const response = await axios.post(`/api/sessions/${sessionId}/start/`);
     return response.data;
   } catch (error) {
-    console.error('Error starting session:', error.response);
-    throw new Error('Error starting session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
@@ -40,8 +40,7 @@ const stopSession = async (sessionId) => {
     const response = await axios.post(`/api/sessions/${sessionId}/stop/`);
     return response.data;
   } catch (error) {
-    console.error('Error stopping session:', error.response);
-    throw new Error('Error stopping session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
@@ -50,8 +49,7 @@ const getAllSessions = async () => {
     const response = await axios.get('api/sessions/');
     return response.data;
   } catch (error) {
-    console.error('Error fetching sessions:', error.response);
-    throw new Error('Error fetching sessions: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
@@ -60,8 +58,7 @@ const getSessionDetails = async (sessionId) => {
     const response = await axios.get(`/api/sessions/${sessionId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching session details:', error.response);
-    throw new Error('Error fetching session details: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
@@ -70,30 +67,24 @@ const getSessionsByUser = async (userId) => {
     const response = await axios.get(`api/sessions/?created_by=${userId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching sessions by user:', error.response);
-    throw new Error('Error fetching sessions by user: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
-
 const fetchSessions = async (userId) => {
   try {
-    const sessions = await getSessionsByUser(userId);
-    return sessions;
+    return await getSessionsByUser(userId);
   } catch (error) {
-    console.error('Error fetching sessions:', error);
-    throw error;
+    handleAxiosError(error);
   }
 };
 
 const fetchGroups = async (sessionId) => {
   try {
     const response = await axios.get(`api/sessions/${sessionId}/groups/`);
-    console.log('Fetched groups:', response.data);  
     return response.data;
   } catch (error) {
-    console.error('Error fetching groups:', error.response);
-    throw new Error('Error fetching groups: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
@@ -102,8 +93,7 @@ const joinSession = async (sessionId, groupId, password) => {
     const response = await axios.post('/api/sessions/join/', { sessionId, groupId, password });
     return response.data;
   } catch (error) {
-    console.error('Error joining session:', error.response);
-    throw new Error('Error joining session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
@@ -112,8 +102,7 @@ const leaveSession = async (sessionId, userId) => {
     const response = await axios.post(`/api/sessions/${sessionId}/leave/`, { userId });
     return response.data;
   } catch (error) {
-    console.error('Error leaving session:', error.response);
-    throw new Error('Error leaving session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
 
@@ -125,8 +114,7 @@ const getJoinedSession = async (userId) => {
     if (error.response && error.response.status === 404) {
       return null; 
     } else {
-      console.error('Error fetching joined session:', error.response);
-      throw new Error('Error fetching joined session: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+      handleAxiosError(error);
     }
   }
 };
@@ -136,12 +124,9 @@ const getUserSessionInfo = async (userId) => {
     const response = await axios.get(`/api/sessions/user-info/?userId=${userId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching user session info:', error.response);
-    throw new Error('Error fetching user session info: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    handleAxiosError(error);
   }
 };
-
-
 
 export default {
   createSession,

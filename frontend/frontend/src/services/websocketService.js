@@ -2,102 +2,74 @@ import EventBus from './eventBus';
 
 const sockets = {};
 
-const connectGroup = (groupId) => {
-  if (!groupId) return;
-  if (sockets[groupId]) {
-    console.log(`WebSocket already connected for group: ${groupId}`);
+// Connecte un WebSocket en utilisant un identifiant et un type spécifiques.
+const connectWebSocket = (id, type) => {
+  if (!id) return;
+  if (sockets[id]) {
+    console.log(`WebSocket déjà connecté pour ${type} : ${id}`);
     return;
   }
-  console.log(`Connecting to WebSocket for group: ${groupId}`);
-  const socket = new WebSocket(`ws://localhost:8000/ws/group/${groupId}/`);
+  console.log(`Connexion au WebSocket pour ${type} : ${id}`);
+  const socket = new WebSocket(`ws://localhost:8000/ws/${type}/${id}/`);
 
-  socket.onopen = () => {
-    console.log(`WebSocket connection established for group: ${groupId}`);
-  };
-
+  socket.onopen = () => console.log(`Connexion WebSocket établie pour ${type} : ${id}`);
   socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log(`WebSocket message received for group: ${groupId}`, data);
-    EventBus.emit(data.event, data);
+    try {
+      const data = JSON.parse(event.data);
+      console.log(`Message WebSocket reçu pour ${type} : ${id}`, data);
+      EventBus.emit(data.event, data);
+    } catch (error) {
+      console.error(`Erreur lors de l'analyse du message WebSocket pour ${type} : ${id}`, error);
+    }
   };
-
   socket.onclose = () => {
-    console.log(`WebSocket connection closed for group: ${groupId}`);
-    delete sockets[groupId];
+    console.log(`Connexion WebSocket fermée pour ${type} : ${id}`);
+    delete sockets[id];
   };
+  socket.onerror = (error) => console.error(`Erreur WebSocket pour ${type} : ${id}`, error);
 
-  socket.onerror = (error) => {
-    console.error(`WebSocket error for group: ${groupId}`, error);
-  };
-
-  sockets[groupId] = socket;
+  sockets[id] = socket;
 };
 
-const disconnectGroup = (groupId) => {
-  if (sockets[groupId]) {
-    console.log(`Disconnecting WebSocket for group: ${groupId}`);
-    sockets[groupId].close();
-    delete sockets[groupId];
+// Déconnecte un WebSocket en utilisant un identifiant et un type spécifiques.
+const disconnectWebSocket = (id, type) => {
+  if (sockets[id]) {
+    console.log(`Déconnexion du WebSocket pour ${type} : ${id}`);
+    sockets[id].close();
+    delete sockets[id];
   }
 };
 
-const connectSessionStatus = (sessionId) => {
-  if (!sessionId) return;
-  if (sockets[sessionId]) {
-    console.log(`WebSocket already connected for session: ${sessionId}`);
-    return;
-  }
-  console.log(`Connecting to WebSocket for session: ${sessionId}`);
-  const socket = new WebSocket(`ws://localhost:8000/ws/session/${sessionId}/`);
-
-  socket.onopen = () => {
-    console.log(`WebSocket connection established for session: ${sessionId}`);
-  };
-
-  socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    console.log(`WebSocket message received for session: ${sessionId}`, data);
-    EventBus.emit(data.event, data);
-  };
-
-  socket.onclose = () => {
-    console.log(`WebSocket connection closed for session: ${sessionId}`);
-    delete sockets[sessionId];
-  };
-
-  socket.onerror = (error) => {
-    console.error(`WebSocket error for session: ${sessionId}`, error);
-  };
-
-  sockets[sessionId] = socket;
+// Déconnecte tous les WebSockets.
+const disconnectAll = () => {
+  Object.keys(sockets).forEach((id) => {
+    console.log(`Déconnexion du WebSocket pour l'ID : ${id}`);
+    if (sockets[id]) {
+      sockets[id].close();
+      delete sockets[id];
+    }
+  });
 };
 
-const disconnectSession = (sessionId) => {
-  if (sockets[sessionId]) {
-    console.log(`Disconnecting WebSocket for session: ${sessionId}`);
-    sockets[sessionId].close();
-    delete sockets[sessionId];
-  }
-};
-
+// Envoie un message à un WebSocket spécifique.
 const sendMessage = (id, message) => {
   if (sockets[id] && sockets[id].readyState === WebSocket.OPEN) {
-    console.log(`Sending WebSocket message to ID: ${id}`, message);
+    console.log(`Envoi d'un message WebSocket à l'ID : ${id}`, message);
     sockets[id].send(JSON.stringify(message));
   } else {
-    console.error(`WebSocket is not connected for ID: ${id}`);
+    console.error(`WebSocket non connecté pour l'ID : ${id}`);
   }
 };
 
-const isConnected = (id) => {
-  return !!sockets[id];
-};
+// Vérifie si un WebSocket est connecté en utilisant un identifiant spécifique.
+const isConnected = (id) => !!sockets[id];
 
 export default {
-  connectGroup,
-  disconnectGroup,
-  connectSessionStatus,
-  disconnectSession,
+  connectGroup: (groupId) => connectWebSocket(groupId, 'group'),
+  disconnectGroup: (groupId) => disconnectWebSocket(groupId, 'group'),
+  connectSessionStatus: (sessionId) => connectWebSocket(sessionId, 'session'),
+  disconnectSession: (sessionId) => disconnectWebSocket(sessionId, 'session'),
   sendMessage,
   isConnected,
+  disconnectAll,
 };

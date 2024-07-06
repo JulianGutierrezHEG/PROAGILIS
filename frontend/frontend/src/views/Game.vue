@@ -56,7 +56,7 @@ const fetchUserSessionInfo = async () => {
     userInfo.value = { ...userInfo.value, ...info };
     if (info && info.session_id) {
       fetchSessionStatus(info.session_id);
-      websocketService.connectSessionStatus(info.session_id); // Connect to WebSocket for session status
+      websocketService.connectSessionStatus(info.session_id); 
     }
   } catch (error) {
     console.error('Error fetching user session info:', error);
@@ -72,6 +72,7 @@ const fetchSessionStatus = async (sessionId) => {
       if (group) {
         currentPhase.value = group.current_phase || 'No current phase';
         console.log(`Current phase for group ${group.name}: ${group.current_phase}`);
+        websocketService.connectGroup(group.id); 
       }
     }
   } catch (error) {
@@ -87,11 +88,12 @@ const leaveSession = async () => {
         user_id: userInfo.value.user_id
       });
 
-      websocketService.disconnectGroup(userInfo.value.groupname);
-      websocketService.sendMessage(userInfo.value.groupname, {
+      const group = userInfo.value.group_id ? userInfo.value.group_id : userInfo.value.groupname; 
+      websocketService.disconnectGroup(group);
+      websocketService.sendMessage(group, {
         event: 'user_left_group',
         user: userInfo.value.id,
-        group_id: userInfo.value.groupname
+        group_id: group
       });
 
       await sessionsService.leaveSession(userInfo.value.session_id, userInfo.value.user_id);
@@ -116,10 +118,6 @@ const handleSessionDeleted = (data) => {
   }
 };
 
-watch(sessionStatus, (newStatus) => {
-  // Handle any other necessary side effects when session status changes
-});
-
 onMounted(() => {
   fetchUserSessionInfo();
   EventBus.on('session_status_changed', updateSessionStatus);
@@ -127,7 +125,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (userInfo.value && userInfo.value.groupname) {
+  if (userInfo.value && userInfo.value.group_id) { 
+    websocketService.disconnectGroup(userInfo.value.group_id);
+  } else if (userInfo.value && userInfo.value.groupname) { 
     websocketService.disconnectGroup(userInfo.value.groupname);
   }
   EventBus.off('session_status_changed', updateSessionStatus);
