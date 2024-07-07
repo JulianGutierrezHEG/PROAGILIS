@@ -1,10 +1,12 @@
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import sessionsService from '@/services/sessionsService';
 import usersService from '@/services/usersService';
 import websocketService from '@/services/websocketService';
 import EventBus from '@/services/eventBus';
 
 export function useSession() {
+  const router = useRouter();
   const sessions = ref([]);
   const selectedSession = ref(null);
   const groups = ref([]);
@@ -16,6 +18,16 @@ export function useSession() {
   const currentUser = ref(null);
   const sessionStatus = ref('not_started');
 
+  const fetchAllSessions = async () => {
+    try {
+      const allSessions = await sessionsService.getAllSessions();
+      sessions.value = allSessions;
+      console.log('Fetched all sessions:', sessions.value);
+    } catch (error) {
+      console.error('Error fetching all sessions:', error);
+    }
+  };
+
   const fetchUserSessions = async () => {
     try {
       const user = await usersService.getCurrentUser();
@@ -24,6 +36,16 @@ export function useSession() {
       sessions.value = allSessions.filter(session => session.status === 'not_started' || session.status === 'active');
     } catch (error) {
       console.error('Error fetching user sessions:', error);
+    }
+  };
+
+  const fetchCreatedSessions = async () => {
+    try {
+      const createdSessions = await sessionsService.fetchCreatedSessions();
+      sessions.value = createdSessions;
+      console.log('Fetched created sessions:', sessions.value);
+    } catch (error) {
+      console.error('Error fetching created sessions:', error);
     }
   };
 
@@ -117,7 +139,7 @@ export function useSession() {
     }
   };
 
-  const leaveSession = async (router) => {
+  const leaveSession = async () => {
     try {
       if (currentUser.value && currentUser.value.session_id) {
         const group = currentUser.value.group_id ? currentUser.value.group_id : currentUser.value.groupname;
@@ -266,6 +288,8 @@ export function useSession() {
     sessionStatus,
     fetchSessionStatus,
     leaveSession,
-    fetchUserSessionInfo
+    fetchUserSessionInfo,
+    fetchCreatedSessions,
+    fetchAllSessions
   };
 }

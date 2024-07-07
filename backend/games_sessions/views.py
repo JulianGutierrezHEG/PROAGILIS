@@ -105,6 +105,13 @@ class SessionDetailView(generics.RetrieveAPIView):
     queryset = Session.objects.all()
     serializer_class = SessionSerializer
 
+class UserCreatedSessionsListView(generics.ListAPIView):
+    serializer_class = SessionSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Session.objects.filter(created_by=user)
+
 class GroupListView(generics.ListAPIView):
     serializer_class = GroupSerializer
 

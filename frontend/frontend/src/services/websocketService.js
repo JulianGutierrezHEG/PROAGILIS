@@ -61,6 +61,24 @@ const sendMessage = (id, message) => {
   }
 };
 
+// Adds a message event listener to a WebSocket by ID.
+const onMessage = (id, callback) => {
+  if (sockets[id]) {
+    sockets[id].addEventListener('message', callback);
+  } else {
+    console.error(`WebSocket non trouvé pour l'ID : ${id}`);
+  }
+};
+
+// Removes a message event listener from a WebSocket by ID.
+const offMessage = (id, callback) => {
+  if (sockets[id]) {
+    sockets[id].removeEventListener('message', callback);
+  } else {
+    console.error(`WebSocket non trouvé pour l'ID : ${id}`);
+  }
+};
+
 // Vérifie si un WebSocket est connecté en utilisant un identifiant spécifique.
 const isConnected = (id) => !!sockets[id];
 
@@ -72,4 +90,6 @@ export default {
   sendMessage,
   isConnected,
   disconnectAll,
+  onMessage,
+  offMessage,
 };

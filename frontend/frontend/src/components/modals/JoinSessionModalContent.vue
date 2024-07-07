@@ -42,7 +42,7 @@ const {
   sessionPassword, 
   passwordError, 
   groupSize, 
-  fetchUserSessions, 
+  fetchAllSessions,
   fetchGroups, 
   joinSession: joinSessionFromComposable, 
   setupEventListeners, 
@@ -58,7 +58,7 @@ const handleSessionChange = async () => {
 };
 
 onMounted(() => {
-  fetchUserSessions();
+  fetchAllSessions(); 
   setupEventListeners();
 });
 

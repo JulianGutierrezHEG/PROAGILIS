@@ -31,41 +31,47 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useSession } from '@/composables/useSession';
+import websocketService from '@/services/websocketService';
 import TestPhase from '@/views/TestPhase.vue';
 import WaitingScreen from '@/views/WaitingScreen.vue';
-import websocketService from '@/services/websocketService';
 
-const { currentUser, sessionStatus, fetchUserSessionInfo, fetchSessionStatus, leaveSession, setupEventListeners, removeEventListeners } = useSession();
+const { currentUser,sessionStatus, leaveSession,fetchUserSessionInfo, fetchSessionStatus, setupEventListeners, removeEventListeners } = useSession();
 const sessionId = ref(null);
+
+const handleWebSocketMessage = (event) => {
+  const message = JSON.parse(event.data);
+  if (message.event === 'session_status_update' && message.session_id === sessionId.value) {
+    fetchSessionStatus(sessionId.value).then(() => {
+      console.log('Session status updated via WebSocket:', message.status);
+    });
+  }
+};
 
 onMounted(async () => {
   console.log('onMounted: Setting up event listeners and fetching user session info.');
   await fetchUserSessionInfo();
   setupEventListeners();
 
-  // Assuming the session ID is stored in currentUser after fetching session info
   if (currentUser.value && currentUser.value.session_id) {
     sessionId.value = currentUser.value.session_id;
     await fetchSessionStatus(sessionId.value);
-    console.log('Fetched session status:', sessionStatus.value);
-
-    // Set up an interval to repeatedly fetch session status for testing
-    intervalId = setInterval(async () => {
-      await fetchSessionStatus(sessionId.value);
-      console.log('Repeatedly fetched session status:', sessionStatus.value);
-    }, 1000);
+    websocketService.onMessage(sessionId.value, handleWebSocketMessage);
   }
 });
 
 onUnmounted(() => {
-  console.log('onUnmounted: Clearing interval and removing event listeners.');
-  clearInterval(intervalId);
+  console.log('onUnmounted: Removing event listeners.');
   removeEventListeners();
+
+  if (sessionId.value) {
+    websocketService.offMessage(sessionId.value, handleWebSocketMessage);
+    websocketService.disconnectSession(sessionId.value);
+  }
+
   if (currentUser.value && currentUser.value.group_id) {
     websocketService.disconnectGroup(currentUser.value.group_id);
   } else if (currentUser.value && currentUser.value.groupname) {
     websocketService.disconnectGroup(currentUser.value.groupname);
   }
 });
-
 </script>

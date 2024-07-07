@@ -84,7 +84,7 @@ const {
   selectedSession, 
   groups, 
   selectedGroup, 
-  fetchUserSessions, 
+  fetchCreatedSessions, // Updated to use the new function
   fetchGroups, 
   handleStatusSession, 
   handleDeleteSession, 
@@ -120,11 +120,14 @@ watch(groups, (newGroups) => {
 });
 
 onMounted(async () => {
-  await fetchUserSessions();
+  console.log('Fetching created sessions...');
+  await fetchCreatedSessions(); // Updated to call the new function
   setupEventListeners();
+  console.log('Sessions:', sessions.value);
 
   if (sessions.value.length > 0) {
     selectedSession.value = sessions.value[0];
+    console.log('Selected session:', selectedSession.value);
     await fetchGroups();
   }
 });

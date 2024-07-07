@@ -46,7 +46,7 @@ const stopSession = async (sessionId) => {
 
 const getAllSessions = async () => {
   try {
-    const response = await axios.get('api/sessions/');
+    const response = await axios.get('api/sessions/list/');
     return response.data;
   } catch (error) {
     handleAxiosError(error);
@@ -74,6 +74,15 @@ const getSessionsByUser = async (userId) => {
 const fetchSessions = async (userId) => {
   try {
     return await getSessionsByUser(userId);
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+const fetchCreatedSessions = async () => {
+  try {
+    const response = await axios.get('api/sessions/created-list/');
+    return response.data;
   } catch (error) {
     handleAxiosError(error);
   }
@@ -131,6 +140,7 @@ export default {
   getSessionsByUser,
   deleteSession,
   fetchSessions,
+  fetchCreatedSessions,
   fetchGroups,
   joinSession,
   getJoinedSession,
