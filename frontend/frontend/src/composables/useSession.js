@@ -139,27 +139,47 @@ export function useSession() {
   const handleStatusSession = async (action) => {
     if (!selectedSession.value) return;
     try {
+      const sessionId = selectedSession.value.id;
+  
+      // Ensure the WebSocket is connected before sending a message
+      if (!websocketService.isConnected(sessionId)) {
+        websocketService.connectSessionStatus(sessionId);
+        // Optionally, wait for a short duration to ensure the connection is established
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+  
       if (action === 'start') {
-        await sessionsService.startSession(selectedSession.value.id);
+        await sessionsService.startSession(sessionId);
         selectedSession.value.status = 'active';
-        console.log(`Session ${selectedSession.value.id} started`);
+        console.log(`Session ${sessionId} started`);
         selectedSession.value.groups.forEach(group => {
           websocketService.connectGroup(group.id);
         });
-        websocketService.sendMessage(selectedSession.value.id, { event: 'session_status_changed', status: 'active' });
+        websocketService.sendMessage(sessionId, { event: 'session_status_changed', status: 'active' });
+        updateSessionStatus({ session_id: sessionId, status: 'active' });
       } else if (action === 'paused') {
-        await sessionsService.stopSession(selectedSession.value.id);
+        await sessionsService.stopSession(sessionId);
         selectedSession.value.status = 'paused';
-        console.log(`Session ${selectedSession.value.id} paused`);
+        console.log(`Session ${sessionId} paused`);
         selectedSession.value.groups.forEach(group => {
           websocketService.disconnectGroup(group.id);
         });
-        websocketService.sendMessage(selectedSession.value.id, { event: 'session_status_changed', status: 'paused' });
+        websocketService.sendMessage(sessionId, { event: 'session_status_changed', status: 'paused' });
+        updateSessionStatus({ session_id: sessionId, status: 'paused' });
       }
     } catch (error) {
       console.error(`Error ${action}ing session:`, error);
     }
   };
+
+  const updateSessionStatus = (data) => {
+    console.log('Update session status event received:', data);
+    if (selectedSession.value && selectedSession.value.id === data.session_id) {
+      sessionStatus.value = data.status;
+      console.log('Session status updated to:', sessionStatus.value);
+    }
+  };
+    
 
   const handleDeleteSession = async (sessionId) => {
     const confirmation = window.confirm('Êtes-vous sûr de vouloir supprimer la session?');
@@ -200,12 +220,6 @@ export function useSession() {
     }
   };
 
-  const updateSessionStatus = (data) => {
-    console.log('Update session status event received:', data);
-    if (selectedSession.value && selectedSession.value.id === data.session_id) {
-      sessionStatus.value = data.status;
-    }
-  };
 
   const handleSessionDeleted = (data) => {
     console.log('Session deleted event received:', data);

@@ -29,19 +29,37 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useSession } from '@/composables/useSession';
 import TestPhase from '@/views/TestPhase.vue';
 import WaitingScreen from '@/views/WaitingScreen.vue';
+import websocketService from '@/services/websocketService';
 
-const { currentUser, sessionStatus, fetchUserSessionInfo, leaveSession, setupEventListeners, removeEventListeners } = useSession();
+const { currentUser, sessionStatus, fetchUserSessionInfo, fetchSessionStatus, leaveSession, setupEventListeners, removeEventListeners } = useSession();
+const sessionId = ref(null);
 
-onMounted(() => {
-  fetchUserSessionInfo();
+onMounted(async () => {
+  console.log('onMounted: Setting up event listeners and fetching user session info.');
+  await fetchUserSessionInfo();
   setupEventListeners();
+
+  // Assuming the session ID is stored in currentUser after fetching session info
+  if (currentUser.value && currentUser.value.session_id) {
+    sessionId.value = currentUser.value.session_id;
+    await fetchSessionStatus(sessionId.value);
+    console.log('Fetched session status:', sessionStatus.value);
+
+    // Set up an interval to repeatedly fetch session status for testing
+    intervalId = setInterval(async () => {
+      await fetchSessionStatus(sessionId.value);
+      console.log('Repeatedly fetched session status:', sessionStatus.value);
+    }, 1000);
+  }
 });
 
 onUnmounted(() => {
+  console.log('onUnmounted: Clearing interval and removing event listeners.');
+  clearInterval(intervalId);
   removeEventListeners();
   if (currentUser.value && currentUser.value.group_id) {
     websocketService.disconnectGroup(currentUser.value.group_id);
@@ -49,4 +67,5 @@ onUnmounted(() => {
     websocketService.disconnectGroup(currentUser.value.groupname);
   }
 });
+
 </script>
