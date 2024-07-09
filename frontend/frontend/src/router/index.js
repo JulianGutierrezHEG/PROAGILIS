@@ -5,11 +5,10 @@ import SignIn from '@/views/SignIn.vue';
 import SignUp from '@/views/SignUp.vue';
 import Dashboard from '@/views/Dashboard.vue';  
 import Game from '@/views/Game.vue';
-import TestPhase from '@/views/TestPhase.vue';
-import TestPhase2 from '@/views/TestPhase2.vue';  // Import TestPhase2 component
 import WaitingScreen from '@/views/WaitingScreen.vue';  
 import userService from '@/services/usersService';
 import sessionsService from '@/services/sessionsService';
+import PhaseOne from '@/components/phases/PhaseOne.vue';
 
 const routes = [
   {
@@ -49,14 +48,9 @@ const routes = [
             component: WaitingScreen,
           },
           {
-            path: 'test-phase',
-            name: 'TestPhase',
-            component: TestPhase,
-          },
-          {
-            path: 'test-phase-2',
-            name: 'TestPhase2',
-            component: TestPhase2,
+            path: 'phase-one',
+            name: 'PhaseOne',
+            component: PhaseOne,
           },
           {
             path: 'waiting-screen',
