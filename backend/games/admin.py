@@ -1,3 +1,7 @@
 from django.contrib import admin
+from .models import Project, UserStoryTemplate, BacklogTemplate, Event
 
-# Register your models here.
+admin.site.register(Project)
+admin.site.register(UserStoryTemplate)
+admin.site.register(BacklogTemplate)
+admin.site.register(Event)

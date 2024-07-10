@@ -1,11 +1,11 @@
 from django.db import models
 from games_sessions.models import Group
-
+from datetime import timedelta
 
 class Project(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    group = models.OneToOneField(Group, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_project')
 
     def __str__(self):
         return self.name
@@ -38,6 +38,7 @@ class UserStory(models.Model):
     time_estimation = models.DurationField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     is_completed = models.BooleanField(default=False)
+    sprint = models.ForeignKey('Sprint', on_delete=models.SET_NULL, null=True, blank=True, related_name='stories')
 
     def __str__(self):
         return self.description
@@ -53,7 +54,8 @@ class Sprint(models.Model):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    user_stories = models.ManyToManyField(UserStory, through='SprintUserStory')
+    user_stories = models.ManyToManyField(UserStory, through='SprintUserStory', related_name='related_sprints')
+    current_progress = models.DurationField(default=timedelta)
 
     def __str__(self):
         return f"Sprint from {self.start_time} to {self.end_time}"
@@ -61,16 +63,17 @@ class Sprint(models.Model):
 class SprintUserStory(models.Model):
     sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE)
     user_story = models.ForeignKey(UserStory, on_delete=models.CASCADE)
-    task_description = models.TextField()
+    description = models.TextField()
     time_estimation = models.DurationField()
     completed = models.BooleanField(default=False)
+    progress_time = models.DurationField(default=timedelta)
 
     def __str__(self):
-        return f"Task: {self.task_description}"
+        return f"Task: {self.description}"
 
 class Event(models.Model):
     description = models.TextField()
-    effect = models.JSONField() 
+    effect = models.JSONField()  # Document expected JSON structure
     sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE)
 
     def __str__(self):

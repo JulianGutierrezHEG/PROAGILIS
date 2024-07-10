@@ -14,7 +14,7 @@ class GamePhaseSerializer(serializers.ModelSerializer):
 class UserStorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserStory
-        fields = ['id', 'description', 'business_value', 'time_estimation', 'project', 'is_completed']
+        fields = ['id', 'description', 'business_value', 'time_estimation', 'project', 'is_completed', 'sprint']
 
 class BacklogSerializer(serializers.ModelSerializer):
     user_stories = UserStorySerializer(many=True, read_only=True)
@@ -28,14 +28,14 @@ class SprintUserStorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = SprintUserStory
-        fields = ['id', 'sprint', 'user_story', 'task_description', 'time_estimation', 'completed']
+        fields = ['id', 'sprint', 'user_story', 'description', 'time_estimation', 'completed', 'progress_time']
 
 class SprintSerializer(serializers.ModelSerializer):
     user_stories = SprintUserStorySerializer(source='sprintuserstory_set', many=True, read_only=True)
     
     class Meta:
         model = Sprint
-        fields = ['id', 'start_time', 'end_time', 'project', 'user_stories']
+        fields = ['id', 'start_time', 'end_time', 'project', 'user_stories', 'current_progress']
 
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
@@ -53,4 +53,3 @@ class BacklogTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BacklogTemplate
         fields = ['id', 'user_stories']
-

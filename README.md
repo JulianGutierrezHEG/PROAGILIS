@@ -21,6 +21,12 @@ cd frontend/frontend
 npm install
 npm run dev
 
+# Données
+commande pour remplir la bdd:
+python manage.py loaddata ecommerce.json
+
+Ce fichier peut être changé ou dupliqué pour changer le type de données
+
 # Final
 Avoir 3 terminal : django server, redis et vue avev vite
 accès via http://localhost:3000/

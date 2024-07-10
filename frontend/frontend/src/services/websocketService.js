@@ -82,14 +82,48 @@ const offMessage = (id, callback) => {
 // Vérifie si un WebSocket est connecté en utilisant un identifiant spécifique.
 const isConnected = (id) => !!sockets[id];
 
+const lockElement = (groupId, elementId, user) => {
+  console.log(`Sending lock event by: ${user}`); 
+  sendMessage(groupId, { event: 'lock_element', element_id: elementId, user });
+};
+
+const unlockElement = (groupId, elementId, user) => {
+  console.log(`Sending unlock event by: ${user}`); 
+  sendMessage(groupId, { event: 'unlock_element', element_id: elementId, user });
+};
+
+const updateProjectDetails = (groupId, projectName, roles, user) => {
+  console.log(`Sending project update by: ${user}`);
+  sendMessage(groupId, { event: 'project_update', projectName, roles, user });
+};
+
+const submitProjectData = (groupId, projectData, user) => {
+  console.log(`Submitting project data by: ${user}`);
+  sendMessage(groupId, { event: 'submit_project_data', projectData, user });
+};
+
+const showWaitingScreen = (groupId) => {
+  console.log(`Sending waiting screen event to group: ${groupId}`);
+  sendMessage(groupId, { event: 'show_waiting_screen' });
+};
+
 export default {
   connectGroup: (groupId) => connectWebSocket(groupId, 'group'),
   disconnectGroup: (groupId) => disconnectWebSocket(groupId, 'group'),
   connectSessionStatus: (sessionId) => connectWebSocket(sessionId, 'session'),
   disconnectSession: (sessionId) => disconnectWebSocket(sessionId, 'session'),
+  connectGame: (gameId) => connectWebSocket(gameId, 'game'),
+  disconnectGame: (gameId) => disconnectWebSocket(gameId, 'game'),
+  connectPhase: (phaseId) => connectWebSocket(phaseId, 'phase'),
+  disconnectPhase: (phaseId) => disconnectWebSocket(phaseId, 'phase'),
   sendMessage,
   isConnected,
   disconnectAll,
   onMessage,
   offMessage,
+  lockElement,
+  unlockElement,
+  updateProjectDetails,
+  submitProjectData,
+  showWaitingScreen,
 };

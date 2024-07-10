@@ -57,6 +57,10 @@ export function useSession() {
       const info = await sessionsService.getUserSessionInfo(user.id);
       console.log('Fetched user session info:', info);
       currentUser.value = { ...currentUser.value, ...info };
+      if (info && info.groupname) {
+        selectedGroup.value = groups.value.find(group => group.name === info.groupname);
+        console.log('Selected Group after fetching user session info:', selectedGroup.value);
+      }
       if (info && info.session_id) {
         fetchSessionStatus(info.session_id);
         websocketService.connectSessionStatus(info.session_id); 
@@ -131,6 +135,7 @@ export function useSession() {
       if (session.groups && session.groups.length > 0) {
         const group = session.groups.find(group => group.users.some(user => user.id === currentUser.value.id));
         if (group) {
+          selectedGroup.value = group;
           websocketService.connectGroup(group.id);
         }
       }

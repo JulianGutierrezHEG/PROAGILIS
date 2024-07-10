@@ -23,7 +23,7 @@
       </div>
       <hr class="my-4 border-black" />
       <div class="phase-container flex-grow">
-        <component :is="currentPhaseComponent" v-if="sessionStatus === 'active'" />
+        <component :is="currentPhaseComponent" v-if="sessionStatus === 'active' && !waiting" :group="selectedGroup" @updateProjectData="handleUpdateProjectData" />
         <WaitingScreen v-else />
       </div>
     </div>
@@ -43,6 +43,7 @@
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useSession } from '@/composables/useSession';
 import websocketService from '@/services/websocketService';
+import EventBus from '@/services/eventBus';
 import WaitingScreen from '@/views/WaitingScreen.vue';
 import PhaseOne from '@/components/phases/PhaseOne.vue';
 import PhaseTwo from '@/components/phases/PhaseTwo.vue';
@@ -53,9 +54,17 @@ import PhaseSix from '@/components/phases/PhaseSix.vue';
 import PhaseSeven from '@/components/phases/PhaseSeven.vue';
 import PhaseEight from '@/components/phases/PhaseEight.vue';
 
-const { currentUser, sessionStatus, leaveSession, fetchUserSessionInfo, fetchSessionStatus, setupEventListeners, removeEventListeners } = useSession();
+const { currentUser, sessionStatus, leaveSession, fetchUserSessionInfo, fetchSessionStatus, setupEventListeners, removeEventListeners, selectedGroup } = useSession();
 const sessionId = ref(null);
 const currentPhaseIndex = ref(0);
+const waiting = ref(false);
+
+const projectName = ref('');
+const roles = ref({
+  scrumMaster: '',
+  productOwner: '',
+  developers: []
+});
 
 const phases = [
   PhaseOne,
@@ -76,14 +85,34 @@ const handleWebSocketMessage = (event) => {
     fetchSessionStatus(sessionId.value).then(() => {
       console.log('Session status updated via WebSocket:', message.status);
     });
+  } else if (message.event === 'show_waiting_screen') {
+    waiting.value = true;
+    console.log("Showing waiting screen for all users in the group.");
   }
 };
 
+const handleUpdateProjectData = (data) => {
+  console.log('Received project data:', data);
+  projectName.value = data.projectName;
+  roles.value = data.roles;
+  console.log('Updated project name:', projectName.value);
+  console.log('Updated roles:', roles.value);
+  
+  const developers = selectedGroup.value.users.filter(
+    (user) => user.username !== roles.value.scrumMaster && user.username !== roles.value.productOwner
+  ).map((user) => user.username);
+
+  console.log(`Nom du projet: ${projectName.value}\n\nRôles:\nProduct Owner: ${roles.value.productOwner || 'Personne n\'est assigné à ce rôle'}\nScrum Master: ${roles.value.scrumMaster || 'Personne n\'est assigné à ce rôle'}\nDéveloppeurs: ${developers.length ? developers.join(', ') : 'Personne n\'est assigné à ce rôle'}`);
+
+  waiting.value = false; // Hide waiting screen after alert
+};
+
 const nextPhase = () => {
+  // Move to the next phase
   if (currentPhaseIndex.value < phases.length - 1) {
     currentPhaseIndex.value++;
   } else {
-    currentPhaseIndex.value = 4; // Loop back to PhaseFive after PhaseEight
+    currentPhaseIndex.value = 4; 
   }
   console.log("Next Phase button clicked");
 };
@@ -105,6 +134,11 @@ onMounted(async () => {
     await fetchSessionStatus(sessionId.value);
     websocketService.onMessage(sessionId.value, handleWebSocketMessage);
   }
+
+  console.log("Selected group:", selectedGroup.value);
+
+  // Connect to phase WebSocket
+  websocketService.connectPhase(selectedGroup.value.id);
 });
 
 onUnmounted(() => {
@@ -121,6 +155,10 @@ onUnmounted(() => {
   } else if (currentUser.value && currentUser.value.groupname) {
     websocketService.disconnectGroup(currentUser.value.groupname);
   }
+
+  // Disconnect from phase WebSocket
+  if (selectedGroup.value && selectedGroup.value.id) {
+    websocketService.disconnectPhase(selectedGroup.value.id);
+  }
 });
 </script>
-

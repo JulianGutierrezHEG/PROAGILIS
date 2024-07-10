@@ -1,7 +1,10 @@
 from django.urls import path
-from .views import UserGroupProjectPhaseView, UpdateGroupPhaseView
+from .views import GroupMembersViewSet
+
+group_members_list = GroupMembersViewSet.as_view({
+    'get': 'list_group_members'
+})
 
 urlpatterns = [
-    path('', UserGroupProjectPhaseView.as_view(), name='showPhases'),
-    path('group/<int:group_id>/update_phase/', UpdateGroupPhaseView.as_view(), name='updateGroupPhase'),
+    path('group/members/', group_members_list, name='group-members-list'),
 ]

@@ -1,0 +1,54 @@
+[
+    {
+        "model": "games.project",
+        "pk": 1,
+        "fields": {
+            "name": "E-commerce Project",
+            "description": "Le directeur du centre commercial Startcourt veut proposer..."
+        }
+    },
+    {
+        "model": "games.sprint",
+        "pk": 1,
+        "fields": {
+            "start_time": "2024-07-01T00:00:00Z",
+            "end_time": "2024-07-15T00:00:00Z",
+            "project": 1,
+            "current_progress": "0:00:00"
+        }
+    },
+    {
+        "model": "games.userstorytemplate",
+        "pk": 1,
+        "fields": {
+            "description": "Consulter le catalogue",
+            "business_value": 5,
+            "time_estimation": "1:00:00"
+        }
+    },
+    {
+        "model": "games.userstorytemplate",
+        "pk": 2,
+        "fields": {
+            "description": "Ajouter au panier",
+            "business_value": 3,
+            "time_estimation": "0:30:00"
+        }
+    },
+    {
+        "model": "games.backlogtemplate",
+        "pk": 1,
+        "fields": {
+            "user_stories": [1, 2]
+        }
+    },
+    {
+        "model": "games.event",
+        "pk": 1,
+        "fields": {
+            "description": "Un développeur tombe malade",
+            "effect": "{\"type\": \"delay\", \"amount\": \"1:00:00\"}",
+            "sprint": 1
+        }
+    }
+]
