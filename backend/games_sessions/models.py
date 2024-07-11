@@ -24,7 +24,7 @@ class Session(models.Model):
 class Group(models.Model):
     name = models.CharField(max_length=200, blank=True)  
     users = models.ManyToManyField(User, related_name='games_sessions', blank=True)
-    current_phase = models.CharField(max_length=100, blank=True, null=True)
+    current_phase = models.ForeignKey('games.GamePhase', on_delete=models.SET_NULL, null=True, blank=True, related_name='groups')
     project = models.OneToOneField('games.Project', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_group')
 
     def __str__(self):

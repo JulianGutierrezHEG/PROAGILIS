@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, GamePhase, UserStory, Backlog, Sprint, SprintUserStory, Event, UserStoryTemplate, BacklogTemplate
+from .models import Project, GamePhase, UserStory, Backlog, Sprint, SprintUserStory, Event, UserStoryTemplate, BacklogTemplate, GroupPhaseStatus
 
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,7 +9,12 @@ class ProjectSerializer(serializers.ModelSerializer):
 class GamePhaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = GamePhase
-        fields = ['id', 'name', 'description', 'project', 'answer', 'status', 'requires_validation']
+        fields = '__all__'
+
+class GroupPhaseStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupPhaseStatus
+        fields = '__all__'
 
 class UserStorySerializer(serializers.ModelSerializer):
     class Meta:

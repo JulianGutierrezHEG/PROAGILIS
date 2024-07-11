@@ -1,10 +1,14 @@
 from django.urls import path
-from .views import GroupMembersViewSet
+from .views import GroupMembersViewSet,GroupCurrentPhaseDetail,GamePhaseDetail,SubmitAnswerView,GroupCurrentPhaseAnswerView
 
 group_members_list = GroupMembersViewSet.as_view({
     'get': 'list_group_members'
 })
 
 urlpatterns = [
-    path('group/members/', group_members_list, name='group-members-list'),
+    path('group/members/', group_members_list, name='groupMembersList'),
+    path('group/<int:group_id>/current-phase/', GroupCurrentPhaseDetail.as_view(), name='groupCurrentPhase'),
+    path('phase/<int:id>/', GamePhaseDetail.as_view(), name='gamePhaseDetail'),
+    path('group/<int:group_id>/submit-answer/', SubmitAnswerView.as_view(), name='submitAnswer'),
+    path('group/<int:group_id>/current-phase/answer/', GroupCurrentPhaseAnswerView.as_view(), name='groupCurrentPhaseAnswer'),
 ]

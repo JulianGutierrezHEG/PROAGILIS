@@ -102,9 +102,9 @@ const submitProjectData = (groupId, projectData, user) => {
   sendMessage(groupId, { event: 'submit_project_data', projectData, user });
 };
 
-const showWaitingScreen = (groupId) => {
+const showWaitingScreen = (groupId, user) => {
   console.log(`Sending waiting screen event to group: ${groupId}`);
-  sendMessage(groupId, { event: 'show_waiting_screen' });
+  sendMessage(groupId, { event: 'show_waiting_screen', user });
 };
 
 export default {

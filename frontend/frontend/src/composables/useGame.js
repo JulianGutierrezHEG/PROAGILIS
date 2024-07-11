@@ -8,6 +8,11 @@ export function useGame(groupId) {
   const groupMembers = ref([]);
   const lockedElements = ref({});
   const currentUser = ref(null);
+  const currentPhase = ref(null);
+  const currentPhaseDetails = ref(null);
+  const currentPhaseAnswer = ref(null);
+  const isLoadingPhaseDetails = ref(true);
+  const waiting = ref(false);
 
   const fetchGroupMembers = async () => {
     try {
@@ -25,6 +30,29 @@ export function useGame(groupId) {
       console.log('Current user:', currentUser.value);
     } catch (error) {
       console.error('Error fetching current user:', error);
+    }
+  };
+
+  const fetchCurrentPhase = async () => {
+    try {
+      isLoadingPhaseDetails.value = true; 
+      const phaseStatus = await gamesService.getGroupCurrentPhase(groupId);
+      currentPhase.value = phaseStatus;
+      if (phaseStatus.status === 'pending') { 
+        waiting.value = true;
+      } else {
+        waiting.value = false;
+      }
+      if (phaseStatus.phase) {
+        const phaseDetails = await gamesService.getPhaseDetails(phaseStatus.phase);
+        currentPhaseDetails.value = phaseDetails;
+      }
+      console.log('Current phase:', currentPhase.value);
+      console.log('Current phase details:', currentPhaseDetails.value);
+    } catch (error) {
+      console.error('Error fetching current phase:', error);
+    } finally {
+      isLoadingPhaseDetails.value = false; 
     }
   };
 
@@ -70,18 +98,54 @@ export function useGame(groupId) {
     }
   };
 
+  const submitGroupAnswer = async (answerData) => {
+    try {
+      await gamesService.submitAnswer(groupId, answerData, currentUser.value);
+    } catch (error) {
+      console.error('Error submitting group answer:', error);
+    }
+  };
+
+  const fetchGroupCurrentPhaseAnswer = async (groupId) => {
+    try {
+      const response = await gamesService.getGroupCurrentPhaseAnswer(groupId);
+      return response;
+    } catch (error) {
+      console.error('Error fetching group current phase answer:', error);
+      return null;
+    }
+  };
+
+  const showWaitingScreen = () => {
+    if (currentUser.value) {
+      websocketService.showWaitingScreen(groupId, currentUser.value);
+    } else {
+      console.error('Current user is not set.');
+    }
+  };
+
   onMounted(() => {
     fetchCurrentUser();
+    fetchCurrentPhase();
   });
 
   return {
     groupMembers,
     lockedElements,
     currentUser,
+    currentPhase,
+    currentPhaseDetails,
+    currentPhaseAnswer,
+    isLoadingPhaseDetails,
+    waiting,
     fetchGroupMembers,
     setupWebSocket,
     cleanupWebSocket,
     lockElement,
     unlockElement,
+    showWaitingScreen,
+    fetchCurrentPhase,
+    submitGroupAnswer,
+    fetchGroupCurrentPhaseAnswer,
   };
 }

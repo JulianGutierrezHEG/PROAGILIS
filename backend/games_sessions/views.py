@@ -6,7 +6,8 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.shortcuts import get_object_or_404
 from .models import Session,Group,User
-from games.models import GamePhase
+from games.utils import update_group_phase_status
+from games.models import GamePhase,GroupPhaseStatus
 from .serializers import SessionSerializer, GroupSerializer
 
 class SessionCreateView(generics.CreateAPIView):
@@ -67,6 +68,13 @@ class StartSessionView(APIView):
         session.status = 'active'
         session.save()
 
+        phase_one = get_object_or_404(GamePhase, id=1)
+        for group in session.groups.all():
+            group_phase_status, created = GroupPhaseStatus.objects.get_or_create(group=group, phase=phase_one)
+            if created or group_phase_status.status in ['pending', 'not_started']:
+                group_phase_status.status = 'in_progress'
+                group_phase_status.save()
+
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"session_{session_id}",
@@ -84,6 +92,11 @@ class StopSessionView(APIView):
         session = get_object_or_404(Session, id=session_id)
         session.status = 'paused'
         session.save()
+
+        for group in session.groups.all():
+            group_phase_status = GroupPhaseStatus.objects.filter(group=group).first()
+            if group_phase_status:
+                update_group_phase_status(group, group_phase_status.phase, 'pending')
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(

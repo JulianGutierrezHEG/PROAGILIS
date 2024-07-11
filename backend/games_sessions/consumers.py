@@ -43,6 +43,18 @@ class GroupConsumer(BaseConsumer):
             )
         except Exception as e:
             print(f"Error in unlock_element: {e}")
+    
+    async def show_waiting_screen(self, event):
+        await self.channel_layer.group_send(
+            self.get_group_name(),
+            {
+                'type': 'show_waiting_screen_broadcast',
+                'user': event['user'],
+            }
+        )
+
+    async def show_waiting_screen_broadcast(self, event):
+        await self.send_message('show_waiting_screen', {'user': event['user']})
 
     async def lock_element_broadcast(self, event):
         await self.send_message('lock_element', {'element_id': event['element_id'], 'user': event['user']})

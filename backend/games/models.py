@@ -11,6 +11,14 @@ class Project(models.Model):
         return self.name
 
 class GamePhase(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    requires_validation = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+class GroupPhaseStatus(models.Model):
     STATUS_CHOICES = [
         ('not_started', 'Non commencé'),
         ('in_progress', 'En cours'),
@@ -18,19 +26,19 @@ class GamePhase(models.Model):
         ('completed', 'Complété'),
         ('wrong', 'Fausse réponse'),
         ('correct_waiting', 'Juste, en attente'),
-        ('wrong_waiting', 'Fausse, en attente'),
-        ('finished', 'Terminé')
+        ('wrong_waiting', 'Fausse, en attente')
     ]
 
-    name = models.CharField(max_length=200)
-    description = models.TextField()
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    answer = models.TextField(blank=True, null=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='phase_statuses')
+    phase = models.ForeignKey(GamePhase, on_delete=models.CASCADE, related_name='group_statuses')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
-    requires_validation = models.BooleanField(default=True)
+    answer = models.JSONField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('group', 'phase')
 
     def __str__(self):
-        return self.name
+        return f"{self.group.name} - {self.phase.name} ({self.status})"
 
 class UserStory(models.Model):
     description = models.TextField()
@@ -73,7 +81,7 @@ class SprintUserStory(models.Model):
 
 class Event(models.Model):
     description = models.TextField()
-    effect = models.JSONField()  # Document expected JSON structure
+    effect = models.JSONField()  
     sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE)
 
     def __str__(self):
