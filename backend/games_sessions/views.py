@@ -7,7 +7,7 @@ from asgiref.sync import async_to_sync
 from django.shortcuts import get_object_or_404
 from .models import Session,Group,User
 from games.utils import update_group_phase_status
-from games.models import GamePhase,GroupPhaseStatus
+from games.models import GamePhase,GroupPhaseStatus,Project
 from .serializers import SessionSerializer, GroupSerializer
 
 class SessionCreateView(generics.CreateAPIView):
@@ -49,8 +49,21 @@ class SessionDeleteView(generics.DestroyAPIView):
 
     def perform_destroy(self, instance):
         session_id = instance.id
+        # Fetch all groups related to the session
+        groups = instance.groups.all()
+        # Delete all related projects
+        for group in groups:
+            try:
+                project = group.assigned_project
+                if project:
+                    project.delete()
+            except Group.assigned_project.RelatedObjectDoesNotExist:
+                pass
+        
+        # Delete the session
         super().perform_destroy(instance)
         
+        # Send WebSocket message
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"session_{session_id}",
@@ -154,7 +167,7 @@ class GetUserSessionInfoView(APIView):
         user = get_object_or_404(User, id=user_id)
         group = Group.objects.filter(users=user).first()
         if group:
-            session = group.session_set.first()
+            session = group.sessions.first()
             if session:
                 return Response({
                     'username': user.username,
@@ -198,7 +211,7 @@ class LeaveSessionView(APIView):
         user_id = request.data.get('userId')
         user = get_object_or_404(User, id=user_id)
         session = get_object_or_404(Session, id=session_id)
-        group = Group.objects.filter(users=user, session=session).first()
+        group = Group.objects.filter(users=user, sessions=session).first()
         if group:
             group.users.remove(user)
         

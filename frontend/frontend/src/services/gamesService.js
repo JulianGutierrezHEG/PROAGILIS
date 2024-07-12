@@ -45,9 +45,46 @@ const submitAnswer = async (groupId, answerData, user) => {
   }
 };
 
+const fetchPhases = async () => {
+  try {
+    const response = await axios.get('/api/games/phases/');
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 const getGroupCurrentPhaseAnswer = async (groupId) => {
   try {
     const response = await axios.get(`/api/games/group/${groupId}/current-phase/answer/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+const getGroupPhasesStatus = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/phases-status/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+
+const updatePhaseStatus = async (groupId, phaseId, status) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/phase/${phaseId}/update-status/`, { status });
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+const createProject = async (groupId, answerData) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/create-project/`, answerData);
     return response.data;
   } catch (error) {
     handleAxiosError(error);
@@ -60,6 +97,10 @@ export default {
   getPhaseDetails,
   submitAnswer,
   getGroupCurrentPhaseAnswer,
+  getGroupPhasesStatus,
+  fetchPhases,
+  updatePhaseStatus,
+  createProject,
 };
 
 

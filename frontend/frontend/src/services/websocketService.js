@@ -13,6 +13,7 @@ const connectWebSocket = (id, type) => {
   const socket = new WebSocket(`ws://localhost:8000/ws/${type}/${id}/`);
 
   socket.onopen = () => console.log(`Connexion WebSocket établie pour ${type} : ${id}`);
+  
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
@@ -107,6 +108,11 @@ const showWaitingScreen = (groupId, user) => {
   sendMessage(groupId, { event: 'show_waiting_screen', user });
 };
 
+const sendPhaseStatusUpdate = (groupId, phaseId, status) => {
+  console.log(`Sending phase status update for group: ${groupId}, phase: ${phaseId}, status: ${status}`);
+  sendMessage(groupId, { event: 'phase_status_update', group_id: groupId, phase_id: phaseId, status });
+};
+
 export default {
   connectGroup: (groupId) => connectWebSocket(groupId, 'group'),
   disconnectGroup: (groupId) => disconnectWebSocket(groupId, 'group'),
@@ -126,4 +132,5 @@ export default {
   updateProjectDetails,
   submitProjectData,
   showWaitingScreen,
+  sendPhaseStatusUpdate,
 };

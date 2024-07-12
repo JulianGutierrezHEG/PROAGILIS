@@ -1,11 +1,14 @@
-from django.db import models
+from django.db import models,transaction
+from django.db.models import CASCADE, SET_NULL
 from games_sessions.models import Group
 from datetime import timedelta
 
 class Project(models.Model):
     name = models.CharField(max_length=200)
-    description = models.TextField()
-    group = models.OneToOneField(Group, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_project')
+    group = models.OneToOneField(Group, on_delete=SET_NULL, null=True, blank=True, related_name='assigned_project')
+    scrum_master = models.CharField(max_length=100, blank=True, null=True)
+    product_owner = models.CharField(max_length=100, blank=True, null=True)
+    developers = models.JSONField(default=list)
 
     def __str__(self):
         return self.name
@@ -24,9 +27,7 @@ class GroupPhaseStatus(models.Model):
         ('in_progress', 'En cours'),
         ('pending', 'En attente de validation'),
         ('completed', 'Complété'),
-        ('wrong', 'Fausse réponse'),
-        ('correct_waiting', 'Juste, en attente'),
-        ('wrong_waiting', 'Fausse, en attente')
+        ('wrong', 'Fausse réponse')
     ]
 
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='phase_statuses')

@@ -23,15 +23,12 @@
       </div>
       <hr class="my-4 border-black" />
       <div class="phase-container flex-grow overflow-auto">
-        <component :is="currentPhaseComponent" v-if="sessionStatus === 'active' && !waiting" :group="selectedGroup" @updateProjectData="handleUpdateProjectData" />
-        <WaitingScreen v-else />
+        <component v-if="sessionStatus === 'active'" :is="currentPhaseComponent" :group="selectedGroup" />
+        <WaitingScreen v-else-if="sessionStatus === 'not_started' || sessionStatus === 'paused' " />
       </div>
     </div>
     <hr class="my-4 border-black" />
     <div class="flex justify-center space-x-4">
-      <button @click="previousPhase" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600" :disabled="currentPhaseIndex === 0">
-        Revenir en arrière
-      </button>
       <button @click="nextPhase" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
         Continuer
       </button>
@@ -40,10 +37,10 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
 import { useSession } from '@/composables/useSession';
-import { useGame } from '@/composables/useGame';
 import websocketService from '@/services/websocketService';
+import EventBus from '@/services/eventBus';
 import WaitingScreen from '@/views/WaitingScreen.vue';
 import PhaseOne from '@/components/phases/PhaseOne.vue';
 import PhaseTwo from '@/components/phases/PhaseTwo.vue';
@@ -55,7 +52,6 @@ import PhaseSeven from '@/components/phases/PhaseSeven.vue';
 import PhaseEight from '@/components/phases/PhaseEight.vue';
 
 const { currentUser, sessionStatus, leaveSession, fetchUserSessionInfo, fetchSessionStatus, setupEventListeners, removeEventListeners, selectedGroup } = useSession();
-const { waiting } = useGame();
 const sessionId = ref(null);
 const currentPhaseIndex = ref(0);
 
@@ -72,6 +68,14 @@ const phases = [
 
 const currentPhaseComponent = computed(() => phases[currentPhaseIndex.value]);
 
+const updateCurrentPhaseComponent = async () => {
+  if (selectedGroup.value && selectedGroup.value.current_phase) {
+    const phaseId = selectedGroup.value.current_phase.phase.id;
+    currentPhaseIndex.value = phaseId - 1;
+    console.log(`Updated currentPhaseIndex to: ${currentPhaseIndex.value}`);
+  }
+};
+
 const handleWebSocketMessage = (event) => {
   const message = JSON.parse(event.data);
   if (message.event === 'session_status_update' && message.session_id === sessionId.value) {
@@ -81,30 +85,31 @@ const handleWebSocketMessage = (event) => {
   }
 };
 
-const handleUpdateProjectData = (data) => {
-  console.log('Received project data:', data);
-  const developers = selectedGroup.value.users.filter(
-    (user) => user.username !== data.roles.scrumMaster && user.username !== data.roles.productOwner
-  ).map((user) => user.username);
+const handlePhaseStatusUpdate = (data) => {
+  console.log('Phase status updated via WebSocket:', data);
+  if (selectedGroup.value.id === data.group_id) {
+    if (!selectedGroup.value.current_phase) {
+      selectedGroup.value.current_phase = { phase: {}, status: '' };
+    }
 
-  console.log(`Nom du projet: ${data.projectName}\n\nRôles:\nProduct Owner: ${data.roles.productOwner || 'Personne n\'est assigné à ce rôle'}\nScrum Master: ${data.roles.scrumMaster || 'Personne n\'est assigné à ce rôle'}\nDéveloppeurs: ${developers.length ? developers.join(', ') : 'Personne n\'est assigné à ce rôle'}`);
+    if (selectedGroup.value.current_phase.phase.id !== data.phase_id || selectedGroup.value.current_phase.status !== data.status) {
+      selectedGroup.value.current_phase.phase.id = data.phase_id;
+      selectedGroup.value.current_phase.status = data.status;
+      updateCurrentPhaseComponent();
+    }
+  }
 };
 
 const nextPhase = () => {
-  // Move to the next phase
   if (currentPhaseIndex.value < phases.length - 1) {
     currentPhaseIndex.value++;
-  } else {
-    currentPhaseIndex.value = 4; 
   }
-  console.log("Next Phase button clicked");
 };
 
 const previousPhase = () => {
   if (currentPhaseIndex.value > 0) {
     currentPhaseIndex.value--;
   }
-  console.log("Previous Phase button clicked");
 };
 
 onMounted(async () => {
@@ -118,10 +123,15 @@ onMounted(async () => {
     websocketService.onMessage(sessionId.value, handleWebSocketMessage);
   }
 
-  console.log("Selected group:", selectedGroup.value);
+  EventBus.on('phase_status_update', handlePhaseStatusUpdate);
 
-  // Connect to phase WebSocket
-  websocketService.connectPhase(selectedGroup.value.id);
+  watch(() => selectedGroup.value, async (newGroup) => {
+    if (newGroup && newGroup.id) {
+      console.log('Selected group changed:', newGroup);
+      await updateCurrentPhaseComponent();
+      websocketService.connectPhase(newGroup.id);
+    }
+  }, { immediate: true });
 });
 
 onUnmounted(() => {
@@ -139,9 +149,10 @@ onUnmounted(() => {
     websocketService.disconnectGroup(currentUser.value.groupname);
   }
 
-  // Disconnect from phase WebSocket
   if (selectedGroup.value && selectedGroup.value.id) {
     websocketService.disconnectPhase(selectedGroup.value.id);
   }
+
+  EventBus.off('phase_status_update', handlePhaseStatusUpdate);
 });
 </script>

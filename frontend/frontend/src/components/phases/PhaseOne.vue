@@ -81,7 +81,8 @@ const {
   lockElement, 
   unlockElement, 
   submitGroupAnswer,
-  showWaitingScreen 
+  showWaitingScreen,
+  fetchCurrentPhase
 } = useGame(props.group.id);
 
 const projectName = ref('');
@@ -159,6 +160,8 @@ const submitProjectData = async () => {
 
   try {
     await submitGroupAnswer(answerData);
+    // Send phase status update via WebSocket
+    websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseDetails.value.id, 'pending');
   } catch (error) {
     console.error('Error submitting project data:', error);
   }
@@ -172,7 +175,16 @@ const submitProjectData = async () => {
   console.log(`Nom du projet: ${projectName.value}\n\nRôles:\nProduct Owner: ${roles.value.productOwner || 'Personne n\'est assigné à ce rôle'}\nScrum Master: ${roles.value.scrumMaster || 'Personne n\'est assigné à ce rôle'}\nDéveloppeurs: ${developers.length ? developers.join(', ') : 'Personne n\'est assigné à ce rôle'}`);
 };
 
-onMounted(() => {
+const handlePhaseStatusUpdate = (data) => {
+  console.log('Phase status updated via WebSocket in PhaseOne:', data);
+  if (data.group_id === props.group.id && data.phase_id === currentPhaseDetails.value.id) {
+    if (data.status === 'wrong') {
+      waiting.value = false;
+    }
+  }
+};
+
+onMounted(async () => {
   fetchGroupMembers();
   setupWebSocket();
   EventBus.on('project_update', handleProjectUpdate);
@@ -181,6 +193,10 @@ onMounted(() => {
   });
   EventBus.on('user_joined_group', handleUserJoinedGroup);
   EventBus.on('user_left_group', handleUserLeftGroup);
+
+  await fetchCurrentPhase();
+
+  EventBus.on('phase_status_update', handlePhaseStatusUpdate);
 });
 
 onUnmounted(() => {
@@ -191,9 +207,9 @@ onUnmounted(() => {
   });
   EventBus.off('user_joined_group', handleUserJoinedGroup);
   EventBus.off('user_left_group', handleUserLeftGroup);
+  EventBus.off('phase_status_update', handlePhaseStatusUpdate);
 });
 </script>
-
 
 <style scoped>
 .locked {

@@ -60,9 +60,29 @@ class PhaseConsumer(BaseConsumer):
                     'user_id': user_id,
                 }
             )
+        elif event == 'phase_status_update':
+            group_id = text_data_json.get('group_id')
+            phase_id = text_data_json.get('phase_id')
+            status = text_data_json.get('status')
+            await self.channel_layer.group_send(
+                self.get_group_name(),
+                {
+                    'type': 'phase_status_update',
+                    'group_id': group_id,
+                    'phase_id': phase_id,
+                    'status': status,
+                }
+            )
 
     async def show_waiting_screen(self, event):
         await self.send_message('show_waiting_screen', {
             'user_id': event['user_id']
+        })
+
+    async def phase_status_update(self, event):
+        await self.send_message('phase_status_update', {
+            'group_id': event['group_id'],
+            'phase_id': event['phase_id'],
+            'status': event['status'],
         })
 

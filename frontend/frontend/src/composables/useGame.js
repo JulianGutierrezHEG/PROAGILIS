@@ -13,6 +13,8 @@ export function useGame(groupId) {
   const currentPhaseAnswer = ref(null);
   const isLoadingPhaseDetails = ref(true);
   const waiting = ref(false);
+  const phases = ref([]);
+  const phasesStatus = ref([]);
 
   const fetchGroupMembers = async () => {
     try {
@@ -53,6 +55,16 @@ export function useGame(groupId) {
       console.error('Error fetching current phase:', error);
     } finally {
       isLoadingPhaseDetails.value = false; 
+    }
+  };
+
+  const fetchGroupPhasesStatus = async (groupId) => {
+    try {
+      const response = await gamesService.getGroupPhasesStatus(groupId);
+      phasesStatus.value = response;
+      return response;
+    } catch (error) {
+      console.error('Error fetching group phases status:', error);
     }
   };
 
@@ -106,6 +118,16 @@ export function useGame(groupId) {
     }
   };
 
+  const fetchPhases = async () => {
+    try {
+      const response = await gamesService.fetchPhases();  
+      phases.value = response;
+      return phases.value;
+    } catch (error) {
+      console.error('Error fetching phases:', error);
+    }
+  };
+
   const fetchGroupCurrentPhaseAnswer = async (groupId) => {
     try {
       const response = await gamesService.getGroupCurrentPhaseAnswer(groupId);
@@ -116,6 +138,26 @@ export function useGame(groupId) {
     }
   };
 
+  const validatePhase = async (groupId, phaseId, isCorrect, answerData) => {
+    try {
+      const status = isCorrect ? 'completed' : 'wrong';
+      await gamesService.updatePhaseStatus(groupId, phaseId, status);
+      websocketService.sendPhaseStatusUpdate(groupId, phaseId, status);
+  
+      if (isCorrect) {
+        if (phaseId === 1) {
+          await gamesService.createProject(groupId, answerData);
+        }
+        const nextPhaseId = phaseId + 1;
+        await gamesService.updatePhaseStatus(groupId, nextPhaseId, 'in_progress');
+        websocketService.sendPhaseStatusUpdate(groupId, nextPhaseId, 'in_progress');
+      } else {
+        waiting.value = false;
+      }
+    } catch (error) {
+      console.error('Error validating phase:', error);
+    }
+  };
   const showWaitingScreen = () => {
     if (currentUser.value) {
       websocketService.showWaitingScreen(groupId, currentUser.value);
@@ -138,6 +180,8 @@ export function useGame(groupId) {
     currentPhaseAnswer,
     isLoadingPhaseDetails,
     waiting,
+    phasesStatus,
+    phases,
     fetchGroupMembers,
     setupWebSocket,
     cleanupWebSocket,
@@ -147,5 +191,8 @@ export function useGame(groupId) {
     fetchCurrentPhase,
     submitGroupAnswer,
     fetchGroupCurrentPhaseAnswer,
+    fetchGroupPhasesStatus,
+    fetchPhases,
+    validatePhase,
   };
 }

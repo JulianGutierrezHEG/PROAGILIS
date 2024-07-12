@@ -4,7 +4,7 @@ from .models import Project, GamePhase, UserStory, Backlog, Sprint, SprintUserSt
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ['id', 'name', 'description', 'group']
+        fields = ['id', 'name', 'group', 'scrum_master', 'product_owner', 'developers']
 
 class GamePhaseSerializer(serializers.ModelSerializer):
     class Meta:
