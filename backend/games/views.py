@@ -37,6 +37,9 @@ class CreateProjectView(APIView):
             developers=roles.get('developers', [])
         )
 
+        group.project = project
+        group.save()
+
         serializer = ProjectSerializer(project)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -52,13 +55,17 @@ class GroupMembersViewSet(viewsets.ViewSet):
         member_data = [{'id': member.id, 'username': member.username} for member in members]
         return Response(member_data)
 
-class GroupCurrentPhaseDetail(RetrieveAPIView):
-    serializer_class = GroupPhaseStatusSerializer
-    lookup_field = 'group_id'
-    lookup_url_kwarg = 'group_id'
-
-    def get_queryset(self):
-        return GroupPhaseStatus.objects.filter(group__id=self.kwargs[self.lookup_url_kwarg])
+class GroupCurrentPhaseDetail(APIView):
+    def get(self, request, group_id):
+        try:
+            group_phase_status = GroupPhaseStatus.objects.filter(group__id=group_id).order_by('-id').first()
+            if group_phase_status:
+                serializer = GroupPhaseStatusSerializer(group_phase_status)
+                return Response(serializer.data)
+            else:
+                return Response({'detail': 'Not found.'}, status=404)
+        except GroupPhaseStatus.DoesNotExist:
+            return Response({'detail': 'Not found.'}, status=404)
 
 class SubmitAnswerView(APIView):
     def post(self, request, group_id):
@@ -138,6 +145,9 @@ class UpdatePhaseStatusView(APIView):
             next_phase = GamePhase.objects.filter(id=phase_id + 1).first()
             if next_phase:
                 update_group_phase_status(group, next_phase, 'in_progress')
+
+                group.current_phase = next_phase
+                group.save()
 
                 # Send WebSocket message for next phase
                 async_to_sync(channel_layer.group_send)(

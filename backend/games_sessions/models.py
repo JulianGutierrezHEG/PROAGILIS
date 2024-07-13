@@ -23,7 +23,6 @@ class Session(models.Model):
         return self.name
 
     def delete(self, *args, **kwargs):
-        # Delete related groups and projects
         with transaction.atomic():
             self.groups.all().delete()
         super(Session, self).delete(*args, **kwargs)

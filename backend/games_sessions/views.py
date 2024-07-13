@@ -87,6 +87,8 @@ class StartSessionView(APIView):
             if created or group_phase_status.status in ['pending', 'not_started']:
                 group_phase_status.status = 'in_progress'
                 group_phase_status.save()
+            group.current_phase = phase_one
+            group.save()
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -148,6 +150,10 @@ class GroupListView(generics.ListAPIView):
         groups = session.groups.all()
         print(f"Groups found: {groups}")  
         return groups
+
+class GroupDetailView(generics.RetrieveAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
 
 class GetJoinedSessionView(APIView):
     def get(self, request):

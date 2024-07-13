@@ -11,6 +11,7 @@ export function useSession() {
   const selectedSession = ref(null);
   const groups = ref([]);
   const selectedGroup = ref(null);
+  const groupDetail = ref(null);
   const sessionPassword = ref('');
   const passwordError = ref(false);
   const groupSize = ref(0);
@@ -84,6 +85,16 @@ export function useSession() {
       websocketService.connectSessionStatus(selectedSession.value.id);
     } catch (error) {
       console.error('Error fetching groups:', error);
+    }
+  };
+
+  const fetchGroupDetail = async (groupId) => {
+    try {
+      const group = await sessionsService.fetchGroupDetail(groupId);
+      groupDetail.value = group;
+      console.log('Fetched group detail:', groupDetail.value);
+    } catch (error) {
+      console.error('Error fetching group detail:', error);
     }
   };
 
@@ -280,17 +291,19 @@ export function useSession() {
     sessionPassword,
     passwordError,
     groupSize,
+    groupDetail,
+    sessionStatus,
+    currentUser,
+    joinedSession,
     fetchUserSessions,
     fetchGroups,
+    fetchGroupDetail,
     joinSession,
     setupEventListeners,
     removeEventListeners,
-    joinedSession,
     fetchJoinedSession,
-    currentUser,
     handleStatusSession,
     handleDeleteSession,
-    sessionStatus,
     fetchSessionStatus,
     leaveSession,
     fetchUserSessionInfo,

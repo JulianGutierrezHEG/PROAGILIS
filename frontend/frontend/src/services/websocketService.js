@@ -5,7 +5,8 @@ const sockets = {};
 // Connecte un WebSocket en utilisant un identifiant et un type spécifiques.
 const connectWebSocket = (id, type) => {
   if (!id) return;
-  if (sockets[id]) {
+  const socketKey = `${type}-${id}`;
+  if (sockets[socketKey]) {
     console.log(`WebSocket déjà connecté pour ${type} : ${id}`);
     return;
   }
@@ -25,63 +26,64 @@ const connectWebSocket = (id, type) => {
   };
   socket.onclose = () => {
     console.log(`Connexion WebSocket fermée pour ${type} : ${id}`);
-    delete sockets[id];
+    delete sockets[socketKey];
   };
   socket.onerror = (error) => console.error(`Erreur WebSocket pour ${type} : ${id}`, error);
 
-  sockets[id] = socket;
+  sockets[socketKey] = socket;
 };
 
 // Déconnecte un WebSocket en utilisant un identifiant et un type spécifiques.
 const disconnectWebSocket = (id, type) => {
-  if (sockets[id]) {
+  const socketKey = `${type}-${id}`;
+  if (sockets[socketKey]) {
     console.log(`Déconnexion du WebSocket pour ${type} : ${id}`);
-    sockets[id].close();
-    delete sockets[id];
+    sockets[socketKey].close();
+    delete sockets[socketKey];
   }
 };
 
 // Déconnecte tous les WebSockets.
 const disconnectAll = () => {
-  Object.keys(sockets).forEach((id) => {
-    console.log(`Déconnexion du WebSocket pour l'ID : ${id}`);
-    if (sockets[id]) {
-      sockets[id].close();
-      delete sockets[id];
+  Object.keys(sockets).forEach((key) => {
+    console.log(`Déconnexion du WebSocket pour l'ID : ${key}`);
+    if (sockets[key]) {
+      sockets[key].close();
+      delete sockets[key];
     }
   });
 };
 
 // Envoie un message à un WebSocket spécifique.
 const sendMessage = (id, message) => {
-  if (sockets[id] && sockets[id].readyState === WebSocket.OPEN) {
-    console.log(`Envoi d'un message WebSocket à l'ID : ${id}`, message);
-    sockets[id].send(JSON.stringify(message));
-  } else {
-    console.error(`WebSocket non connecté pour l'ID : ${id}`);
-  }
+  Object.keys(sockets).forEach((key) => {
+    if (key.includes(id) && sockets[key].readyState === WebSocket.OPEN) {
+      console.log(`Envoi d'un message WebSocket à l'ID : ${key}`, message);
+      sockets[key].send(JSON.stringify(message));
+    }
+  });
 };
 
 // Adds a message event listener to a WebSocket by ID.
 const onMessage = (id, callback) => {
-  if (sockets[id]) {
-    sockets[id].addEventListener('message', callback);
-  } else {
-    console.error(`WebSocket non trouvé pour l'ID : ${id}`);
-  }
+  Object.keys(sockets).forEach((key) => {
+    if (key.includes(id)) {
+      sockets[key].addEventListener('message', callback);
+    }
+  });
 };
 
 // Removes a message event listener from a WebSocket by ID.
 const offMessage = (id, callback) => {
-  if (sockets[id]) {
-    sockets[id].removeEventListener('message', callback);
-  } else {
-    console.error(`WebSocket non trouvé pour l'ID : ${id}`);
-  }
+  Object.keys(sockets).forEach((key) => {
+    if (key.includes(id)) {
+      sockets[key].removeEventListener('message', callback);
+    }
+  });
 };
 
 // Vérifie si un WebSocket est connecté en utilisant un identifiant spécifique.
-const isConnected = (id) => !!sockets[id];
+const isConnected = (id) => !!Object.keys(sockets).find(key => key.includes(id));
 
 const lockElement = (groupId, elementId, user) => {
   console.log(`Sending lock event by: ${user}`); 
@@ -123,10 +125,6 @@ export default {
   disconnectGroup: (groupId) => disconnectWebSocket(groupId, 'group'),
   connectSessionStatus: (sessionId) => connectWebSocket(sessionId, 'session'),
   disconnectSession: (sessionId) => disconnectWebSocket(sessionId, 'session'),
-  connectGame: (gameId) => connectWebSocket(gameId, 'game'),
-  disconnectGame: (gameId) => disconnectWebSocket(gameId, 'game'),
-  connectPhase: (phaseId) => connectWebSocket(phaseId, 'phase'),
-  disconnectPhase: (phaseId) => disconnectWebSocket(phaseId, 'phase'),
   sendMessage,
   isConnected,
   disconnectAll,

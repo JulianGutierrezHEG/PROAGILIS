@@ -51,7 +51,7 @@ import PhaseSix from '@/components/phases/PhaseSix.vue';
 import PhaseSeven from '@/components/phases/PhaseSeven.vue';
 import PhaseEight from '@/components/phases/PhaseEight.vue';
 
-const { currentUser, sessionStatus, leaveSession, fetchUserSessionInfo, fetchSessionStatus, setupEventListeners, removeEventListeners, selectedGroup } = useSession();
+const { currentUser, sessionStatus, leaveSession, fetchUserSessionInfo, fetchSessionStatus, setupEventListeners, removeEventListeners, selectedGroup, fetchGroupDetail } = useSession();
 const sessionId = ref(null);
 const currentPhaseIndex = ref(0);
 
@@ -69,10 +69,12 @@ const phases = [
 const currentPhaseComponent = computed(() => phases[currentPhaseIndex.value]);
 
 const updateCurrentPhaseComponent = async () => {
-  if (selectedGroup.value && selectedGroup.value.current_phase) {
-    const phaseId = selectedGroup.value.current_phase.phase.id;
-    currentPhaseIndex.value = phaseId - 1;
+  if (selectedGroup.value && selectedGroup.value.current_phase && selectedGroup.value.current_phase.id) {
+    const phaseId = selectedGroup.value.current_phase.id;
+    currentPhaseIndex.value = phaseId - 1; // Adjusting phaseId to zero-based index
     console.log(`Updated currentPhaseIndex to: ${currentPhaseIndex.value}`);
+  } else {
+    console.log('No current phase available for the selected group');
   }
 };
 
@@ -85,17 +87,23 @@ const handleWebSocketMessage = (event) => {
   }
 };
 
-const handlePhaseStatusUpdate = (data) => {
+const handlePhaseStatusUpdate = async (data) => {
   console.log('Phase status updated via WebSocket:', data);
   if (selectedGroup.value.id === data.group_id) {
     if (!selectedGroup.value.current_phase) {
-      selectedGroup.value.current_phase = { phase: {}, status: '' };
+      selectedGroup.value.current_phase = { id: null, name: '', description: '', status: '' };
     }
 
-    if (selectedGroup.value.current_phase.phase.id !== data.phase_id || selectedGroup.value.current_phase.status !== data.status) {
-      selectedGroup.value.current_phase.phase.id = data.phase_id;
+    if (selectedGroup.value.current_phase.id !== data.phase_id || selectedGroup.value.current_phase.status !== data.status) {
+      selectedGroup.value.current_phase.id = data.phase_id;
       selectedGroup.value.current_phase.status = data.status;
-      updateCurrentPhaseComponent();
+
+      // Fetch group detail to ensure the latest data is loaded
+      await fetchGroupDetail(selectedGroup.value.id);
+      await updateCurrentPhaseComponent();
+
+      // Connect to the correct phase WebSocket using group ID
+      websocketService.connectGroup(selectedGroup.value.id);
     }
   }
 };
@@ -103,12 +111,6 @@ const handlePhaseStatusUpdate = (data) => {
 const nextPhase = () => {
   if (currentPhaseIndex.value < phases.length - 1) {
     currentPhaseIndex.value++;
-  }
-};
-
-const previousPhase = () => {
-  if (currentPhaseIndex.value > 0) {
-    currentPhaseIndex.value--;
   }
 };
 
@@ -128,8 +130,10 @@ onMounted(async () => {
   watch(() => selectedGroup.value, async (newGroup) => {
     if (newGroup && newGroup.id) {
       console.log('Selected group changed:', newGroup);
+      await fetchGroupDetail(newGroup.id);
       await updateCurrentPhaseComponent();
-      websocketService.connectPhase(newGroup.id);
+
+      websocketService.connectGroup(newGroup.id);
     }
   }, { immediate: true });
 });
@@ -150,9 +154,11 @@ onUnmounted(() => {
   }
 
   if (selectedGroup.value && selectedGroup.value.id) {
-    websocketService.disconnectPhase(selectedGroup.value.id);
+    websocketService.disconnectGroup(selectedGroup.value.id);
   }
 
   EventBus.off('phase_status_update', handlePhaseStatusUpdate);
 });
 </script>
+
+

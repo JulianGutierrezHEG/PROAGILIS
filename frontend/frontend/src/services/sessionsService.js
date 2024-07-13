@@ -97,6 +97,15 @@ const fetchGroups = async (sessionId) => {
   }
 };
 
+const fetchGroupDetail = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/sessions/group/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 const joinSession = async (sessionId, groupId, password) => {
   try {
     const response = await axios.post('/api/sessions/join/', { sessionId, groupId, password });
@@ -142,6 +151,7 @@ export default {
   fetchSessions,
   fetchCreatedSessions,
   fetchGroups,
+  fetchGroupDetail,
   joinSession,
   getJoinedSession,
   getUserSessionInfo,

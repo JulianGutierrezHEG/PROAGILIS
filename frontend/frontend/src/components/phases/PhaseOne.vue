@@ -84,7 +84,7 @@ const {
   submitGroupAnswer,
   showWaitingScreen,
   fetchCurrentPhase
-} = useGame(props.group.id);
+} = useGame(props.group.id, props.group);
 
 const projectName = ref('');
 const roles = ref({
@@ -135,21 +135,7 @@ const submitForm = () => {
   console.log('Rôles:', roles.value);
 };
 
-const handleProjectUpdate = (data) => {
-  projectName.value = data.projectName;
-  roles.value = data.roles;
-  console.log(`Project updated by: ${data.user}`);
-};
 
-const handleUserJoinedGroup = (data) => {
-  console.log('User joined group:', data);
-  fetchGroupMembers();
-};
-
-const handleUserLeftGroup = (data) => {
-  console.log('User left group:', data);
-  fetchGroupMembers();
-};
 
 const submitProjectData = async () => {
   showWaitingScreen(props.group.id, currentUser.value);
@@ -194,45 +180,22 @@ const submitProjectData = async () => {
 };
 
 
-const handlePhaseStatusUpdate = (data) => {
-  console.log('Phase status updated via WebSocket in PhaseOne:', data);
-  if (data.group_id === props.group.id && data.phase_id === currentPhaseDetails.value.id) {
-    if (data.status === 'wrong') {
-      waiting.value = false;
-    }
-  }
-};
 
-const handlePhaseAnswerUpdate = (data) => {
-  console.log('Phase answer updated via WebSocket in PhaseOne:', data);
-};
 
 onMounted(async () => {
   fetchGroupMembers();
   setupWebSocket();
-  EventBus.on('project_update', handleProjectUpdate);
+  await fetchCurrentPhase();
   EventBus.on('show_waiting_screen', () => {
     waiting.value = true;
   });
-  EventBus.on('user_joined_group', handleUserJoinedGroup);
-  EventBus.on('user_left_group', handleUserLeftGroup);
-
-  await fetchCurrentPhase();
-
-  EventBus.on('phase_status_update', handlePhaseStatusUpdate);
-  EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
 });
 
 onUnmounted(() => {
   cleanupWebSocket();
-  EventBus.off('project_update', handleProjectUpdate);
   EventBus.off('show_waiting_screen', () => {
     waiting.value = true;
   });
-  EventBus.off('user_joined_group', handleUserJoinedGroup);
-  EventBus.off('user_left_group', handleUserLeftGroup);
-  EventBus.off('phase_status_update', handlePhaseStatusUpdate);
-  EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
 });
 </script>
 

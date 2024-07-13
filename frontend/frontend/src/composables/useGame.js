@@ -4,7 +4,7 @@ import gamesService from '@/services/gamesService';
 import usersService from '@/services/usersService';
 import EventBus from '@/services/eventBus';
 
-export function useGame(groupId) {
+export function useGame(groupId, group) {
   const groupMembers = ref([]);
   const lockedElements = ref({});
   const currentUser = ref(null);
@@ -15,6 +15,11 @@ export function useGame(groupId) {
   const waiting = ref(false);
   const phases = ref([]);
   const phasesStatus = ref([]);
+  const roles = ref({
+    scrumMaster: '',
+    productOwner: '',
+    developers: []
+  });
 
   const fetchGroupMembers = async () => {
     try {
@@ -69,17 +74,58 @@ export function useGame(groupId) {
   };
 
   const setupWebSocket = () => {
+    console.log('Setting up WebSocket for group:', groupId);
     websocketService.connectGroup(groupId);
 
     EventBus.on('lock_element', handleLockElement);
     EventBus.on('unlock_element', handleUnlockElement);
+    EventBus.on('project_update', handleProjectUpdate);
+    EventBus.on('user_joined_group', handleUserJoinedGroup);
+    EventBus.on('user_left_group', handleUserLeftGroup);
+    EventBus.on('phase_status_update', handlePhaseStatusUpdate);
+    EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
   };
 
   const cleanupWebSocket = () => {
+    console.log('Cleaning up WebSocket for group:', groupId);
     websocketService.disconnectGroup(groupId);
 
     EventBus.off('lock_element', handleLockElement);
     EventBus.off('unlock_element', handleUnlockElement);
+    EventBus.off('project_update', handleProjectUpdate);
+    EventBus.off('user_joined_group', handleUserJoinedGroup);
+    EventBus.off('user_left_group', handleUserLeftGroup);
+    EventBus.off('phase_status_update', handlePhaseStatusUpdate);
+    EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
+  };
+
+  const handleProjectUpdate = (data) => {
+    projectName.value = data.projectName;
+    roles.value = data.roles;
+    console.log(`Project updated by: ${data.user}`);
+  };
+  
+  const handleUserJoinedGroup = (data) => {
+    console.log('User joined group:', data);
+    fetchGroupMembers();
+  };
+  
+  const handleUserLeftGroup = (data) => {
+    console.log('User left group:', data);
+    fetchGroupMembers();
+  };
+
+  const handlePhaseStatusUpdate = (data) => {
+    console.log('Phase status updated via WebSocket:', data);
+    if (data.group_id === group.id && data.phase_id === currentPhaseDetails.value.id) {
+      if (data.status === 'wrong') {
+        waiting.value = false;
+      }
+    }
+  };
+  
+  const handlePhaseAnswerUpdate = (data) => {
+    console.log('Phase answer updated via WebSocket in PhaseOne:', data);
   };
 
   const handleLockElement = (data) => {
