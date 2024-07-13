@@ -99,6 +99,7 @@ const fetchPhaseData = async () => {
   try {
     const fetchedPhases = await fetchPhases();
     phases.value = fetchedPhases;
+    phases.value = fetchedPhases.sort((a, b) => a.id - b.id);
     console.log('Fetched phases:', phases.value);
 
     const response = await fetchGroupPhasesStatus(props.group.id);
@@ -151,6 +152,8 @@ const handleValidation = async (isCorrect) => {
       console.error('Error setting next phase to in_progress:', error);
     }
   }
+
+  websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseId.value, answerData);
 };
 
 const handlePhaseStatusUpdate = (data) => {
@@ -160,13 +163,22 @@ const handlePhaseStatusUpdate = (data) => {
   }
 };
 
+const handlePhaseAnswerUpdate = (data) => {
+  console.log('Phase answer updated via WebSocket in GroupInfo:', data);
+  if (data.group_id === props.group.id && data.phase_id === currentPhaseId.value) {
+    phaseAnswer.value = data.answer;
+  }
+};
+
 onMounted(() => {
   fetchPhaseData();
   EventBus.on('phase_status_update', handlePhaseStatusUpdate);
+  EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
 });
 
 onUnmounted(() => {
   EventBus.off('phase_status_update', handlePhaseStatusUpdate);
+  EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
 });
 
 watch(() => props.group.id, fetchPhaseData, { immediate: true });

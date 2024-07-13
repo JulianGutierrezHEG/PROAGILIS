@@ -71,6 +71,25 @@ class GroupConsumer(BaseConsumer):
             'phase_id': event['phase_id'],
             'status': event['status']
         })
+    
+    async def phase_answer_update(self, event):
+        await self.channel_layer.group_send(
+        self.get_group_name(),
+        {
+            'type': 'phase_answer_update_broadcast',
+            'event': 'phase_answer_update',
+            'group_id': event['group_id'],
+            'phase_id': event['phase_id'],
+            'answer': event['answer']
+        }
+    )
+
+    async def phase_answer_update_broadcast(self, event):
+        await self.send_message('phase_answer_update', {
+        'group_id': event['group_id'],
+        'phase_id': event['phase_id'],
+        'answer': event['answer']
+    })
 
     async def show_waiting_screen_broadcast(self, event):
         await self.send_message('show_waiting_screen', {'user': event['user']})

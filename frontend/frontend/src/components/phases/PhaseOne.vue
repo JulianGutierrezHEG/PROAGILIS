@@ -60,6 +60,7 @@ import { useGame } from '@/composables/useGame';
 import websocketService from '@/services/websocketService';
 import EventBus from '@/services/eventBus';
 import WaitingScreen from '@/views/WaitingScreen.vue';
+import gamesService from '@/services/gamesService';
 
 const props = defineProps({
   group: {
@@ -153,6 +154,14 @@ const handleUserLeftGroup = (data) => {
 const submitProjectData = async () => {
   showWaitingScreen(props.group.id, currentUser.value);
 
+  if (!roles.value.scrumMaster && !roles.value.productOwner) {
+    roles.value.developers = groupMembers.value.map(member => member.username);
+  } else {
+    roles.value.developers = groupMembers.value.filter(
+      (member) => member.username !== roles.value.scrumMaster && member.username !== roles.value.productOwner
+    ).map((member) => member.username);
+  }
+
   const answerData = {
     projectName: projectName.value,
     roles: roles.value,
@@ -160,20 +169,30 @@ const submitProjectData = async () => {
 
   try {
     await submitGroupAnswer(answerData);
-    // Send phase status update via WebSocket
-    websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseDetails.value.id, 'pending');
+
+    if (currentPhaseDetails.value.requires_validation) {
+      websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseDetails.value.id, 'pending');
+      websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
+    } else {
+      const nextPhaseId = currentPhaseDetails.value.id + 1;
+      await gamesService.updatePhaseStatus(props.group.id, currentPhaseDetails.value.id, 'completed');
+      websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseDetails.value.id, 'completed');
+
+      await gamesService.updatePhaseStatus(props.group.id, nextPhaseId, 'in_progress');
+      websocketService.sendPhaseStatusUpdate(props.group.id, nextPhaseId, 'in_progress');
+
+      websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
+    }
   } catch (error) {
     console.error('Error submitting project data:', error);
   }
 
   EventBus.emit('updateProjectData', answerData);
 
-  const developers = groupMembers.value.filter(
-    (member) => member.username !== roles.value.scrumMaster && member.username !== roles.value.productOwner
-  ).map((member) => member.username);
-
+  const developers = roles.value.developers;
   console.log(`Nom du projet: ${projectName.value}\n\nRôles:\nProduct Owner: ${roles.value.productOwner || 'Personne n\'est assigné à ce rôle'}\nScrum Master: ${roles.value.scrumMaster || 'Personne n\'est assigné à ce rôle'}\nDéveloppeurs: ${developers.length ? developers.join(', ') : 'Personne n\'est assigné à ce rôle'}`);
 };
+
 
 const handlePhaseStatusUpdate = (data) => {
   console.log('Phase status updated via WebSocket in PhaseOne:', data);
@@ -182,6 +201,10 @@ const handlePhaseStatusUpdate = (data) => {
       waiting.value = false;
     }
   }
+};
+
+const handlePhaseAnswerUpdate = (data) => {
+  console.log('Phase answer updated via WebSocket in PhaseOne:', data);
 };
 
 onMounted(async () => {
@@ -197,6 +220,7 @@ onMounted(async () => {
   await fetchCurrentPhase();
 
   EventBus.on('phase_status_update', handlePhaseStatusUpdate);
+  EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
 });
 
 onUnmounted(() => {
@@ -208,6 +232,7 @@ onUnmounted(() => {
   EventBus.off('user_joined_group', handleUserJoinedGroup);
   EventBus.off('user_left_group', handleUserLeftGroup);
   EventBus.off('phase_status_update', handlePhaseStatusUpdate);
+  EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
 });
 </script>
 

@@ -113,6 +113,11 @@ const sendPhaseStatusUpdate = (groupId, phaseId, status) => {
   sendMessage(groupId, { event: 'phase_status_update', group_id: groupId, phase_id: phaseId, status });
 };
 
+const sendPhaseAnswerUpdate = (groupId, phaseId, answerData) => {
+  console.log(`Sending phase answer update for group: ${groupId}, phase: ${phaseId}`);
+  sendMessage(groupId, { event: 'phase_answer_update', group_id: groupId, phase_id: phaseId, answer: answerData });
+};
+
 export default {
   connectGroup: (groupId) => connectWebSocket(groupId, 'group'),
   disconnectGroup: (groupId) => disconnectWebSocket(groupId, 'group'),
@@ -133,4 +138,5 @@ export default {
   submitProjectData,
   showWaitingScreen,
   sendPhaseStatusUpdate,
+  sendPhaseAnswerUpdate,
 };
