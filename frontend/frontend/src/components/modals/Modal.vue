@@ -14,6 +14,8 @@ import JoinSessionModalContent from '@/components/modals/JoinSessionModalContent
 import CreateSessionModalContent from '@/components/modals/CreateSessionModalContent.vue';
 import UserStoryCreateContent from '@/components/modals/UserStoryCreateContent.vue';
 import UserStoryDivideContent from '@/components/modals/UserStoryDivideContent.vue';
+import PhaseOneAnswer from '@/components/phasesAnswer/PhaseOneAnswer.vue';
+import PhaseTwoAnswer from '@/components/phasesAnswer/PhaseTwoAnswer.vue';
 
 const isVisible = ref(false);
 const activeModalComponent = shallowRef(null);
@@ -23,6 +25,8 @@ const modalComponents = {
   createSession: CreateSessionModalContent,
   userstorycreate: UserStoryCreateContent,
   userstorydivide: UserStoryDivideContent,
+  Phase1Answer: PhaseOneAnswer,
+  Phase2Answer: PhaseTwoAnswer,
 };
 
 const openModalHandler = (event) => {

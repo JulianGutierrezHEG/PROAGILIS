@@ -2,6 +2,9 @@ import { watch } from 'vue';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
+// FONCTIONS POUR LA GESTION DES UTILSATEURS, DE LEUR CONNEXION ET AUTORISATION
+
+
 // Initialise le store d'authentification avec les valeurs stockées dans le sessionStorage
 export function initializeAuth() {
   const authStore = useAuthStore();
@@ -46,9 +49,7 @@ export function updateAuthorizationHeader() {
 // Récupère un nouveau token d'accès et met à jour le store d'authentification
 export function getAccessAndUpdate() {
   const authStore = useAuthStore();
-  console.log('Getting new access token...');
   if (!authStore.isAuthenticated) {
-    console.log('User is not authenticated, skipping token refresh.');
     return;
   }
 

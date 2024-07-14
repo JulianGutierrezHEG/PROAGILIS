@@ -67,8 +67,6 @@ onUnmounted(() => {
 });
 
 const handleJoinSession = async () => {
-  console.log('Selected Session:', selectedSession.value);
-  console.log('Selected Group:', selectedGroup.value);
   await joinSessionFromComposable(router);
 };
 </script>

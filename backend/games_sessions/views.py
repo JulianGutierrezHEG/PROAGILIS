@@ -10,6 +10,7 @@ from games.utils import update_group_phase_status
 from games.models import GamePhase,GroupPhaseStatus,Project
 from .serializers import SessionSerializer, GroupSerializer
 
+# Crée une session
 class SessionCreateView(generics.CreateAPIView):
     queryset = Session.objects.all()
     serializer_class = SessionSerializer
@@ -37,6 +38,7 @@ class SessionCreateView(generics.CreateAPIView):
 
         return session
 
+# Supprime une session et toutes les données associées
 class SessionDeleteView(generics.DestroyAPIView):
     queryset = Session.objects.all()
     serializer_class = SessionSerializer
@@ -44,14 +46,12 @@ class SessionDeleteView(generics.DestroyAPIView):
     def get_object(self):
         obj = super().get_object()
         if obj.created_by != self.request.user:
-            raise PermissionDenied("You do not have permission to delete this session.")
+            raise PermissionDenied("Vous n'avez pas la permission de supprimer cette session.")
         return obj
 
     def perform_destroy(self, instance):
         session_id = instance.id
-        # Fetch all groups related to the session
         groups = instance.groups.all()
-        # Delete all related projects
         for group in groups:
             try:
                 project = group.assigned_project
@@ -59,11 +59,8 @@ class SessionDeleteView(generics.DestroyAPIView):
                     project.delete()
             except Group.assigned_project.RelatedObjectDoesNotExist:
                 pass
-        
-        # Delete the session
         super().perform_destroy(instance)
         
-        # Send WebSocket message
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"session_{session_id}",
@@ -75,6 +72,7 @@ class SessionDeleteView(generics.DestroyAPIView):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+# Démarre une session
 class StartSessionView(APIView):
     def post(self, request, session_id):
         session = get_object_or_404(Session, id=session_id)
@@ -100,8 +98,9 @@ class StartSessionView(APIView):
             }
         )
 
-        return Response({'status': 'Session started successfully.'}, status=status.HTTP_200_OK)
+        return Response({'status': 'Session commencée'}, status=status.HTTP_200_OK)
 
+# Met en pause une session
 class StopSessionView(APIView):
     def post(self, request, session_id, *args, **kwargs):
         session = get_object_or_404(Session, id=session_id)
@@ -123,16 +122,19 @@ class StopSessionView(APIView):
             }
         )
 
-        return Response({'status': 'Session paused successfully.'}, status=status.HTTP_200_OK)
+        return Response({'status': 'Session en pause'}, status=status.HTTP_200_OK)
 
+# Liste toutes les sessions
 class SessionListView(generics.ListAPIView):
     queryset = Session.objects.all()
     serializer_class = SessionSerializer
 
+# Détail d'une session
 class SessionDetailView(generics.RetrieveAPIView):
     queryset = Session.objects.all()
     serializer_class = SessionSerializer
 
+# Liste les sessions créées par un utilisateur
 class UserCreatedSessionsListView(generics.ListAPIView):
     serializer_class = SessionSerializer
 
@@ -140,21 +142,22 @@ class UserCreatedSessionsListView(generics.ListAPIView):
         user = self.request.user
         return Session.objects.filter(created_by=user)
 
+# Liste les sessions auxquelles un utilisateur participe
 class GroupListView(generics.ListAPIView):
     serializer_class = GroupSerializer
 
     def get_queryset(self):
         session_id = self.kwargs.get('session_id')
-        print(f"Fetching groups for session ID: {session_id}")  
         session = get_object_or_404(Session, id=session_id)
         groups = session.groups.all()
-        print(f"Groups found: {groups}")  
         return groups
 
+# Détail d'un groupe
 class GroupDetailView(generics.RetrieveAPIView):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
 
+# Retourne la session à laquelle un utilisateur participe
 class GetJoinedSessionView(APIView):
     def get(self, request):
         user_id = request.query_params.get('userId')
@@ -167,6 +170,7 @@ class GetJoinedSessionView(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+# Retourne les informations de session d'un utilisateur
 class GetUserSessionInfoView(APIView):
     def get(self, request):
         user_id = request.query_params.get('userId')
@@ -182,8 +186,9 @@ class GetUserSessionInfoView(APIView):
                     'session_id': session.id ,
                     'user_id': user.id,
                 }, status=status.HTTP_200_OK)
-        return Response({'detail': 'No joined session found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'detail': 'Pas de session trouvée'}, status=status.HTTP_404_NOT_FOUND)
 
+# Rejoint une session
 class JoinSessionView(APIView):
     def post(self, request):
         session_id = request.data.get('sessionId')
@@ -192,7 +197,7 @@ class JoinSessionView(APIView):
 
         session = get_object_or_404(Session, id=session_id)
         if session.password != password:
-            return Response({'success': False, 'detail': 'Incorrect password'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'success': False, 'detail': 'Mauvais mot de passe'}, status=status.HTTP_403_FORBIDDEN)
 
         group = get_object_or_404(Group, id=group_id)
         group.users.add(request.user)
@@ -211,7 +216,8 @@ class JoinSessionView(APIView):
         )
 
         return Response({'success': True})
-    
+
+# Quitte une session
 class LeaveSessionView(APIView):
     def post(self, request, session_id):
         user_id = request.data.get('userId')
@@ -233,5 +239,5 @@ class LeaveSessionView(APIView):
                 }
             )
             return Response({'success': True}, status=status.HTTP_200_OK)
-        return Response({'detail': 'User not in any group of this session'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': 'L\'utilisateur n\'est pas dans ce groupe'}, status=status.HTTP_404_NOT_FOUND)
 

@@ -5,6 +5,8 @@ import usersService from '@/services/usersService';
 import websocketService from '@/services/websocketService';
 import EventBus from '@/services/eventBus';
 
+// COMPOSABLE POUR LES SESSIONS, UTILISEE DANS LES VUES
+
 export function useSession() {
   const router = useRouter();
   const sessions = ref([]);
@@ -19,16 +21,17 @@ export function useSession() {
   const currentUser = ref(null);
   const sessionStatus = ref('not_started');
 
+  // Récupère toutes les sessions
   const fetchAllSessions = async () => {
     try {
       const allSessions = await sessionsService.getAllSessions();
       sessions.value = allSessions;
-      console.log('Fetched all sessions:', sessions.value);
     } catch (error) {
-      console.error('Error fetching all sessions:', error);
+      console.error('Erreur lors de la récupération des sessions:', error);
     }
   };
 
+  // Récupère les sessions de l'utilisateur
   const fetchUserSessions = async () => {
     try {
       const user = await usersService.getCurrentUser();
@@ -36,109 +39,106 @@ export function useSession() {
       const allSessions = await sessionsService.fetchSessions(user.id);
       sessions.value = allSessions.filter(session => session.status === 'not_started' || session.status === 'active');
     } catch (error) {
-      console.error('Error fetching user sessions:', error);
+      console.error('Erreur lors de la récupération des sessions de l\'utilisateur:', error);
     }
   };
 
+  // Récupère les sessions créées par l'utilisateur
   const fetchCreatedSessions = async () => {
     try {
       const createdSessions = await sessionsService.fetchCreatedSessions();
       sessions.value = createdSessions;
-      console.log('Fetched created sessions:', sessions.value);
     } catch (error) {
-      console.error('Error fetching created sessions:', error);
+      console.error('Erreur lors de la récupération des sessions créées:', error);
     }
   };
 
+  // Récupère les informations de session de l'utilisateur
   const fetchUserSessionInfo = async () => {
     try {
       const user = await usersService.getCurrentUser();
-      console.log('Fetched user:', user);
       currentUser.value = user;
       const info = await sessionsService.getUserSessionInfo(user.id);
-      console.log('Fetched user session info:', info);
       currentUser.value = { ...currentUser.value, ...info };
       if (info && info.groupname) {
         selectedGroup.value = groups.value.find(group => group.name === info.groupname);
-        console.log('Selected Group after fetching user session info:', selectedGroup.value);
       }
       if (info && info.session_id) {
         fetchSessionStatus(info.session_id);
         websocketService.connectSessionStatus(info.session_id); 
       }
     } catch (error) {
-      console.error('Error fetching user session info:', error);
+      console.error('Erreur lors de la récupération des informations de session de l\'utilisateur:', error);
     }
   };
 
+  // Récupère les groupes de la session 
   const fetchGroups = async () => {
     if (!selectedSession.value || !selectedSession.value.id) return; 
     try {
       const session = await sessionsService.getSessionDetails(selectedSession.value.id);
       groupSize.value = session.group_size;
       groups.value = session.groups.filter(group => group.users.length < session.group_size);
-      console.log('Filtered groups:', groups.value);
-      
       session.groups.forEach(group => {
         websocketService.connectGroup(group.id);
       });
       websocketService.connectSessionStatus(selectedSession.value.id);
     } catch (error) {
-      console.error('Error fetching groups:', error);
+      console.error('Erreur lors de la récupération des groupes de la session:', error);
     }
   };
 
+  // Récupère les détails du groupe
   const fetchGroupDetail = async (groupId) => {
     try {
       const group = await sessionsService.fetchGroupDetail(groupId);
       groupDetail.value = group;
-      console.log('Fetched group detail:', groupDetail.value);
     } catch (error) {
-      console.error('Error fetching group detail:', error);
+      console.error('Erreur lors de la récupération des détails du groupe:', error);
     }
   };
 
+  // Rejoint une session
   const joinSession = async (router) => {
     try {
       const user = await usersService.getCurrentUser();
-      console.log('User:', user);
-      console.log('Selected Session ID:', selectedSession.value.id);
-      console.log('Selected Group ID:', selectedGroup.value.id);
+      console.log('Utilisateur:', user);
+      console.log('Session ID:', selectedSession.value.id);
+      console.log('Groupe ID:', selectedGroup.value.id);
       const response = await sessionsService.joinSession(selectedSession.value.id, selectedGroup.value.id, sessionPassword.value);
-      console.log('Join session response:', response);
       if (response.success) {
         const joinedSessionResponse = await sessionsService.getJoinedSession(user.id);
         if (joinedSessionResponse) {
           router.push(`/game/${joinedSessionResponse.id}`);
         } else {
-          console.error('Error: Joined session not found');
+          console.error('Erreur: Session introuvable');
         }
       } else {
         passwordError.value = true;
       }
     } catch (error) {
-      console.error('Error joining session:', error);
+      console.error('Erreur: Impossible de rejoindre la session:', error);
       passwordError.value = true;
     }
   };
 
+  // Récupère la session rejointe
   const fetchJoinedSession = async () => {
     try {
       const user = await usersService.getCurrentUser();
       currentUser.value = user;
       const session = await sessionsService.getJoinedSession(user.id);
       if (!session) {
-        console.log('Pas de session rejointe');
         joinedSession.value = '';
         return;
       }
       joinedSession.value = session;
-      console.log('Session rejointe:', session);
     } catch (error) {
       console.error('Erreur lors de la récupération de la session rejointe:', error);
     }
   };
 
+  // Récupère le statut de la session
   const fetchSessionStatus = async (sessionId) => {
     try {
       const session = await sessionsService.getSessionDetails(sessionId);
@@ -151,10 +151,11 @@ export function useSession() {
         }
       }
     } catch (error) {
-      console.error('Error fetching session status:', error);
+      console.error('Erreur lors de la récupération du statut de la session:', error);
     }
   };
 
+  // Quitte la session
   const leaveSession = async () => {
     try {
       if (currentUser.value && currentUser.value.session_id) {
@@ -170,26 +171,25 @@ export function useSession() {
         router.push('/');
       }
     } catch (error) {
-      console.error('Error leaving session:', error);
+      console.error('Erreur: Impossible de quitter la session:', error);
     }
   };
 
+  // Gère le statut de la session
   const handleStatusSession = async (action) => {
     if (!selectedSession.value) return;
     try {
       const sessionId = selectedSession.value.id;
   
-      // Ensure the WebSocket is connected before sending a message
       if (!websocketService.isConnected(sessionId)) {
         websocketService.connectSessionStatus(sessionId);
-        // Optionally, wait for a short duration to ensure the connection is established
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
   
       if (action === 'start') {
         await sessionsService.startSession(sessionId);
         selectedSession.value.status = 'active';
-        console.log(`Session ${sessionId} started`);
+        console.log(`Session ${sessionId} commencée`);
         selectedSession.value.groups.forEach(group => {
           websocketService.connectGroup(group.id);
         });
@@ -198,7 +198,7 @@ export function useSession() {
       } else if (action === 'paused') {
         await sessionsService.stopSession(sessionId);
         selectedSession.value.status = 'paused';
-        console.log(`Session ${sessionId} paused`);
+        console.log(`Session ${sessionId} en pause`);
         selectedSession.value.groups.forEach(group => {
           websocketService.disconnectGroup(group.id);
         });
@@ -206,19 +206,19 @@ export function useSession() {
         updateSessionStatus({ session_id: sessionId, status: 'paused' });
       }
     } catch (error) {
-      console.error(`Error ${action}ing session:`, error);
+      console.error(`Erreur lors de l'action ( ${action} ) de la session:`, error);
     }
   };
 
+  // Met à jour le statut de la session
   const updateSessionStatus = (data) => {
-    console.log('Update session status event received:', data);
     if (selectedSession.value && selectedSession.value.id === data.session_id) {
       sessionStatus.value = data.status;
-      console.log('Session status updated to:', sessionStatus.value);
     }
   };
     
 
+  // Supprime la session
   const handleDeleteSession = async (sessionId) => {
     const confirmation = window.confirm('Êtes-vous sûr de vouloir supprimer la session?');
     if (!confirmation) return;
@@ -232,12 +232,13 @@ export function useSession() {
         await fetchGroups();
       }
     } catch (error) {
-      console.error('Error deleting session:', error);
+      console.error('Erreur lors de la suppression de la session:', error);
     }
   };
 
+
+  // Met à jour les membres du groupe
   const updateGroupMembers = (data) => {
-    console.log('Update group members event received:', data);
     if (!selectedSession.value || !selectedSession.value.groups) return;
   
     const groupIndex = selectedSession.value.groups.findIndex(g => g.id === data.group_id);
@@ -259,15 +260,17 @@ export function useSession() {
   };
 
 
+  // Supprime la session
   const handleSessionDeleted = (data) => {
-    console.log('Session deleted event received:', data);
     if (selectedSession.value && selectedSession.value.id === data.session_id) {
       selectedSession.value = null;
       sessions.value = sessions.value.filter(session => session.id !== data.session_id);
     }
+    router.push('/');
   };
 
 
+  // Met en place les écouteurs d'événements
   const setupEventListeners = () => {
     EventBus.on('user_joined_group', updateGroupMembers);
     EventBus.on('user_left_group', updateGroupMembers);
@@ -275,6 +278,7 @@ export function useSession() {
     EventBus.on('session_deleted', handleSessionDeleted);
   };
 
+  // Supprime les écouteurs d'événements
   const removeEventListeners = () => {
     EventBus.off('user_joined_group', updateGroupMembers);
     EventBus.off('user_left_group', updateGroupMembers);

@@ -2,10 +2,14 @@
   <div>
     <div class="mt-8">
       <h3 class="font-bold text-xl text-center mb-4">Phase du groupe</h3>
+      <i class="block text-center text-sm"> Cliquez sur le numéro de la phase pour voir les réponses</i>
       <ol class="items-center w-full space-y-4 sm:flex sm:space-x-8 sm:space-y-0 rtl:space-x-reverse">
         <li v-for="(phase, index) in phases" :key="phase.id" :class="getPhaseClass(phaseStatus[phase.id]?.status)">
-          <span class="flex items-center justify-center w-8 h-8 border rounded-full shrink-0"
-            :class="getPhaseBorderClass(phaseStatus[phase.id]?.status)">
+          <span 
+            class="flex items-center justify-center w-8 h-8 border rounded-full shrink-0 cursor-pointer"
+            :class="getPhaseBorderClass(phaseStatus[phase.id]?.status)"
+            @click="() => openPhaseModal(phase)"
+          >
             {{ index + 1 }}
           </span>
           <span>
@@ -15,33 +19,15 @@
         </li>
       </ol>
     </div>
-    <div v-if="phaseAnswer && phaseAnswer.projectName">
-      <h3 class="font-bold text-xl text-center mb-4">Réponse pour la phase {{ currentPhaseName }} :</h3>
-      <p class="text-center">Nom du projet: {{ phaseAnswer.projectName }}</p>
-      <p class="text-center">Rôles:</p>
-      <p class="text-center">Product Owner: {{ phaseAnswer.roles.productOwner }}</p>
-      <p class="text-center">Scrum Master: {{ phaseAnswer.roles.scrumMaster }}</p>
-      <p class="text-center">Développeurs: {{ phaseAnswer.roles.developers.join(', ') }}</p>
-    </div>
-    <div v-if="currentPhaseNeedsValidation">
-      <button @click="handleValidation(true)"
-        class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 mt-4">
-        Réponse correcte
-      </button>
-      <button @click="handleValidation(false)"
-        class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 mt-4">
-        Réponse incorrecte
-      </button>
-    </div>
+    <Modal />
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, provide, onUnmounted } from 'vue';
 import { useGame } from '@/composables/useGame';
-import gamesService from '@/services/gamesService';
-import websocketService from '@/services/websocketService';
 import EventBus from '@/services/eventBus';
+import Modal from '@/components/modals/Modal.vue';
 
 const props = defineProps({
   group: {
@@ -50,15 +36,19 @@ const props = defineProps({
   }
 });
 
-const { fetchPhases, fetchGroupPhasesStatus, fetchGroupCurrentPhaseAnswer, validatePhase } = useGame(props.group.id);
+const { fetchPhases, fetchGroupPhasesStatus, fetchPhaseDetails } = useGame(props.group.id);
 
 const phases = ref([]);
 const phaseStatus = ref({});
-const currentPhaseName = ref(null);
-const currentPhaseId = ref(null);
-const currentPhaseNeedsValidation = ref(false);
-const phaseAnswer = ref(null);
 const statusChoices = ref({});
+
+const groupId = ref(props.group.id);
+const phaseId = ref(null);
+const phaseNeedsValidation = ref(false);
+
+provide('groupId', groupId);
+provide('phaseId', phaseId);
+provide('phaseNeedsValidation', phaseNeedsValidation);
 
 const getPhaseClass = (status) => {
   switch (status) {
@@ -95,90 +85,47 @@ const getStatusText = (status) => {
 };
 
 const fetchPhaseData = async () => {
-  console.log('Fetching phase data for group:', props.group.id);
+  console.log('Récupération des données du groupe:', props.group.id);
   try {
     const fetchedPhases = await fetchPhases();
     phases.value = fetchedPhases;
     phases.value = fetchedPhases.sort((a, b) => a.id - b.id);
-    console.log('Fetched phases:', phases.value);
 
     const response = await fetchGroupPhasesStatus(props.group.id);
-    console.log('Fetched statuses:', response.phase_statuses);
     phaseStatus.value = {};
     statusChoices.value = response.status_choices;
     response.phase_statuses.forEach(status => {
       phaseStatus.value[status.phase.id] = status;
     });
-    console.log('Phase status after update:', phaseStatus.value);
 
-    const answerData = await fetchGroupCurrentPhaseAnswer(props.group.id);
-    if (answerData) {
-      currentPhaseName.value = answerData.phase_name;
-      currentPhaseId.value = answerData.phase_id;
-      phaseAnswer.value = answerData.answer;
-      currentPhaseNeedsValidation.value = answerData.requires_validation; 
-    } else {
-      currentPhaseName.value = null;
-      currentPhaseId.value = null;
-      phaseAnswer.value = null;
-      currentPhaseNeedsValidation.value = false;
-    }
-    console.log('Current phase name:', currentPhaseName.value);
-    console.log('Current phase id:', currentPhaseId.value);
-    console.log('Phase answer:', phaseAnswer.value);
-    console.log('Current phase needs validation:', currentPhaseNeedsValidation.value);
+    console.log('Phase Status:', phaseStatus.value);
   } catch (error) {
-    console.error('Error fetching phase data:', error);
+    console.error('Erreur lors de la récupération des données de la phase:', error);
   }
 };
 
-const handleValidation = async (isCorrect) => {
-  console.log('Handling validation for phase id:', currentPhaseId.value);
-  const answerData = phaseAnswer.value;
-  await validatePhase(props.group.id, currentPhaseId.value, isCorrect,answerData);
-
-  if (isCorrect) {
-    try {
-      const nextPhaseId = currentPhaseId.value + 1;
-      await gamesService.updatePhaseStatus(props.group.id, nextPhaseId, 'in_progress');
-
-      // Broadcast phase status updates
-      console.log('Sending phase status update for group:', props.group.id, ', phase:', currentPhaseId.value, ', status: completed');
-      websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseId.value, 'completed');
-      
-      console.log('Sending phase status update for group:', props.group.id, ', phase:', nextPhaseId, ', status: in_progress');
-      websocketService.sendPhaseStatusUpdate(props.group.id, nextPhaseId, 'in_progress');
-    } catch (error) {
-      console.error('Error setting next phase to in_progress:', error);
-    }
-  }
-
-  websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseId.value, answerData);
+const openPhaseModal = async (phase) => {
+  const modalType = `Phase${phase.id}Answer`;
+  const phaseDetails = await fetchPhaseDetails(phase.id);
+  phaseId.value = phaseDetails.id;
+  phaseNeedsValidation.value = phaseDetails.requires_validation;
+  groupId.value = props.group.id;
+  EventBus.emit('open-modal', { modalType });
 };
 
 const handlePhaseStatusUpdate = (data) => {
-  console.log('Phase status updated via WebSocket in GroupInfo:', data);
   if (data.group_id === props.group.id) {
     phaseStatus.value[data.phase_id].status = data.status;
-  }
-};
-
-const handlePhaseAnswerUpdate = (data) => {
-  console.log('Phase answer updated via WebSocket in GroupInfo:', data);
-  if (data.group_id === props.group.id && data.phase_id === currentPhaseId.value) {
-    phaseAnswer.value = data.answer;
   }
 };
 
 onMounted(() => {
   fetchPhaseData();
   EventBus.on('phase_status_update', handlePhaseStatusUpdate);
-  EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
 });
 
 onUnmounted(() => {
   EventBus.off('phase_status_update', handlePhaseStatusUpdate);
-  EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
 });
 
 watch(() => props.group.id, fetchPhaseData, { immediate: true });

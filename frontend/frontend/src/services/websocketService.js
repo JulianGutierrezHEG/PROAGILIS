@@ -1,8 +1,10 @@
 import EventBus from './eventBus';
 
+// FONCTIONS POUR LA GESTION DES WEBSOCKETS
+
 const sockets = {};
 
-// Connecte un WebSocket en utilisant un identifiant et un type spécifiques.
+// Connecte un WebSocket en utilisant un identifiant et un type spécifiques
 const connectWebSocket = (id, type) => {
   if (!id) return;
   const socketKey = `${type}-${id}`;
@@ -33,7 +35,7 @@ const connectWebSocket = (id, type) => {
   sockets[socketKey] = socket;
 };
 
-// Déconnecte un WebSocket en utilisant un identifiant et un type spécifiques.
+// Déconnecte un WebSocket en utilisant un identifiant et un type spécifiques
 const disconnectWebSocket = (id, type) => {
   const socketKey = `${type}-${id}`;
   if (sockets[socketKey]) {
@@ -43,7 +45,7 @@ const disconnectWebSocket = (id, type) => {
   }
 };
 
-// Déconnecte tous les WebSockets.
+// Déconnecte tous les WebSockets
 const disconnectAll = () => {
   Object.keys(sockets).forEach((key) => {
     console.log(`Déconnexion du WebSocket pour l'ID : ${key}`);
@@ -54,7 +56,7 @@ const disconnectAll = () => {
   });
 };
 
-// Envoie un message à un WebSocket spécifique.
+// Envoie un message à un WebSocket spécifique
 const sendMessage = (id, message) => {
   Object.keys(sockets).forEach((key) => {
     if (key.includes(id) && sockets[key].readyState === WebSocket.OPEN) {
@@ -64,7 +66,7 @@ const sendMessage = (id, message) => {
   });
 };
 
-// Adds a message event listener to a WebSocket by ID.
+// Ajoute un écouteur d'événements de message à un WebSocket avec ID
 const onMessage = (id, callback) => {
   Object.keys(sockets).forEach((key) => {
     if (key.includes(id)) {
@@ -73,7 +75,7 @@ const onMessage = (id, callback) => {
   });
 };
 
-// Removes a message event listener from a WebSocket by ID.
+// Supprime un écouteur d'événements de message à un WebSocket avec ID
 const offMessage = (id, callback) => {
   Object.keys(sockets).forEach((key) => {
     if (key.includes(id)) {
@@ -85,38 +87,40 @@ const offMessage = (id, callback) => {
 // Vérifie si un WebSocket est connecté en utilisant un identifiant spécifique.
 const isConnected = (id) => !!Object.keys(sockets).find(key => key.includes(id));
 
+// Envoi du message de verrouillage d'un élément
 const lockElement = (groupId, elementId, user) => {
-  console.log(`Sending lock event by: ${user}`); 
   sendMessage(groupId, { event: 'lock_element', element_id: elementId, user });
 };
 
+// Envoi du message de déverrouillage d'un élément
 const unlockElement = (groupId, elementId, user) => {
-  console.log(`Sending unlock event by: ${user}`); 
   sendMessage(groupId, { event: 'unlock_element', element_id: elementId, user });
 };
 
+// Envoi du message de mise à jour des détails du projet
 const updateProjectDetails = (groupId, projectName, roles, user) => {
-  console.log(`Sending project update by: ${user}`);
   sendMessage(groupId, { event: 'project_update', projectName, roles, user });
 };
 
+// Envoi du message de soumission des données du projet
 const submitProjectData = (groupId, projectData, user) => {
-  console.log(`Submitting project data by: ${user}`);
   sendMessage(groupId, { event: 'submit_project_data', projectData, user });
 };
 
+// Envoi du message d'affichage de l'écran d'attente
 const showWaitingScreen = (groupId, user) => {
-  console.log(`Sending waiting screen event to group: ${groupId}`);
   sendMessage(groupId, { event: 'show_waiting_screen', user });
 };
 
+// Envoi du message de mise à jour de l'état de la phase
 const sendPhaseStatusUpdate = (groupId, phaseId, status) => {
-  console.log(`Sending phase status update for group: ${groupId}, phase: ${phaseId}, status: ${status}`);
+  console.log(`Envoi du statut de la phase pour le groupe: ${groupId}, phase: ${phaseId}, status: ${status}`);
   sendMessage(groupId, { event: 'phase_status_update', group_id: groupId, phase_id: phaseId, status });
 };
 
+// Envoi du message de mise à jour de la réponse de la phase
 const sendPhaseAnswerUpdate = (groupId, phaseId, answerData) => {
-  console.log(`Sending phase answer update for group: ${groupId}, phase: ${phaseId}`);
+  console.log(`Envoi de la réponse de la phase du groupe: ${groupId}, phase: ${phaseId}`);
   sendMessage(groupId, { event: 'phase_answer_update', group_id: groupId, phase_id: phaseId, answer: answerData });
 };
 

@@ -9,13 +9,13 @@
       <div class="mb-6">
         <label class="block text-gray-700 font-medium mb-2">Groupes</label>
         <div class="flex space-x-4">
-          <div class="w-1/2">
+            <div class="w-1/2">
             <label for="number-of-groups" class="block text-gray-700 mb-1">Nombre de Groupes</label>
-            <input type="number" id="number-of-groups" v-model="numberOfGroups" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
+            <input type="number" id="number-of-groups" v-model="numberOfGroups" min="1" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
           </div>
           <div class="w-1/2">
             <label for="group-size" class="block text-gray-700 mb-1">Taille du Groupe</label>
-            <input type="number" id="group-size" v-model="groupSize" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
+            <input type="number" id="group-size" v-model="groupSize" min="1" class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600">
           </div>
         </div>
       </div>
@@ -49,12 +49,12 @@ const createSession = async () => {
     group_size: groupSize.value,
     password: sessionPassword.value,
   };
-
   try {
-    const response = await sessionsService.createSession(sessionData);
+    await sessionsService.createSession(sessionData);
     router.push('/dashboard'); 
   } catch (error) {
-    console.error('Error creating session:', error.message);
+    console.log("Erreur lors de la création de la session:",error);
   }
+
 };
 </script>

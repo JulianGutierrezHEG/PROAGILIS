@@ -2,6 +2,17 @@ from backend.base_consumers import BaseConsumer
 from channels.db import database_sync_to_async
 from games_sessions.models import Group
 
+# Consumer pour les groupes
+# Evenements :
+# - user_joined_group : envoi de la notification d'ajout d'un utilisateur à un groupe
+# - user_left_group : envoi de la notification de départ d'un utilisateur d'un groupe
+# - lock_element : envoi de la notification de verrouillage d'un élément de l'inteface
+# - unlock_element : envoi de la notification de déverrouillage d'un élément de l'inteface
+# - show_waiting_screen : envoi de la notification d'affichage de l'écran d'attente au groupe
+# - phase_status_update : envoi de la notification de mise à jour de l'état de la phase
+# - phase_answer_update : envoi de la notification de mise à jour de la réponse de la phase
+# - project_update : envoi de la notification de mise à jour du projet
+# - send_group_members_update : envoi de la notification de mise à jour des membres du groupe
 class GroupConsumer(BaseConsumer):
     def get_group_name(self):
         return f"group_{self.scope['url_route']['kwargs']['group_id']}"
@@ -28,7 +39,7 @@ class GroupConsumer(BaseConsumer):
                 }
             )
         except Exception as e:
-            print(f"Error in lock_element: {e}")
+            print(f"Erreur dans lock_element: {e}")
 
     async def unlock_element(self, event):
         try:
@@ -42,7 +53,7 @@ class GroupConsumer(BaseConsumer):
                 }
             )
         except Exception as e:
-            print(f"Error in unlock_element: {e}")
+            print(f"Erreur dans lock_element: {e}")
     
     async def show_waiting_screen(self, event):
         await self.channel_layer.group_send(
@@ -121,6 +132,10 @@ class GroupConsumer(BaseConsumer):
         users = await database_sync_to_async(list)(group.users.values('id', 'username'))
         await self.send_message('group_members_update', {'members': users})
 
+# Consumer pour les sessions
+# Evenements : 
+# - session_status_update : envoi de l'état de la session
+# - session_deleted : envoi de la suppression de la session
 class SessionConsumer(BaseConsumer):
     def get_group_name(self):
         return f"session_{self.scope['url_route']['kwargs']['session_id']}"

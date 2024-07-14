@@ -170,13 +170,9 @@ const submitProjectData = async () => {
       websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
     }
   } catch (error) {
-    console.error('Error submitting project data:', error);
+    console.error('Erreur lors de la soumission des données du projet:', error);
   }
-
   EventBus.emit('updateProjectData', answerData);
-
-  const developers = roles.value.developers;
-  console.log(`Nom du projet: ${projectName.value}\n\nRôles:\nProduct Owner: ${roles.value.productOwner || 'Personne n\'est assigné à ce rôle'}\nScrum Master: ${roles.value.scrumMaster || 'Personne n\'est assigné à ce rôle'}\nDéveloppeurs: ${developers.length ? developers.join(', ') : 'Personne n\'est assigné à ce rôle'}`);
 };
 
 

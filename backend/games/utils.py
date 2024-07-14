@@ -3,6 +3,7 @@ from games_sessions.models import Group
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
+# Met à jour le statut d'une phase de jeu pour un groupe 
 def update_group_phase_status(group, phase, status, answer=None):
     group_phase_status, created = GroupPhaseStatus.objects.get_or_create(
         group=group,
@@ -15,7 +16,6 @@ def update_group_phase_status(group, phase, status, answer=None):
             group_phase_status.answer = answer
         group_phase_status.save()
     
-    # Send WebSocket message
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
         f"phase_{group.id}",

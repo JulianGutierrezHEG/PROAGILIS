@@ -17,7 +17,6 @@
         <h2 class="font-bold text-xl mb-4 text-center">{{ selectedSession.name }} </h2>
         <p class="text-center mb-10">Mot de passe: {{ selectedSession.password }}</p>
         <div class="flex justify-center mb-4 space-x-10">
-          <img src="https://cdn-icons-png.flaticon.com/512/25/25442.png" alt="settings" class="w-6 h-6 cursor-pointer">
           <img v-if="selectedSession.status !== 'active'"
                src="https://cdn-icons-png.flaticon.com/512/727/727245.png" 
                alt="start" 
@@ -99,35 +98,31 @@ const selectGroup = (group) => {
 watch(selectedSession, (newSession, oldSession) => {
   if (oldSession) {
     oldSession.groups.forEach(group => {
-      console.log('Disconnecting WebSocket for group:', group.id);
+      console.log('Websocket déconnexion pour le groupe:', group.id);
       websocketService.disconnectGroup(group.id);
     });
-    console.log('Disconnecting WebSocket for session:', oldSession.id);
+    console.log('Websocket déconnexion pour la session:', oldSession.id);
     websocketService.disconnectSession(oldSession.id);
   }
   if (newSession) {
     newSession.groups.forEach(group => {
-      console.log('Connecting WebSocket for group:', group.id);
+      console.log('WebSocket connexion pour le groupe:', group.id);
       websocketService.connectGroup(group.id);
     });
-    console.log('Connecting WebSocket for session:', newSession.id);
+    console.log('WebSocket connexion pour la session:', newSession.id);
     websocketService.connectSessionStatus(newSession.id);
   }
 }, { immediate: true });
 
 watch(groups, (newGroups) => {
-  console.log('Groups updated:', newGroups);
+  console.log('Groupes mis à jour:', newGroups);
 });
 
 onMounted(async () => {
-  console.log('Fetching created sessions...');
   await fetchCreatedSessions(); 
   setupEventListeners();
-  console.log('Sessions:', sessions.value);
-
   if (sessions.value.length > 0) {
     selectedSession.value = sessions.value[0];
-    console.log('Selected session:', selectedSession.value);
     await fetchGroups();
   }
 });

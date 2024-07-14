@@ -67,7 +67,6 @@ const goToDashboard = () => {
 
 const goToGameSession = () => {
   if (joinedSession.value) {
-    console.log('Navigating to game session:', joinedSession.value.id);
     router.push(`/game/${joinedSession.value.id}`);
   }
 };

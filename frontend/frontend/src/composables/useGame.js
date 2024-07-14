@@ -4,6 +4,8 @@ import gamesService from '@/services/gamesService';
 import usersService from '@/services/usersService';
 import EventBus from '@/services/eventBus';
 
+// COMPOSABLE POUR LES PARTIES, UTILISEE DANS LES VUES
+
 export function useGame(groupId, group) {
   const groupMembers = ref([]);
   const lockedElements = ref({});
@@ -21,25 +23,27 @@ export function useGame(groupId, group) {
     developers: []
   });
 
+  // Récupère les membres du groupe
   const fetchGroupMembers = async () => {
     try {
       const members = await gamesService.getGroupMembers();
       groupMembers.value = members;
     } catch (error) {
-      console.error('Error fetching group members:', error);
+      console.error('Erreur lors de la récupération des membres du groupe:', error);
     }
   };
 
+  // Récupère l'utilisateur actuel
   const fetchCurrentUser = async () => {
     try {
       const user = await usersService.getCurrentUser();
       currentUser.value = user.username;
-      console.log('Current user:', currentUser.value);
     } catch (error) {
-      console.error('Error fetching current user:', error);
+      console.error('Erreur lors de la récupération de l\'utilisateur actuel:', error);
     }
   };
 
+  // Récupère la phase actuelle
   const fetchCurrentPhase = async () => {
     try {
       isLoadingPhaseDetails.value = true; 
@@ -54,27 +58,40 @@ export function useGame(groupId, group) {
         const phaseDetails = await gamesService.getPhaseDetails(phaseStatus.phase);
         currentPhaseDetails.value = phaseDetails;
       }
-      console.log('Current phase:', currentPhase.value);
-      console.log('Current phase details:', currentPhaseDetails.value);
+      console.log('Phase actuelle:', currentPhase.value);
+      console.log('Détails de la phase actuelle:', currentPhaseDetails.value);
     } catch (error) {
-      console.error('Error fetching current phase:', error);
+      console.error('Erreur lors de la récupération de la phase actuelle:', error);
     } finally {
       isLoadingPhaseDetails.value = false; 
     }
   };
 
+  // Récupère les détails d'une phase spécifique
+  const fetchPhaseDetails = async (phaseId) => {
+      try {
+        const phaseDetails = await gamesService.getPhaseDetails(phaseId);
+        return phaseDetails;
+      } catch (error) {
+        console.error('Erreur lors de la récupération des détails de la phase:', error);
+        return null;
+      }
+  };
+
+  // Récupère les statuts des phases du groupe
   const fetchGroupPhasesStatus = async (groupId) => {
     try {
       const response = await gamesService.getGroupPhasesStatus(groupId);
       phasesStatus.value = response;
       return response;
     } catch (error) {
-      console.error('Error fetching group phases status:', error);
+      console.error('Erreur lors de la récupération des statuts des phases du groupe:', error);
     }
   };
 
+  // Mise en place des websockets et des événements
   const setupWebSocket = () => {
-    console.log('Setting up WebSocket for group:', groupId);
+    console.log('Mise en place du WebSocket pour le groupe:', groupId);
     websocketService.connectGroup(groupId);
 
     EventBus.on('lock_element', handleLockElement);
@@ -86,8 +103,9 @@ export function useGame(groupId, group) {
     EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
   };
 
+  // Nettoyage des websockets et des événements
   const cleanupWebSocket = () => {
-    console.log('Cleaning up WebSocket for group:', groupId);
+    console.log('Nettoyage du WebSocket pour le groupe:', groupId);
     websocketService.disconnectGroup(groupId);
 
     EventBus.off('lock_element', handleLockElement);
@@ -99,24 +117,27 @@ export function useGame(groupId, group) {
     EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
   };
 
+  // Mis à jour du projet
   const handleProjectUpdate = (data) => {
     projectName.value = data.projectName;
     roles.value = data.roles;
-    console.log(`Project updated by: ${data.user}`);
+    console.log(`Projet mis à jour par: ${data.user}`);
   };
   
+  // Utilisateur rejoint le groupe
   const handleUserJoinedGroup = (data) => {
-    console.log('User joined group:', data);
+    console.log('Un utilisateur a rejoint le groupe:', data);
     fetchGroupMembers();
   };
   
+  // Utilisateur quitte le groupe
   const handleUserLeftGroup = (data) => {
-    console.log('User left group:', data);
+    console.log('Un utilisateur a quitté le groupe:', data);
     fetchGroupMembers();
   };
 
+  // Mis à jour du statut de la phase
   const handlePhaseStatusUpdate = (data) => {
-    console.log('Phase status updated via WebSocket:', data);
     if (data.group_id === group.id && data.phase_id === currentPhaseDetails.value.id) {
       if (data.status === 'wrong') {
         waiting.value = false;
@@ -124,66 +145,73 @@ export function useGame(groupId, group) {
     }
   };
   
+  // Mis à jour de la réponse de la phase
   const handlePhaseAnswerUpdate = (data) => {
-    console.log('Phase answer updated via WebSocket in PhaseOne:', data);
+    console.log('Websocket envoie de la réponse de la phase:', data);
   };
 
+  // Verrouille un élément
   const handleLockElement = (data) => {
-    console.log(`Element locked by: ${data.user}`);
     lockedElements.value = { ...lockedElements.value, [data.element_id]: data.user };
   };
 
+  // Déverrouille un élément
   const handleUnlockElement = (data) => {
-    console.log(`Element unlocked by: ${data.user}`);
     const updatedLockedElements = { ...lockedElements.value };
     delete updatedLockedElements[data.element_id];
     lockedElements.value = updatedLockedElements;
   };
 
+  // Verrouille un élément (websockets)
   const lockElement = (elementId) => {
     if (currentUser.value) {
       websocketService.lockElement(groupId, elementId, currentUser.value);
     } else {
-      console.error('Current user is not set.');
+      console.error('L\'utilisateur actuel n\'est pas défini.');
     }
   };
 
+  // Déverrouille un élément (websockets)
   const unlockElement = (elementId) => {
     if (currentUser.value) {
       websocketService.unlockElement(groupId, elementId, currentUser.value);
     } else {
-      console.error('Current user is not set.');
+      console.error('L\'utilisateur actuel n\'est pas défini.');
     }
   };
 
+  // Soumet une réponse de groupe
   const submitGroupAnswer = async (answerData) => {
     try {
       await gamesService.submitAnswer(groupId, answerData, currentUser.value);
     } catch (error) {
-      console.error('Error submitting group answer:', error);
+      console.error('Erreur lors de la soumission de la réponse du groupe:', error);
     }
   };
 
+  // Récupère les phases du jeu
   const fetchPhases = async () => {
     try {
       const response = await gamesService.fetchPhases();  
       phases.value = response;
       return phases.value;
     } catch (error) {
-      console.error('Error fetching phases:', error);
+      console.error('Erreur lors de la récupération des phases:', error);
     }
   };
 
-  const fetchGroupCurrentPhaseAnswer = async (groupId) => {
+  // Récupère la réponse d'une phase d'un groupe
+  const fetchGroupPhaseAnswer = async (groupId, phaseId) => {
     try {
-      const response = await gamesService.getGroupCurrentPhaseAnswer(groupId);
+      const response = await gamesService.getGroupPhaseAnswer(groupId, phaseId);
       return response;
     } catch (error) {
-      console.error('Error fetching group current phase answer:', error);
+      console.error('Erreur lors de la récupération de la réponse de la phase du groupe:', error);
       return null;
     }
   };
 
+  // Valide une phase
   const validatePhase = async (groupId, phaseId, isCorrect, answerData) => {
     try {
       const status = isCorrect ? 'completed' : 'wrong';
@@ -201,14 +229,16 @@ export function useGame(groupId, group) {
         waiting.value = false;
       }
     } catch (error) {
-      console.error('Error validating phase:', error);
+      console.error('Erreur lors de la validation de la phase:', error);
     }
   };
+
+  // Affiche l'écran d'attente
   const showWaitingScreen = () => {
     if (currentUser.value) {
       websocketService.showWaitingScreen(groupId, currentUser.value);
     } else {
-      console.error('Current user is not set.');
+      console.error('L\'utilisateur actuel n\'est pas défini.');
     }
   };
 
@@ -236,9 +266,10 @@ export function useGame(groupId, group) {
     showWaitingScreen,
     fetchCurrentPhase,
     submitGroupAnswer,
-    fetchGroupCurrentPhaseAnswer,
+    fetchGroupPhaseAnswer,
     fetchGroupPhasesStatus,
     fetchPhases,
+    fetchPhaseDetails,
     validatePhase,
   };
 }

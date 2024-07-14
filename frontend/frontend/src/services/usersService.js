@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// utilisation de djoser: Permet de récupérer les informations de l'utilisateur connecté
 const getCurrentUser = async () => {
   try {
     const response = await axios.get('/api/users/auth/users/me/');

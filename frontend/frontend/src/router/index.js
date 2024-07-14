@@ -5,10 +5,8 @@ import SignIn from '@/views/SignIn.vue';
 import SignUp from '@/views/SignUp.vue';
 import Dashboard from '@/views/Dashboard.vue';  
 import Game from '@/views/Game.vue';
-import WaitingScreen from '@/views/WaitingScreen.vue';  
 import userService from '@/services/usersService';
 import sessionsService from '@/services/sessionsService';
-import PhaseOne from '@/components/phases/PhaseOne.vue';
 
 const routes = [
   {
@@ -40,24 +38,7 @@ const routes = [
       {
         path: 'game/:sessionId',
         component: Game,
-        meta: { requiresAuth: true },
-        children: [
-          {
-            path: '',
-            name: 'Game',
-            component: WaitingScreen,
-          },
-          {
-            path: 'phase-one',
-            name: 'PhaseOne',
-            component: PhaseOne,
-          },
-          {
-            path: 'waiting-screen',
-            name: 'WaitingScreen',
-            component: WaitingScreen,
-          },
-        ]
+        meta: { requiresAuth: true }
       },
     ],
   },
@@ -89,7 +70,7 @@ router.beforeEach(async (to, from, next) => {
           next({ name: 'Home' });
         }
       } catch (error) {
-        console.error('Error in route guard:', error);
+        console.error('Erreur lors du route guard:', error);
         next({ name: 'Home' });
       }
     } else {

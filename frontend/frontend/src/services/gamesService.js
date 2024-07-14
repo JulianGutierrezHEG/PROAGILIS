@@ -1,10 +1,14 @@
 import axios from 'axios';
 
+// FONCTIONS POUR LA GESTION DES PARTIES ET LEUR APPEL API VIA AXIOS
+
+// Gère les erreurs renvoyées par Axios
 const handleAxiosError = (error) => {
-  const errorMessage = error.response?.data?.detail || 'Unknown error occurred';
+  const errorMessage = error.response?.data?.detail || 'Erreur inconnue';
   throw new Error(errorMessage);
 };
 
+// Récupère les détails d'une phase
 const getPhaseDetails = async (phaseId) => {
   try {
     const response = await axios.get(`/api/games/phase/${phaseId}/`);
@@ -14,6 +18,7 @@ const getPhaseDetails = async (phaseId) => {
   }
 };
 
+// Récupère les membres d'un groupe
 const getGroupMembers = async () => {
   try {
     const response = await axios.get('/api/games/group/members/');
@@ -24,6 +29,7 @@ const getGroupMembers = async () => {
   }
 };
 
+// Récupère la phase actuelle d'un groupe
 const getGroupCurrentPhase = async (groupId) => {
   try {
     const response = await axios.get(`/api/games/group/${groupId}/current-phase/`);
@@ -33,6 +39,7 @@ const getGroupCurrentPhase = async (groupId) => {
   }
 };
 
+// Soumet une réponse à une phase
 const submitAnswer = async (groupId, answerData, user) => {
   try {
     const response = await axios.post(`/api/games/group/${groupId}/submit-answer/`, {
@@ -45,6 +52,7 @@ const submitAnswer = async (groupId, answerData, user) => {
   }
 };
 
+// Récupère les phases du jeu
 const fetchPhases = async () => {
   try {
     const response = await axios.get('/api/games/phases/');
@@ -54,15 +62,17 @@ const fetchPhases = async () => {
   }
 };
 
-const getGroupCurrentPhaseAnswer = async (groupId) => {
+// Récupère la réponse à une phase d'un groupe
+const getGroupPhaseAnswer = async (groupId, phaseId) => {
   try {
-    const response = await axios.get(`/api/games/group/${groupId}/current-phase/answer/`);
+    const response = await axios.get(`/api/games/group/${groupId}/phase/${phaseId}/answer/`);
     return response.data;
   } catch (error) {
     handleAxiosError(error);
   }
 };
 
+// Récupère le statut des phases d'un groupe
 const getGroupPhasesStatus = async (groupId) => {
   try {
     const response = await axios.get(`/api/games/group/${groupId}/phases-status/`);
@@ -72,7 +82,7 @@ const getGroupPhasesStatus = async (groupId) => {
   }
 };
 
-
+// Met à jour le statut d'une phase
 const updatePhaseStatus = async (groupId, phaseId, status) => {
   try {
     const response = await axios.post(`/api/games/group/${groupId}/phase/${phaseId}/update-status/`, { status });
@@ -82,6 +92,7 @@ const updatePhaseStatus = async (groupId, phaseId, status) => {
   }
 };
 
+// Crée un projet pour un groupe
 const createProject = async (groupId, answerData) => {
   try {
     const response = await axios.post(`/api/games/group/${groupId}/create-project/`, answerData);
@@ -96,7 +107,7 @@ export default {
   getGroupCurrentPhase,
   getPhaseDetails,
   submitAnswer,
-  getGroupCurrentPhaseAnswer,
+  getGroupPhaseAnswer,
   getGroupPhasesStatus,
   fetchPhases,
   updatePhaseStatus,
