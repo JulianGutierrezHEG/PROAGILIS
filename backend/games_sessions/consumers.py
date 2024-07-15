@@ -131,6 +131,49 @@ class GroupConsumer(BaseConsumer):
         group = await database_sync_to_async(Group.objects.get)(id=group_id)
         users = await database_sync_to_async(list)(group.users.values('id', 'username'))
         await self.send_message('group_members_update', {'members': users})
+    
+    async def phase_inputs_update(self, event):
+        await self.channel_layer.group_send(
+            self.get_group_name(),
+            {
+                'type': 'phase_inputs_update_broadcast',
+                'event': 'phase_inputs_update',
+                'group_id': event['group_id'],
+                'phase_id': event['phase_id'],
+                'phase_inputs': event['phase_inputs'],
+                'user': event['user']
+            }
+        )
+
+    async def phase_inputs_update_broadcast(self, event):
+        await self.send_message('phase_inputs_update', {
+            'group_id': event['group_id'],
+            'phase_id': event['phase_id'],
+            'phase_inputs': event['phase_inputs'],
+            'user': event['user']
+        })
+
+    async def submit_phase_answer(self, event):
+        await self.channel_layer.group_send(
+            self.get_group_name(),
+            {
+                'type': 'submit_phase_answer_broadcast',
+                'event': 'submit_phase_answer',
+                'group_id': event['group_id'],
+                'phase_id': event['phase_id'],
+                'answer': event['answer'],
+                'user': event['user']
+            }
+        )
+
+    async def submit_phase_answer_broadcast(self, event):
+        await self.send_message('submit_phase_answer', {
+            'group_id': event['group_id'],
+            'phase_id': event['phase_id'],
+            'answer': event['answer'],
+            'user': event['user']
+        })
+
 
 # Consumer pour les sessions
 # Evenements : 

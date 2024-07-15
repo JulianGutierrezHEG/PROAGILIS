@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.locked {
+    background-color: rgba(211, 211, 211, 0.5); 
+    border-color: #a9a9a9; 
+    pointer-events: none; 
+    opacity: 0.7; 
+    position: relative;
+  }
+  
+.locked:after {
+    content: "Bloqué"; 
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: red;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.7); 
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 10; 
+}
+  
+
+.custom-button:hover {
+    background-color: #3b82f6; 
+  }
+  
+.custom-button:active, .custom-button:focus {
+    background-color: #2563eb; 
+    transform: scale(1); 
+    outline: none; 
+}
+  
+.custom-button {
+    width: 100%; 
+    padding: 12px 24px; 
+}

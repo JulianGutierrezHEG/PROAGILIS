@@ -79,13 +79,29 @@ class StartSessionView(APIView):
         session.status = 'active'
         session.save()
 
-        phase_one = get_object_or_404(GamePhase, id=1)
         for group in session.groups.all():
-            group_phase_status, created = GroupPhaseStatus.objects.get_or_create(group=group, phase=phase_one)
-            if created or group_phase_status.status in ['pending', 'not_started']:
+            # Fetch the current phase status for the group
+            group_phase_status = GroupPhaseStatus.objects.filter(group=group).order_by('-phase_id').first()
+
+            if group_phase_status:
+                # If the current phase is in_progress, keep it as is
+                if group_phase_status.status == 'in_progress' or group_phase_status.status == 'pending' or group_phase_status.status == 'wrong':
+                    group.current_phase = group_phase_status.phase
+                else:
+                    # Otherwise, set the status of the first phase to in_progress
+                    phase_one = get_object_or_404(GamePhase, id=1)
+                    group_phase_status, created = GroupPhaseStatus.objects.get_or_create(group=group, phase=phase_one)
+                    group_phase_status.status = 'in_progress'
+                    group_phase_status.save()
+                    group.current_phase = phase_one
+            else:
+                # If there's no phase status, initialize with phase one
+                phase_one = get_object_or_404(GamePhase, id=1)
+                group_phase_status, created = GroupPhaseStatus.objects.get_or_create(group=group, phase=phase_one)
                 group_phase_status.status = 'in_progress'
                 group_phase_status.save()
-            group.current_phase = phase_one
+                group.current_phase = phase_one
+
             group.save()
 
         channel_layer = get_channel_layer()
@@ -99,6 +115,7 @@ class StartSessionView(APIView):
         )
 
         return Response({'status': 'Session commencée'}, status=status.HTTP_200_OK)
+
 
 # Met en pause une session
 class StopSessionView(APIView):

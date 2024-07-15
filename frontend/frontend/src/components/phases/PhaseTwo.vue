@@ -13,33 +13,33 @@
           <label for="specific" class="block text-gray-700 text-lg">Spécifique</label>
           <textarea id="specific" v-model="smartObjectives.specific" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
                     :class="{ locked: lockedElements.specific && lockedElements.specific !== currentUser }"
-                    @focus="lock('specific')" @blur="unlock('specific')" required></textarea>
+                    @focus="lock('specific')" @blur="unlock('specific')" @input="updatePhaseInputs" required></textarea>
         </div>
         <div class="mb-6">
           <label for="measurable" class="block text-gray-700 text-lg">Mesurable</label>
           <textarea id="measurable" v-model="smartObjectives.measurable" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
                     :class="{ locked: lockedElements.measurable && lockedElements.measurable !== currentUser }"
-                    @focus="lock('measurable')" @blur="unlock('measurable')" required></textarea>
+                    @focus="lock('measurable')" @blur="unlock('measurable')" @input="updatePhaseInputs" required></textarea>
         </div>
         <div class="mb-6">
           <label for="achievable" class="block text-gray-700 text-lg">Atteignable</label>
           <textarea id="achievable" v-model="smartObjectives.achievable" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
                     :class="{ locked: lockedElements.achievable && lockedElements.achievable !== currentUser }"
-                    @focus="lock('achievable')" @blur="unlock('achievable')" required></textarea>
+                    @focus="lock('achievable')" @blur="unlock('achievable')" @input="updatePhaseInputs" required></textarea>
         </div>
         <div class="mb-6">
           <label for="relevant" class="block text-gray-700 text-lg">Pertinent</label>
           <textarea id="relevant" v-model="smartObjectives.relevant" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
                     :class="{ locked: lockedElements.relevant && lockedElements.relevant !== currentUser }"
-                    @focus="lock('relevant')" @blur="unlock('relevant')" required></textarea>
+                    @focus="lock('relevant')" @blur="unlock('relevant')" @input="updatePhaseInputs" required></textarea>
         </div>
         <div class="mb-6">
           <label for="timeBound" class="block text-gray-700 text-lg">Délimité dans le temps</label>
           <textarea id="timeBound" v-model="smartObjectives.timeBound" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
                     :class="{ locked: lockedElements.timeBound && lockedElements.timeBound !== currentUser }"
-                    @focus="lock('timeBound')" @blur="unlock('timeBound')" required></textarea>
+                    @focus="lock('timeBound')" @blur="unlock('timeBound')" @input="updatePhaseInputs" required></textarea>
         </div>
-        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+        <button @click.prevent="submitProjectData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
           Soumettre
         </button>
       </form>
@@ -48,10 +48,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useGame } from '@/composables/useGame';
 import WaitingScreen from '@/views/WaitingScreen.vue';
-import gamesService from '@/services/gamesService';
 import websocketService from '@/services/websocketService';
 import EventBus from '@/services/eventBus';
 
@@ -74,10 +73,10 @@ const {
   cleanupWebSocket, 
   lockElement, 
   unlockElement, 
-  submitGroupAnswer,
+  checkValidationAndSendAnswer,
   showWaitingScreen,
   fetchCurrentPhase
-} = useGame(props.group.id,props.group);
+} = useGame(props.group.id, props.group);
 
 const smartObjectives = ref({
   specific: '',
@@ -95,7 +94,16 @@ const unlock = (elementId) => {
   unlockElement(elementId);
 };
 
+const updatePhaseInputs = () => {
+  websocketService.updatePhaseInputs(props.group.id, currentPhaseDetails.value.id, smartObjectives.value, currentUser.value);
+  console.log('SMART Objectives:', smartObjectives.value);
+};
+
 const submitForm = async () => {
+  console.log('SMART Objectives:', smartObjectives.value);
+};
+
+const submitProjectData = async () => {
   showWaitingScreen(props.group.id, currentUser.value);
 
   const answerData = {
@@ -106,81 +114,21 @@ const submitForm = async () => {
     timeBound: smartObjectives.value.timeBound
   };
 
-  try {
-    await submitGroupAnswer(answerData);
-
-    if (currentPhaseDetails.value.requires_validation) {
-      websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseDetails.value.id, 'pending');
-      websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
-    } else {
-      const nextPhaseId = currentPhaseDetails.value.id + 1;
-      await gamesService.updatePhaseStatus(props.group.id, currentPhaseDetails.value.id, 'completed');
-      websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseDetails.value.id, 'completed');
-
-      await gamesService.updatePhaseStatus(props.group.id, nextPhaseId, 'in_progress');
-      websocketService.sendPhaseStatusUpdate(props.group.id, nextPhaseId, 'in_progress');
-
-      websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
-    }
-  } catch (error) {
-    console.error('Error submitting SMART objectives:', error);
-  }
+  await checkValidationAndSendAnswer(answerData);
 
   EventBus.emit('updateSMARTObjectives', answerData);
 };
 
 onMounted(async () => {
-  fetchGroupMembers();
   setupWebSocket();
+  fetchGroupMembers();
   await fetchCurrentPhase();
-  EventBus.on('show_waiting_screen', () => {
-    waiting.value = true;
-  });
+  EventBus.on('inputs_update', updatePhaseInputs);
 });
 
 onUnmounted(() => {
   cleanupWebSocket();
-  EventBus.off('show_waiting_screen', () => {
-    waiting.value = true;
-  });
+  EventBus.off('inputs_update', updatePhaseInputs);
 });
 </script>
 
-<style scoped>
-.locked {
-  background-color: rgba(211, 211, 211, 0.5); 
-  border-color: #a9a9a9; 
-  pointer-events: none; 
-  opacity: 0.7; 
-  position: relative;
-}
-
-.locked:after {
-  content: "Bloqué"; 
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: red;
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.7); 
-  padding: 2px 6px;
-  border-radius: 4px;
-  z-index: 10; 
-}
-
-button:hover {
-  background-color: #3b82f6; 
-}
-
-button:active, button:focus {
-  background-color: #2563eb; 
-  transform: scale(1); 
-  outline: none; 
-}
-
-button {
-  width: 100%; 
-  padding: 12px 24px; 
-}
-</style>

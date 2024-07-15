@@ -107,6 +107,12 @@ const submitProjectData = (groupId, projectData, user) => {
   sendMessage(groupId, { event: 'submit_project_data', projectData, user });
 };
 
+
+// Envoi du message de soumission de la réponse d'une phase
+const submitAnswer = (groupId, phaseId, answerData, user) => {
+  sendMessage(groupId, { event: 'phase_answer_submit', phase_id: phaseId, answer: answerData, user });
+};
+
 // Envoi du message d'affichage de l'écran d'attente
 const showWaitingScreen = (groupId, user) => {
   sendMessage(groupId, { event: 'show_waiting_screen', user });
@@ -122,6 +128,16 @@ const sendPhaseStatusUpdate = (groupId, phaseId, status) => {
 const sendPhaseAnswerUpdate = (groupId, phaseId, answerData) => {
   console.log(`Envoi de la réponse de la phase du groupe: ${groupId}, phase: ${phaseId}`);
   sendMessage(groupId, { event: 'phase_answer_update', group_id: groupId, phase_id: phaseId, answer: answerData });
+};
+
+// Envoi du message de mise à jour des détails du projet pour toutes les phases
+const updatePhaseInputs = (groupId, phaseId, phaseInputs, user) => {
+  sendMessage(groupId, { event: 'phase_inputs_update', group_id: groupId, phase_id: phaseId, phase_inputs: phaseInputs, user });
+};
+
+// Envoi du message de soumission de la réponse pour toutes les phases
+const submitPhaseAnswer = (groupId, phaseId, answerData, user) => {
+  sendMessage(groupId, { event: 'submit_phase_answer', group_id: groupId, phase_id: phaseId, answer: answerData, user });
 };
 
 export default {
@@ -141,4 +157,7 @@ export default {
   showWaitingScreen,
   sendPhaseStatusUpdate,
   sendPhaseAnswerUpdate,
+  updatePhaseInputs,
+  submitAnswer,
+  submitPhaseAnswer,
 };

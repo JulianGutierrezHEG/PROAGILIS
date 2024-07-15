@@ -25,7 +25,7 @@
           <div v-else class="flex justify-center gap-4">
             <button v-for="member in availableMembers" :key="member.id" @click="selectScrumMaster(member.username)"
                     :class="{ 'bg-blue-600 text-white': roles.scrumMaster === member.username, 'bg-gray-300': roles.scrumMaster !== member.username }"
-                    class="p-3 rounded-lg text-lg transition-colors duration-150 ease-in-out">
+                    class="p-3 rounded-lg text-lg transition-colors duration-150 ease-in-out custom-button">
               {{ member.username }}
             </button>
           </div>
@@ -40,7 +40,7 @@
           <div v-else class="flex justify-center gap-4">
             <button v-for="member in availableMembers" :key="member.id" @click="selectProductOwner(member.username)"
                     :class="{ 'bg-blue-600 text-white': roles.productOwner === member.username, 'bg-gray-300': roles.productOwner !== member.username }"
-                    class="p-3 rounded-lg text-lg transition-colors duration-150 ease-in-out">
+                    class="p-3 rounded-lg text-lg transition-colors duration-150 ease-in-out custom-button">
               {{ member.username }}
             </button>
           </div>
@@ -81,7 +81,7 @@ const {
   cleanupWebSocket, 
   lockElement, 
   unlockElement, 
-  submitGroupAnswer,
+  checkValidationAndSendAnswer,
   showWaitingScreen,
   fetchCurrentPhase
 } = useGame(props.group.id, props.group);
@@ -152,26 +152,9 @@ const submitProjectData = async () => {
     projectName: projectName.value,
     roles: roles.value,
   };
+  console.log('Answer Data:', answerData);
+  await checkValidationAndSendAnswer(answerData);
 
-  try {
-    await submitGroupAnswer(answerData);
-
-    if (currentPhaseDetails.value.requires_validation) {
-      websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseDetails.value.id, 'pending');
-      websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
-    } else {
-      const nextPhaseId = currentPhaseDetails.value.id + 1;
-      await gamesService.updatePhaseStatus(props.group.id, currentPhaseDetails.value.id, 'completed');
-      websocketService.sendPhaseStatusUpdate(props.group.id, currentPhaseDetails.value.id, 'completed');
-
-      await gamesService.updatePhaseStatus(props.group.id, nextPhaseId, 'in_progress');
-      websocketService.sendPhaseStatusUpdate(props.group.id, nextPhaseId, 'in_progress');
-
-      websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
-    }
-  } catch (error) {
-    console.error('Erreur lors de la soumission des données du projet:', error);
-  }
   EventBus.emit('updateProjectData', answerData);
 };
 
@@ -182,54 +165,9 @@ onMounted(async () => {
   fetchGroupMembers();
   setupWebSocket();
   await fetchCurrentPhase();
-  EventBus.on('show_waiting_screen', () => {
-    waiting.value = true;
-  });
 });
 
 onUnmounted(() => {
   cleanupWebSocket();
-  EventBus.off('show_waiting_screen', () => {
-    waiting.value = true;
-  });
 });
 </script>
-
-<style scoped>
-.locked {
-  background-color: rgba(211, 211, 211, 0.5); 
-  border-color: #a9a9a9; 
-  pointer-events: none; 
-  opacity: 0.7; 
-  position: relative;
-}
-
-.locked:after {
-  content: "Bloqué"; 
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: red;
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.7); 
-  padding: 2px 6px;
-  border-radius: 4px;
-  z-index: 10; 
-}
-
-button:hover {
-  background-color: #3b82f6; 
-}
-
-button:active, button:focus {
-  background-color: #2563eb; 
-  transform: scale(1); 
-  outline: none; 
-}
-
-button {
-  width: 100%; 
-  padding: 12px 24px; 
-}
-</style>

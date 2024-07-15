@@ -74,12 +74,12 @@ class GroupCurrentPhaseDetail(APIView):
 
 # Soumet une réponse pour la phase de jeu actuelle
 class SubmitAnswerView(APIView):
-    def post(self, request, group_id):
+    def post(self, request, group_id, phase_id):
         group = get_object_or_404(Group, id=group_id)
         answer = request.data.get('answer')
         user = request.data.get('user')
 
-        group_phase_status, created = GroupPhaseStatus.objects.get_or_create(group=group, phase_id=1)
+        group_phase_status, created = GroupPhaseStatus.objects.get_or_create(group=group, phase_id=phase_id)
         group_phase_status.answer = answer
         group_phase_status.status = 'pending'
         group_phase_status.save()

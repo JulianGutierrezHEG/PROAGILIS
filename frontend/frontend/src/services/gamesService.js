@@ -40,9 +40,9 @@ const getGroupCurrentPhase = async (groupId) => {
 };
 
 // Soumet une réponse à une phase
-const submitAnswer = async (groupId, answerData, user) => {
+const submitAnswer = async (groupId,phaseId, answerData, user) => {
   try {
-    const response = await axios.post(`/api/games/group/${groupId}/submit-answer/`, {
+    const response = await axios.post(`/api/games/group/${groupId}/phase/${phaseId}/submit-answer/`, {
       answer: answerData,
       user: user,
     });

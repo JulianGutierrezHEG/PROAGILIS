@@ -101,6 +101,7 @@ export function useGame(groupId, group) {
     EventBus.on('user_left_group', handleUserLeftGroup);
     EventBus.on('phase_status_update', handlePhaseStatusUpdate);
     EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
+    EventBus.on('show_waiting_screen', handleShowWaitingScreen);
   };
 
   // Nettoyage des websockets et des événements
@@ -115,6 +116,13 @@ export function useGame(groupId, group) {
     EventBus.off('user_left_group', handleUserLeftGroup);
     EventBus.off('phase_status_update', handlePhaseStatusUpdate);
     EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
+    EventBus.on('show_waiting_screen', handleShowWaitingScreen);
+
+  };
+
+  // Affiche l'écran d'attente
+  const handleShowWaitingScreen = () => {
+    waiting.value = true;
   };
 
   // Mis à jour du projet
@@ -122,6 +130,20 @@ export function useGame(groupId, group) {
     projectName.value = data.projectName;
     roles.value = data.roles;
     console.log(`Projet mis à jour par: ${data.user}`);
+  };
+
+  // Mis à jour du statut de la phase
+  const handlePhaseStatusUpdate = (data) => {
+      if (data.group_id === group.id && data.phase_id === currentPhaseDetails.value.id) {
+        if (data.status === 'wrong') {
+          waiting.value = false;
+        }
+      }
+  };
+    
+  // Mis à jour de la réponse de la phase
+  const handlePhaseAnswerUpdate = (data) => {
+      console.log('Websocket envoie de la réponse de la phase:', data);
   };
   
   // Utilisateur rejoint le groupe
@@ -134,20 +156,6 @@ export function useGame(groupId, group) {
   const handleUserLeftGroup = (data) => {
     console.log('Un utilisateur a quitté le groupe:', data);
     fetchGroupMembers();
-  };
-
-  // Mis à jour du statut de la phase
-  const handlePhaseStatusUpdate = (data) => {
-    if (data.group_id === group.id && data.phase_id === currentPhaseDetails.value.id) {
-      if (data.status === 'wrong') {
-        waiting.value = false;
-      }
-    }
-  };
-  
-  // Mis à jour de la réponse de la phase
-  const handlePhaseAnswerUpdate = (data) => {
-    console.log('Websocket envoie de la réponse de la phase:', data);
   };
 
   // Verrouille un élément
@@ -183,10 +191,34 @@ export function useGame(groupId, group) {
   // Soumet une réponse de groupe
   const submitGroupAnswer = async (answerData) => {
     try {
-      await gamesService.submitAnswer(groupId, answerData, currentUser.value);
+      const phaseId = currentPhaseDetails.value.id;
+      await gamesService.submitAnswer(groupId,phaseId, answerData, currentUser.value);
     } catch (error) {
       console.error('Erreur lors de la soumission de la réponse du groupe:', error);
     }
+  };
+
+  // Check si besoin validation et soumet les données de la phase
+  const checkValidationAndSendAnswer = async (answerData) => {
+      try {
+        await submitGroupAnswer(answerData);
+  
+        if (currentPhaseDetails.value.requires_validation) {
+          websocketService.sendPhaseStatusUpdate(groupId, currentPhaseDetails.value.id, 'pending');
+          websocketService.sendPhaseAnswerUpdate(groupId, currentPhaseDetails.value.id, answerData);
+        } else {
+          const nextPhaseId = currentPhaseDetails.value.id + 1;
+          await gamesService.updatePhaseStatus(groupId, currentPhaseDetails.value.id, 'completed');
+          websocketService.sendPhaseStatusUpdate(groupId, currentPhaseDetails.value.id, 'completed');
+  
+          await gamesService.updatePhaseStatus(groupId, nextPhaseId, 'in_progress');
+          websocketService.sendPhaseStatusUpdate(groupId, nextPhaseId, 'in_progress');
+  
+          websocketService.sendPhaseAnswerUpdate(groupId, currentPhaseDetails.value.id, answerData);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la validation et soumission des données de la phase:', error);
+      }
   };
 
   // Récupère les phases du jeu
@@ -266,6 +298,7 @@ export function useGame(groupId, group) {
     showWaitingScreen,
     fetchCurrentPhase,
     submitGroupAnswer,
+    checkValidationAndSendAnswer,
     fetchGroupPhaseAnswer,
     fetchGroupPhasesStatus,
     fetchPhases,
