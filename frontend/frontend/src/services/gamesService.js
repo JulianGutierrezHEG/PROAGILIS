@@ -102,6 +102,15 @@ const createProject = async (groupId, answerData) => {
   }
 };
 
+const fetchToCutUserStories = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/fetch-US-To-Cut/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 export default {
   getGroupMembers,
   getGroupCurrentPhase,
@@ -112,6 +121,7 @@ export default {
   fetchPhases,
   updatePhaseStatus,
   createProject,
+  fetchToCutUserStories,
 };
 
 

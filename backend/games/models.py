@@ -40,24 +40,23 @@ class GroupPhaseStatus(models.Model):
 
     def __str__(self):
         return f"{self.group.name} - {self.phase.name} ({self.status})"
+    
+class Backlog(models.Model):
+    project = models.OneToOneField(Project, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f"Backlog for {self.project.name}"
+    
 class UserStory(models.Model):
     description = models.TextField()
     business_value = models.IntegerField()
     time_estimation = models.DurationField()
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    backlog = models.ForeignKey('Backlog', on_delete=models.CASCADE, related_name='user_stories')
     is_completed = models.BooleanField(default=False)
     sprint = models.ForeignKey('Sprint', on_delete=models.SET_NULL, null=True, blank=True, related_name='stories')
 
     def __str__(self):
         return self.description
-
-class Backlog(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    user_stories = models.ManyToManyField(UserStory)
-
-    def __str__(self):
-        return f"Backlog for {self.project.name}"
 
 class Sprint(models.Model):
     start_time = models.DateTimeField()

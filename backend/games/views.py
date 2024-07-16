@@ -10,7 +10,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from games_sessions.models import Group
-from .models import GamePhase, GroupPhaseStatus,Project
+from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate
 from .serializers import GroupPhaseStatusSerializer,GamePhaseSerializer,ProjectSerializer
 from .utils import update_group_phase_status
 
@@ -40,6 +40,17 @@ class CreateProjectView(APIView):
             developers=roles.get('developers', [])
         )
 
+        backlog = Backlog.objects.create(project=project)
+
+        user_story_templates = UserStoryTemplate.objects.all()
+        for template in user_story_templates:
+            UserStory.objects.create(
+                description=template.description,
+                business_value=template.business_value,
+                time_estimation=template.time_estimation,
+                backlog=backlog
+            )
+
         group.project = project
         group.save()
 
@@ -53,7 +64,7 @@ class GroupMembersViewSet(viewsets.ViewSet):
         user = request.user
         group = Group.objects.filter(users=user).first()  
         if not group:
-            return Response({'error': 'User is not part of any group'}, status=400)
+            return Response({'error': 'L\'utilisateur n\'appartient à aucun groupe'}, status=status.HTTP_404_NOT_FOUND)
         
         members = group.users.all()
         member_data = [{'id': member.id, 'username': member.username} for member in members]
@@ -68,9 +79,9 @@ class GroupCurrentPhaseDetail(APIView):
                 serializer = GroupPhaseStatusSerializer(group_phase_status)
                 return Response(serializer.data)
             else:
-                return Response({'detail': 'Not found.'}, status=404)
+                return Response({'detail': 'Pas trouvé.'}, status=404)
         except GroupPhaseStatus.DoesNotExist:
-            return Response({'detail': 'Not found.'}, status=404)
+            return Response({'detail': 'Pas trouvé.'}, status=404)
 
 # Soumet une réponse pour la phase de jeu actuelle
 class SubmitAnswerView(APIView):
@@ -84,7 +95,7 @@ class SubmitAnswerView(APIView):
         group_phase_status.status = 'pending'
         group_phase_status.save()
 
-        return Response({'status': 'Answer submitted successfully.'}, status=status.HTTP_200_OK)
+        return Response({'status': 'Réponse soumise avec succès'}, status=status.HTTP_200_OK)
 
 # Retourne la réponse soumise pour une phase de jeu
 class GroupPhaseAnswerView(APIView):
@@ -120,7 +131,7 @@ class GroupPhasesStatusView(APIView):
             status_choices = dict(GroupPhaseStatus.STATUS_CHOICES)
             return Response({'phase_statuses': phase_status_list, 'status_choices': status_choices}, status=status.HTTP_200_OK)
         except Group.DoesNotExist:
-            return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Groupe pas trouvé'}, status=status.HTTP_404_NOT_FOUND)
 
 # Met à jour le statut d'une phase de jeu pour un groupe
 class UpdatePhaseStatusView(APIView):
@@ -130,7 +141,7 @@ class UpdatePhaseStatusView(APIView):
         new_status = request.data.get('status')
 
         if not new_status:
-            return Response({'error': 'Status is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Statut est requis'}, status=status.HTTP_400_BAD_REQUEST)
 
         update_group_phase_status(group, phase, new_status)
 
@@ -163,4 +174,22 @@ class UpdatePhaseStatusView(APIView):
                     }
                 )
 
-        return Response({'status': 'Phase status updated successfully'}, status=status.HTTP_200_OK)
+        return Response({'status': 'Statut mis à jour avec succès'}, status=status.HTTP_200_OK)
+
+class FetchToCutUserStoriesView(APIView):
+    def get(self, request, group_id):
+        group = get_object_or_404(Group, id=group_id)
+        project = group.project
+        if not project:
+            return Response({"detail": "Pas de projet trouvé pour ce groupe"}, status=status.HTTP_404_NOT_FOUND)
+        
+        backlog = project.backlog
+        if not backlog:
+            return Response({"detail": "Pas de backlog trouvé pour ce projet"}, status=status.HTTP_404_NOT_FOUND)
+
+        user_stories = backlog.user_stories.all()[:2]  
+        if len(user_stories) < 2:
+            return Response({"detail": "Pas assez d'User stories dans le backlog"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = [{"id": story.id, "description": story.description, "business_value": story.business_value, "time_estimation": story.time_estimation} for story in user_stories]
+        return Response(data, status=status.HTTP_200_OK)

@@ -1,11 +1,12 @@
 <template>
-    <div class="p-4">
-      <h2 class="text-2xl font-bold mb-4">Phase 3: Compléter le Product Backlog</h2>
-      <p class="mb-4">
-        Ajoutez au moins 5 nouvelles user stories à votre product backlog incomplet. Prenez 2 user stories existantes et divisez-les en stories plus gérables.
-      </p>
-      <p class="mb-4 text-sm text-gray-500">
-        Cliquez sur une user story existante pour la diviser.
+  <div class="p-4 overflow-auto">
+    <div v-if="waiting">
+      <WaitingScreen />
+    </div>
+    <div v-else>
+      <h2 v-if="!isLoadingPhaseDetails" class="text-3xl font-bold mb-6 text-center">{{ currentPhaseDetails.name }}</h2>
+      <p v-if="!isLoadingPhaseDetails" class="mb-6 text-center">
+        {{ currentPhaseDetails.description }}
       </p>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-2">User Stories Existantes</h3>
@@ -26,36 +27,63 @@
       </div>
       <Modal />
     </div>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue';
-  import EventBus from '@/services/eventBus';
-  import UserStoryCard from '@/components/interactables/UserStoryCard.vue';
-  import Modal from '@/components/modals/Modal.vue';
-  
-  const existingUserStories = ref([
-    { name: 'Consulter le catalogue', value: 'Haute', description: 'En tant que client, je veux pouvoir consulter le catalogue de produits pour choisir ce que je veux acheter.' },
-    { name: 'Ajouter au panier', value: 'Moyenne', description: 'En tant que client, je veux ajouter des produits à mon panier pour les acheter plus tard.' }
-  ]);
-  
-  const newUserStories = ref([]);
-  
-  const openDivideModal = (story) => {
-    EventBus.emit('open-modal', { modalType: 'userstorydivide', story });
-  };
-  
-  const openCreateModal = () => {
-    EventBus.emit('open-modal', { modalType: 'userstorycreate' });
-  };
-  
-  EventBus.on('story-submitted', ({ story, isDivide }) => {
-    if (isDivide) {
-      existingUserStories.value = existingUserStories.value.filter(s => s.name !== story.name && s.description !== story.description);
-      newUserStories.value.push({ name: story.name, value: 'Moyenne', description: story.description });
-    } else {
-      newUserStories.value.push({ name: story.name, value: 'Moyenne', description: story.description });
-    }
-  });
-  </script>
-  
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useGame } from '@/composables/useGame';
+import EventBus from '@/services/eventBus';
+import WaitingScreen from '@/views/WaitingScreen.vue';
+import UserStoryCard from '@/components/interactables/UserStoryCard.vue';
+import Modal from '@/components/modals/Modal.vue';
+
+const props = defineProps({
+  group: {
+    type: Object,
+    required: true
+  }
+});
+
+const { 
+  fetchGroupMembers, 
+  setupWebSocket, 
+  cleanupWebSocket, 
+  fetchCurrentPhase, 
+  existingUserStories, 
+  fetchUserStoriesToCut,
+  waiting, 
+  isLoadingPhaseDetails, 
+  currentPhaseDetails 
+} = useGame(props.group.id, props.group);
+
+const newUserStories = ref([]);
+
+const openDivideModal = (story) => {
+  EventBus.emit('open-modal', { modalType: 'userstorydivide', story });
+};
+
+const openCreateModal = () => {
+  EventBus.emit('open-modal', { modalType: 'userstorycreate' });
+};
+
+EventBus.on('story-submitted', ({ story, isDivide }) => {
+  if (isDivide) {
+    existingUserStories.value = existingUserStories.value.filter(s => s.id !== story.id);
+    newUserStories.value.push(story);
+  } else {
+    newUserStories.value.push(story);
+  }
+});
+
+onMounted(async () => {
+  fetchGroupMembers();
+  setupWebSocket();
+  await fetchCurrentPhase();
+  await fetchUserStoriesToCut(props.group.id);
+});
+
+onUnmounted(() => {
+  cleanupWebSocket();
+});
+</script>

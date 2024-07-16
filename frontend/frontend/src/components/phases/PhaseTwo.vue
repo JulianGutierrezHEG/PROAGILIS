@@ -52,7 +52,6 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useGame } from '@/composables/useGame';
 import WaitingScreen from '@/views/WaitingScreen.vue';
 import websocketService from '@/services/websocketService';
-import EventBus from '@/services/eventBus';
 
 const props = defineProps({
   group: {

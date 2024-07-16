@@ -29,6 +29,7 @@ export function useGame(groupId, group) {
     relevant: '',
     timeBound: ''
   });
+  const existingUserStories = ref([]);
 
   // Récupère les membres du groupe
   const fetchGroupMembers = async () => {
@@ -233,6 +234,8 @@ export function useGame(groupId, group) {
           websocketService.sendPhaseStatusUpdate(groupId, nextPhaseId, 'in_progress');
   
           websocketService.sendPhaseAnswerUpdate(groupId, currentPhaseDetails.value.id, answerData);
+
+          await gamesService.createProject(groupId, answerData);
         }
       } catch (error) {
         console.error('Erreur lors de la validation et soumission des données de la phase:', error);
@@ -292,6 +295,15 @@ export function useGame(groupId, group) {
     }
   };
 
+  const fetchUserStoriesToCut = async (groupId) => {
+    try {
+      const userStories = await gamesService.fetchToCutUserStories(groupId);
+      existingUserStories.value = userStories;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des user stories à couper:', error);
+    }
+  };
+
   onMounted(() => {
     fetchCurrentUser();
     fetchCurrentPhase();
@@ -308,6 +320,7 @@ export function useGame(groupId, group) {
     waiting,
     phasesStatus,
     phases,
+    existingUserStories,
     fetchGroupMembers,
     setupWebSocket,
     cleanupWebSocket,
@@ -322,5 +335,6 @@ export function useGame(groupId, group) {
     fetchPhases,
     fetchPhaseDetails,
     validatePhase,
+    fetchUserStoriesToCut,
   };
 }

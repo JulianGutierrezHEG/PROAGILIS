@@ -1,20 +1,74 @@
 [
     {
-        "model": "games.project",
+        "model": "games.gamephase",
         "pk": 1,
         "fields": {
-            "name": "E-commerce Project",
-            "description": "Le directeur du centre commercial Startcourt veut proposer..."
+            "name": "Création du projet",
+            "description": "Le directeur du centre commercial Startcourt veut proposer, aux boutiques qu'il héberge, un service de création de site de e-commerce. Ainsi, chaque boutique qui en fera la demande pourra avoir son propre site de vente en ligne. Il fait donc appel à votre société pour développer les sites de vente en ligne pour les boutiques qui en font la demande.\nVotre société utilisant habituellement Scrum comme méthode de gestion de projet, vous allez la mettre aussi en œuvre pour ce projet.",
+            "requires_validation": false
         }
     },
     {
-        "model": "games.sprint",
-        "pk": 1,
+        "model": "games.gamephase",
+        "pk": 2,
         "fields": {
-            "start_time": "2024-07-01T00:00:00Z",
-            "end_time": "2024-07-15T00:00:00Z",
-            "project": 1,
-            "current_progress": "0:00:00"
+            "name": "Objectif SMART",
+            "description": "Définir SMART",
+            "requires_validation": true
+        }
+    },
+    {
+        "model": "games.gamephase",
+        "pk": 3,
+        "fields": {
+            "name": "User Stories",
+            "description": "Corriger et dépcouper les US",
+            "requires_validation": true
+        }
+    },
+    {
+        "model": "games.gamephase",
+        "pk": 4,
+        "fields": {
+            "name": "Modifier les US",
+            "description": "Prioriser les US",
+            "requires_validation": true
+        }
+    },
+    {
+        "model": "games.gamephase",
+        "pk": 5,
+        "fields": {
+            "name": "Sprint Planning",
+            "description": "Planifier le sprint",
+            "requires_validation": true
+        }
+    },
+    {
+        "model": "games.gamephase",
+        "pk": 6,
+        "fields": {
+            "name": "Sprint Execution",
+            "description": "Exécuter le sprint",
+            "requires_validation": true
+        }
+    },
+    {
+        "model": "games.gamephase",
+        "pk": 7,
+        "fields": {
+            "name": "Sprint Review",
+            "description": "Revue du sprint",
+            "requires_validation": true
+        }
+    },
+    {
+        "model": "games.gamephase",
+        "pk": 8,
+        "fields": {
+            "name": "Rétrospective",
+            "description": "Rétrospective du sprint",
+            "requires_validation": true
         }
     },
     {
@@ -36,19 +90,75 @@
         }
     },
     {
-        "model": "games.backlogtemplate",
-        "pk": 1,
+        "model": "games.userstorytemplate",
+        "pk": 3,
         "fields": {
-            "user_stories": [1, 2]
+            "description": "Passer la commande",
+            "business_value": 8,
+            "time_estimation": "2:00:00"
         }
     },
     {
-        "model": "games.event",
-        "pk": 1,
+        "model": "games.userstorytemplate",
+        "pk": 4,
         "fields": {
-            "description": "Un développeur tombe malade",
-            "effect": "{\"type\": \"delay\", \"amount\": \"1:00:00\"}",
-            "sprint": 1
+            "description": "Créer un compte utilisateur",
+            "business_value": 6,
+            "time_estimation": "1:30:00"
+        }
+    },
+    {
+        "model": "games.userstorytemplate",
+        "pk": 5,
+        "fields": {
+            "description": "Rechercher un produit",
+            "business_value": 4,
+            "time_estimation": "0:45:00"
+        }
+    },
+    {
+        "model": "games.userstorytemplate",
+        "pk": 6,
+        "fields": {
+            "description": "Consulter l'historique des commandes",
+            "business_value": 7,
+            "time_estimation": "1:15:00"
+        }
+    },
+    {
+        "model": "games.userstorytemplate",
+        "pk": 7,
+        "fields": {
+            "description": "Modifier les informations du compte",
+            "business_value": 5,
+            "time_estimation": "1:00:00"
+        }
+    },
+    {
+        "model": "games.userstorytemplate",
+        "pk": 8,
+        "fields": {
+            "description": "Ajouter une adresse de livraison",
+            "business_value": 4,
+            "time_estimation": "0:45:00"
+        }
+    },
+    {
+        "model": "games.userstorytemplate",
+        "pk": 9,
+        "fields": {
+            "description": "Consulter les avis des produits",
+            "business_value": 6,
+            "time_estimation": "1:15:00"
+        }
+    },
+    {
+        "model": "games.userstorytemplate",
+        "pk": 10,
+        "fields": {
+            "description": "Ajouter un produit aux favoris",
+            "business_value": 3,
+            "time_estimation": "0:30:00"
         }
     }
 ]
