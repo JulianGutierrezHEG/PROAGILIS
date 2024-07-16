@@ -22,6 +22,13 @@ export function useGame(groupId, group) {
     productOwner: '',
     developers: []
   });
+  const smartObjectives = ref({
+    specific: '',
+    measurable: '',
+    achievable: '',
+    relevant: '',
+    timeBound: ''
+  });
 
   // Récupère les membres du groupe
   const fetchGroupMembers = async () => {
@@ -97,6 +104,7 @@ export function useGame(groupId, group) {
     EventBus.on('lock_element', handleLockElement);
     EventBus.on('unlock_element', handleUnlockElement);
     EventBus.on('project_update', handleProjectUpdate);
+    EventBus.on('smart_update', handleSmartUpdate);
     EventBus.on('user_joined_group', handleUserJoinedGroup);
     EventBus.on('user_left_group', handleUserLeftGroup);
     EventBus.on('phase_status_update', handlePhaseStatusUpdate);
@@ -112,6 +120,7 @@ export function useGame(groupId, group) {
     EventBus.off('lock_element', handleLockElement);
     EventBus.off('unlock_element', handleUnlockElement);
     EventBus.off('project_update', handleProjectUpdate);
+    EventBus.off('smart_update', handleSmartUpdate);
     EventBus.off('user_joined_group', handleUserJoinedGroup);
     EventBus.off('user_left_group', handleUserLeftGroup);
     EventBus.off('phase_status_update', handlePhaseStatusUpdate);
@@ -128,8 +137,17 @@ export function useGame(groupId, group) {
   // Mis à jour du projet
   const handleProjectUpdate = (data) => {
     projectName.value = data.projectName;
-    roles.value = data.roles;
+    roles.value.scrumMaster = data.roles.scrumMaster;
+    roles.value.productOwner = data.roles.productOwner;
+    roles.value.developers = data.roles.developers;
     console.log(`Projet mis à jour par: ${data.user}`);
+  };
+
+  const handleSmartUpdate = (data) => {
+    if (data.group_id === group.id && data.phase_id === currentPhaseDetails.value.id) {
+      smartObjectives.value = data.smart_details;
+      console.log(`SMART Objectives mis à jour par: ${data.user}`);
+    }
   };
 
   // Mis à jour du statut de la phase

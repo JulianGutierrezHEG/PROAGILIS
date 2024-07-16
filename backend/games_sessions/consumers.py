@@ -114,6 +114,10 @@ class GroupConsumer(BaseConsumer):
     async def project_update_broadcast(self, event):
         await self.send_message('project_update', event)
     
+    async def smart_update_broadcast(self, event):
+        print("smart_update_broadcast")
+        await self.send_message('smart_update', event)
+    
     
     async def project_update(self, event):
         await self.channel_layer.group_send(
@@ -125,54 +129,25 @@ class GroupConsumer(BaseConsumer):
                 'user': event['user'],
             }
         )
+    
+    async def smart_update(self, event):
+        await self.channel_layer.group_send(
+            self.get_group_name(),
+            {
+                'type': 'smart_update_broadcast',
+                'event': 'smart_update',
+                'group_id': event['group_id'],
+                'phase_id': event['phase_id'],
+                'smart_details': event['smart_details'],
+                'user': event['user']
+            }
+        )
 
     async def send_group_members_update(self):
         group_id = self.scope['url_route']['kwargs']['group_id']
         group = await database_sync_to_async(Group.objects.get)(id=group_id)
         users = await database_sync_to_async(list)(group.users.values('id', 'username'))
         await self.send_message('group_members_update', {'members': users})
-    
-    async def phase_inputs_update(self, event):
-        await self.channel_layer.group_send(
-            self.get_group_name(),
-            {
-                'type': 'phase_inputs_update_broadcast',
-                'event': 'phase_inputs_update',
-                'group_id': event['group_id'],
-                'phase_id': event['phase_id'],
-                'phase_inputs': event['phase_inputs'],
-                'user': event['user']
-            }
-        )
-
-    async def phase_inputs_update_broadcast(self, event):
-        await self.send_message('phase_inputs_update', {
-            'group_id': event['group_id'],
-            'phase_id': event['phase_id'],
-            'phase_inputs': event['phase_inputs'],
-            'user': event['user']
-        })
-
-    async def submit_phase_answer(self, event):
-        await self.channel_layer.group_send(
-            self.get_group_name(),
-            {
-                'type': 'submit_phase_answer_broadcast',
-                'event': 'submit_phase_answer',
-                'group_id': event['group_id'],
-                'phase_id': event['phase_id'],
-                'answer': event['answer'],
-                'user': event['user']
-            }
-        )
-
-    async def submit_phase_answer_broadcast(self, event):
-        await self.send_message('submit_phase_answer', {
-            'group_id': event['group_id'],
-            'phase_id': event['phase_id'],
-            'answer': event['answer'],
-            'user': event['user']
-        })
 
 
 # Consumer pour les sessions

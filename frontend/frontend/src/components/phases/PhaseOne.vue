@@ -46,7 +46,7 @@
           </div>
         </div>
         <p class="text-center mb-6 text-lg">Tous les autres membres du groupe seront des développeurs.</p>
-        <button @click.prevent="submitProjectData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+        <button @click.prevent="submitProjectData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
           Soumettre
         </button>
       </form>
@@ -60,7 +60,6 @@ import { useGame } from '@/composables/useGame';
 import websocketService from '@/services/websocketService';
 import EventBus from '@/services/eventBus';
 import WaitingScreen from '@/views/WaitingScreen.vue';
-import gamesService from '@/services/gamesService';
 
 const props = defineProps({
   group: {
@@ -135,8 +134,6 @@ const submitForm = () => {
   console.log('Rôles:', roles.value);
 };
 
-
-
 const submitProjectData = async () => {
   showWaitingScreen(props.group.id, currentUser.value);
 
@@ -154,11 +151,7 @@ const submitProjectData = async () => {
   };
   console.log('Answer Data:', answerData);
   await checkValidationAndSendAnswer(answerData);
-
-  EventBus.emit('updateProjectData', answerData);
 };
-
-
 
 
 onMounted(async () => {

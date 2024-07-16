@@ -102,9 +102,9 @@ const updateProjectDetails = (groupId, projectName, roles, user) => {
   sendMessage(groupId, { event: 'project_update', projectName, roles, user });
 };
 
-// Envoi du message de soumission des données du projet
-const submitProjectData = (groupId, projectData, user) => {
-  sendMessage(groupId, { event: 'submit_project_data', projectData, user });
+const updateSmartDetails = (groupId, phaseId, smartDetails, user) => {
+  console.log(`Envoi de la mise à jour des détails intelligents pour le groupe: ${groupId}, phase: ${phaseId}`);
+  sendMessage(groupId, { event: 'smart_update', group_id: groupId, phase_id: phaseId, smart_details: smartDetails, user });
 };
 
 
@@ -130,15 +130,6 @@ const sendPhaseAnswerUpdate = (groupId, phaseId, answerData) => {
   sendMessage(groupId, { event: 'phase_answer_update', group_id: groupId, phase_id: phaseId, answer: answerData });
 };
 
-// Envoi du message de mise à jour des détails du projet pour toutes les phases
-const updatePhaseInputs = (groupId, phaseId, phaseInputs, user) => {
-  sendMessage(groupId, { event: 'phase_inputs_update', group_id: groupId, phase_id: phaseId, phase_inputs: phaseInputs, user });
-};
-
-// Envoi du message de soumission de la réponse pour toutes les phases
-const submitPhaseAnswer = (groupId, phaseId, answerData, user) => {
-  sendMessage(groupId, { event: 'submit_phase_answer', group_id: groupId, phase_id: phaseId, answer: answerData, user });
-};
 
 export default {
   connectGroup: (groupId) => connectWebSocket(groupId, 'group'),
@@ -153,11 +144,9 @@ export default {
   lockElement,
   unlockElement,
   updateProjectDetails,
-  submitProjectData,
+  updateSmartDetails,
   showWaitingScreen,
   sendPhaseStatusUpdate,
   sendPhaseAnswerUpdate,
-  updatePhaseInputs,
   submitAnswer,
-  submitPhaseAnswer,
 };
