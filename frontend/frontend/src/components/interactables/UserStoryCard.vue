@@ -1,11 +1,9 @@
 <template>
-  <div v-if="story" class="bg-white shadow-md rounded-lg p-4 mb-4">
-    <h3 class="text-lg font-semibold mb-2">{{ story.description }}</h3>
-    <p class="text-sm text-gray-500 mb-2">Valeur: {{ story.business_value }}</p>
-    <p class="text-gray-700">Estimation de temps: {{ formattedTimeEstimation }}</p>
-  </div>
-  <div v-else class="bg-white shadow-md rounded-lg p-4 mb-4">
-    <p class="text-red-500">No story data available.</p>
+  <div :class="['bg-white shadow-md rounded-lg p-4 mb-4', { 'bg-blue-100': isSelected }]">
+    <h3 class="text-lg font-semibold mb-2">{{ story.name }}</h3>
+    <p class="text-lg font-semibold mb-2">{{ story.description }}</p>
+    <p class="text-sm text-gray-500 mb-2">Valeur: {{ story.business_value || '' }}</p>
+    <p class="text-gray-700">Estimation de temps: {{ formattedTimeEstimation || '' }}</p>
   </div>
 </template>
 
@@ -17,6 +15,10 @@ const props = defineProps({
     type: Object,
     required: true,
     default: () => ({})
+  },
+  isSelected: {
+    type: Boolean,
+    default: false
   }
 });
 

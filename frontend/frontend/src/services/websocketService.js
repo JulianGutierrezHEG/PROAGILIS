@@ -107,6 +107,11 @@ const updateSmartDetails = (groupId, phaseId, smartDetails, user) => {
   sendMessage(groupId, { event: 'smart_update', group_id: groupId, phase_id: phaseId, smart_details: smartDetails, user });
 };
 
+// Envoi du message de mise à jour des user stories
+const updateCreatedUserStories = (groupId, userStories, user) => {
+  sendMessage(groupId, { event: 'user_story_created_update', userStories, user });
+};
+
 
 // Envoi du message de soumission de la réponse d'une phase
 const submitAnswer = (groupId, phaseId, answerData, user) => {
@@ -149,4 +154,5 @@ export default {
   sendPhaseStatusUpdate,
   sendPhaseAnswerUpdate,
   submitAnswer,
+  updateCreatedUserStories
 };

@@ -48,6 +48,7 @@ class Backlog(models.Model):
         return f"Backlog for {self.project.name}"
     
 class UserStory(models.Model):
+    name = models.CharField(max_length=200)
     description = models.TextField()
     business_value = models.IntegerField()
     time_estimation = models.DurationField()

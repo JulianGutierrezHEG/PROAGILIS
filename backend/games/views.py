@@ -9,6 +9,7 @@ from rest_framework import status
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
+from datetime import timedelta
 from games_sessions.models import Group
 from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate
 from .serializers import GroupPhaseStatusSerializer,GamePhaseSerializer,ProjectSerializer
@@ -175,7 +176,42 @@ class UpdatePhaseStatusView(APIView):
                 )
 
         return Response({'status': 'Statut mis à jour avec succès'}, status=status.HTTP_200_OK)
+    
+# Retourne des users stories pour un groupe ( si pas de paramètre ids, retourne toutes les user stories du backlog)
+class FetchUserStoriesView(APIView):
+    def post(self, request, group_id):
+        group = get_object_or_404(Group, id=group_id)
+        project = group.project
+        if not project:
+            return Response({"detail": "Pas de projet trouvé pour ce groupe"}, status=status.HTTP_404_NOT_FOUND)
+        
+        backlog = project.backlog
+        if not backlog:
+            return Response({"detail": "Pas de backlog trouvé pour ce projet"}, status=status.HTTP_404_NOT_FOUND)
 
+        ids = request.data.get('ids', [])
+        
+        if ids:
+            user_stories = UserStory.objects.filter(id__in=ids)
+        else:
+            user_stories = backlog.user_stories.all()
+        
+        data = [
+            {
+                "id": story.id,
+                "name": story.name,
+                "description": story.description,
+                "business_value": story.business_value,
+                "time_estimation": story.time_estimation,
+                "backlog": story.backlog.id,
+                "is_completed": story.is_completed,
+                "sprint": story.sprint.id if story.sprint else None
+            }
+            for story in user_stories
+        ]
+        return Response(data, status=status.HTTP_200_OK)
+
+# Retourne les user stories à découper pour un groupe
 class FetchToCutUserStoriesView(APIView):
     def get(self, request, group_id):
         group = get_object_or_404(Group, id=group_id)
@@ -193,3 +229,56 @@ class FetchToCutUserStoriesView(APIView):
 
         data = [{"id": story.id, "description": story.description, "business_value": story.business_value, "time_estimation": story.time_estimation} for story in user_stories]
         return Response(data, status=status.HTTP_200_OK)
+
+# Crée une nouvelle user story pour un groupe
+class AddUserStoryView(APIView):
+    def post(self, request, group_id):
+        group = get_object_or_404(Group, id=group_id)
+        project = group.project
+        if not project:
+            return Response({"detail": "Pas de projet trouvé pour ce groupe"}, status=status.HTTP_404_NOT_FOUND)
+        
+        backlog = project.backlog
+        if not backlog:
+            return Response({"detail": "Pas de backlog trouvé pour ce projet"}, status=status.HTTP_404_NOT_FOUND)
+
+        name = request.data.get('name')
+        description = request.data.get('description')
+
+        if not name or not description:
+            return Response({"detail": "Tous les champs sont requis"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_story = UserStory.objects.create(
+            name=name,
+            description=description,
+            business_value=0,  
+            time_estimation=timedelta(0),  
+            backlog=backlog
+        )
+
+        return Response({
+            "id": user_story.id,
+            "name": user_story.name,
+            "description": user_story.description,
+            "business_value": user_story.business_value,
+            "time_estimation": user_story.time_estimation.total_seconds()  
+        }, status=status.HTTP_201_CREATED)
+
+# Supprime une user story pour un groupe
+class DeleteUserStoryView(APIView):
+    def delete(self, request, group_id, story_id):
+        group = get_object_or_404(Group, id=group_id)
+        project = group.project
+        if not project:
+            return Response({"detail": "Pas de projet trouvé pour ce groupe"}, status=status.HTTP_404_NOT_FOUND)
+        
+        backlog = project.backlog
+        if not backlog:
+            return Response({"detail": "Pas de backlog trouvé pour ce projet"}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            user_story = UserStory.objects.get(id=story_id, backlog=backlog)
+            user_story.delete()
+            return Response({"detail": "User story supprimée avec succès"}, status=status.HTTP_200_OK)
+        except UserStory.DoesNotExist:
+            return Response({"detail": "User story non trouvée"}, status=status.HTTP_404_NOT_FOUND)

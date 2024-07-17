@@ -115,9 +115,20 @@ class GroupConsumer(BaseConsumer):
         await self.send_message('project_update', event)
     
     async def smart_update_broadcast(self, event):
-        print("smart_update_broadcast")
         await self.send_message('smart_update', event)
     
+    async def user_story_update_created_broadcast(self, event):
+        await self.send_message('user_story_created_update', event)
+    
+    async def user_story_created_update(self, event):
+        await self.channel_layer.group_send(
+        self.get_group_name(),
+        {
+            'type': 'user_story_created_update',
+            'userStories': event['userStories'],
+            'user': event['user'],
+        }
+    )
     
     async def project_update(self, event):
         await self.channel_layer.group_send(

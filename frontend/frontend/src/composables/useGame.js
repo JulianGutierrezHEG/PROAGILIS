@@ -3,10 +3,12 @@ import websocketService from '@/services/websocketService';
 import gamesService from '@/services/gamesService';
 import usersService from '@/services/usersService';
 import EventBus from '@/services/eventBus';
+import { useGameStore } from '@/stores/gameStore';
 
 // COMPOSABLE POUR LES PARTIES, UTILISEE DANS LES VUES
 
 export function useGame(groupId, group) {
+  const gameStore = useGameStore();
   const groupMembers = ref([]);
   const lockedElements = ref({});
   const currentUser = ref(null);
@@ -106,6 +108,7 @@ export function useGame(groupId, group) {
     EventBus.on('unlock_element', handleUnlockElement);
     EventBus.on('project_update', handleProjectUpdate);
     EventBus.on('smart_update', handleSmartUpdate);
+    EventBus.on('user_story_created_update', handleUserStoryUpdate);
     EventBus.on('user_joined_group', handleUserJoinedGroup);
     EventBus.on('user_left_group', handleUserLeftGroup);
     EventBus.on('phase_status_update', handlePhaseStatusUpdate);
@@ -122,6 +125,7 @@ export function useGame(groupId, group) {
     EventBus.off('unlock_element', handleUnlockElement);
     EventBus.off('project_update', handleProjectUpdate);
     EventBus.off('smart_update', handleSmartUpdate);
+    EventBus.on('user_story_created_update', handleUserStoryUpdate);
     EventBus.off('user_joined_group', handleUserJoinedGroup);
     EventBus.off('user_left_group', handleUserLeftGroup);
     EventBus.off('phase_status_update', handlePhaseStatusUpdate);
@@ -149,6 +153,16 @@ export function useGame(groupId, group) {
       smartObjectives.value = data.smart_details;
       console.log(`SMART Objectives mis à jour par: ${data.user}`);
     }
+  };
+
+  const handleUserStoryUpdate = (data) => {
+    createdUserStoryIds.value = data.userStories;
+    gameStore.setCreatedUserStoryIds(data.userStories);
+    console.log(`User stories updated by: ${data.user}`);
+  };
+
+  const updateCreatedUserStories = (userStories, user) => {
+    websocketService.updateCreatedUserStories(groupId, userStories, user);
   };
 
   // Mis à jour du statut de la phase
@@ -295,12 +309,48 @@ export function useGame(groupId, group) {
     }
   };
 
+  // Récupère les user stories
+  const fetchUserStories = async (groupId, storyIds = []) => {
+    try {
+      const response = await gamesService.fetchUserStories(groupId, storyIds);
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des User Stories:', error);
+      throw error;
+    }
+  };
+
+  // Récupère les user stories à couper
   const fetchUserStoriesToCut = async (groupId) => {
     try {
       const userStories = await gamesService.fetchToCutUserStories(groupId);
       existingUserStories.value = userStories;
     } catch (error) {
       console.error('Erreur lors de la récupération des user stories à couper:', error);
+    }
+  };
+
+  // Ajoute une user story
+  const addUserStory = async (storyData) => {
+    try {
+      storyData.groupId = groupId; 
+      const response = await gamesService.addUserStory(storyData);
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de la création de la User Story:', error);
+      throw error;
+    }
+  };
+
+  // Supprime une user story
+  const deleteUserStory = async (groupId, storyId) => {
+    try {
+      console.log(`Deleting user story with ID ${storyId} for group ${groupId}`); // Debugging
+      const response = await gamesService.deleteUserStory(groupId, storyId);
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la User Story:', error);
+      throw error;
     }
   };
 
@@ -336,5 +386,9 @@ export function useGame(groupId, group) {
     fetchPhaseDetails,
     validatePhase,
     fetchUserStoriesToCut,
+    addUserStory,
+    deleteUserStory,
+    fetchUserStories,
+    updateCreatedUserStories
   };
 }

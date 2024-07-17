@@ -102,9 +102,41 @@ const createProject = async (groupId, answerData) => {
   }
 };
 
+// Récupère les user stories d'un groupe
+const fetchUserStories = async (groupId, storyIds = []) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/fetch-userstories/`, { ids: storyIds });
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Récupère les user stories à découper
 const fetchToCutUserStories = async (groupId) => {
   try {
     const response = await axios.get(`/api/games/fetch-US-To-Cut/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Ajoute une user story
+const addUserStory = async (storyData) => {
+  try {
+    const response = await axios.post(`/api/games/group/${storyData.groupId}/add-userstory/`, storyData);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Supprime une user story
+const deleteUserStory = async (groupId, storyId) => {
+  try {
+    console.log(`Request to delete user story with ID ${storyId} for group ${groupId}`); // Debugging
+    const response = await axios.delete(`/api/games/group/${groupId}/delete-userstory/${storyId}/`);
     return response.data;
   } catch (error) {
     handleAxiosError(error);
@@ -121,7 +153,10 @@ export default {
   fetchPhases,
   updatePhaseStatus,
   createProject,
+  fetchUserStories,
   fetchToCutUserStories,
+  addUserStory,
+  deleteUserStory,
 };
 
 
