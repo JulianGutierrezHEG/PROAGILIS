@@ -282,3 +282,37 @@ class DeleteUserStoryView(APIView):
             return Response({"detail": "User story supprimée avec succès"}, status=status.HTTP_200_OK)
         except UserStory.DoesNotExist:
             return Response({"detail": "User story non trouvée"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+# Met à jour les détails d'une user story pour un groupe
+class UpdateUserStoryView(APIView):
+    def put(self, request, group_id, user_story_id):
+        try:
+            user_story = get_object_or_404(UserStory, id=user_story_id, backlog__project__group__id=group_id)
+        except UserStory.DoesNotExist:
+            return Response({"detail": "User Story not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        if 'business_value' in data:
+            user_story.business_value = data['business_value']
+        if 'name' in data:
+            user_story.name = data['name']
+        if 'description' in data:
+            user_story.description = data['description']
+        if 'time_estimation' in data:
+            user_story.time_estimation = data['time_estimation']
+        if 'is_completed' in data:
+            user_story.is_completed = data['is_completed']
+        if 'sprint' in data:
+            user_story.sprint_id = data['sprint']
+
+        user_story.save()
+        return Response({
+            "id": user_story.id,
+            "name": user_story.name,
+            "description": user_story.description,
+            "business_value": user_story.business_value,
+            "time_estimation": user_story.time_estimation,
+            "is_completed": user_story.is_completed,
+            "sprint": user_story.sprint_id,
+        }, status=status.HTTP_200_OK)

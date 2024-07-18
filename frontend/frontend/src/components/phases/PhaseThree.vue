@@ -35,7 +35,7 @@
       <button @click="handleStoryAction" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 mt-2">
         {{ isDividing ? (divideCounter === 1 ? 'Valider et créer la deuxième' : 'Diviser la User Story') : 'Ajouter une User Story' }}
       </button>
-      <button @click="submitPhaseThreeAnswer" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 mt-2">
+      <button @click="submitPhaseThreeAnswer" class="bg-blue-500 text-white px-4 py-2 m-9 rounded-md hover:bg-blue-600">
         Soumettre la réponse
       </button>
     </div>

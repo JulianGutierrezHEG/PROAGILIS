@@ -135,6 +135,11 @@ const sendPhaseAnswerUpdate = (groupId, phaseId, answerData) => {
   sendMessage(groupId, { event: 'phase_answer_update', group_id: groupId, phase_id: phaseId, answer: answerData });
 };
 
+// Envoi du message de mise à jour des détails de l'US
+const updateUserStoryDetails = (groupId, storyId, businessValue, user) => {
+  sendMessage(groupId, { event: 'user_story_update', storyId, businessValue, user });
+};
+
 
 export default {
   connectGroup: (groupId) => connectWebSocket(groupId, 'group'),
@@ -154,5 +159,6 @@ export default {
   sendPhaseStatusUpdate,
   sendPhaseAnswerUpdate,
   submitAnswer,
-  updateCreatedUserStories
+  updateCreatedUserStories,
+  updateUserStoryDetails
 };

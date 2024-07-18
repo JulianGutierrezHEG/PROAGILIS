@@ -117,8 +117,8 @@ const submitProjectData = async () => {
 };
 
 onMounted(async () => {
-  setupWebSocket();
   fetchGroupMembers();
+  setupWebSocket();
   await fetchCurrentPhase();
 });
 

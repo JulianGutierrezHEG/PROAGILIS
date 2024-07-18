@@ -13,6 +13,7 @@ from .views import (
     FetchToCutUserStoriesView,
     AddUserStoryView,
     DeleteUserStoryView,
+    UpdateUserStoryView
 )
 
 group_members_list = GroupMembersViewSet.as_view({
@@ -33,4 +34,5 @@ urlpatterns = [
     path('fetch-US-To-Cut/<int:group_id>/', FetchToCutUserStoriesView.as_view(), name='fetchUSToCut'),
     path('group/<int:group_id>/add-userstory/', AddUserStoryView.as_view(), name='addUserStory'),
     path('group/<int:group_id>/delete-userstory/<int:story_id>/', DeleteUserStoryView.as_view(), name='deleteUserStory'),
+    path('group/<int:group_id>/update-userstory/<int:user_story_id>/', UpdateUserStoryView.as_view(), name='updateUserStory'),
 ]

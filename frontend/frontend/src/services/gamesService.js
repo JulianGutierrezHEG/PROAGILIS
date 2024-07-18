@@ -143,6 +143,16 @@ const deleteUserStory = async (groupId, storyId) => {
   }
 };
 
+// Met à jour les détails d'une user story
+const updateUserStoryDetails = async (groupId, storyId, storyData) => {
+  try {
+    const response = await axios.put(`/api/games/group/${groupId}/update-userstory/${storyId}/`, storyData);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 export default {
   getGroupMembers,
   getGroupCurrentPhase,
@@ -157,6 +167,7 @@ export default {
   fetchToCutUserStories,
   addUserStory,
   deleteUserStory,
+  updateUserStoryDetails,
 };
 
 

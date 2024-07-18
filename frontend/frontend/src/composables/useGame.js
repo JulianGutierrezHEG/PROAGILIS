@@ -109,6 +109,7 @@ export function useGame(groupId, group) {
     EventBus.on('project_update', handleProjectUpdate);
     EventBus.on('smart_update', handleSmartUpdate);
     EventBus.on('user_story_created_update', handleUserStoryUpdate);
+    EventBus.on('user_story_update', handleUserStoryUpdate);
     EventBus.on('user_joined_group', handleUserJoinedGroup);
     EventBus.on('user_left_group', handleUserLeftGroup);
     EventBus.on('phase_status_update', handlePhaseStatusUpdate);
@@ -126,6 +127,7 @@ export function useGame(groupId, group) {
     EventBus.off('project_update', handleProjectUpdate);
     EventBus.off('smart_update', handleSmartUpdate);
     EventBus.on('user_story_created_update', handleUserStoryUpdate);
+    EventBus.off('user_story_update', handleUserStoryUpdate);
     EventBus.off('user_joined_group', handleUserJoinedGroup);
     EventBus.off('user_left_group', handleUserLeftGroup);
     EventBus.off('phase_status_update', handlePhaseStatusUpdate);
@@ -156,9 +158,11 @@ export function useGame(groupId, group) {
   };
 
   const handleUserStoryUpdate = (data) => {
-    createdUserStoryIds.value = data.userStories;
-    gameStore.setCreatedUserStoryIds(data.userStories);
-    console.log(`User stories updated by: ${data.user}`);
+    const updatedStory = data.storyData;
+    const index = userStories.value.findIndex(story => story.id === data.storyId);
+    if (index !== -1) {
+      userStories.value[index] = { ...userStories.value[index], ...updatedStory };
+    }
   };
 
   const updateCreatedUserStories = (userStories, user) => {
@@ -354,6 +358,18 @@ export function useGame(groupId, group) {
     }
   };
 
+  // Met à jour les détails d'une user story
+  const updateUserStoryDetails = async (storyId, storyData) => {
+    try {
+      console.log(`Updating user story with ID ${storyId} for group ${groupId}`);
+      const response = await gamesService.updateUserStoryDetails(groupId, storyId, storyData);
+      return response;
+    } catch (error) {
+      console.error('Error updating user story details:', error);
+      throw error;
+    }
+  };
+
   onMounted(() => {
     fetchCurrentUser();
     fetchCurrentPhase();
@@ -389,6 +405,7 @@ export function useGame(groupId, group) {
     addUserStory,
     deleteUserStory,
     fetchUserStories,
-    updateCreatedUserStories
+    updateCreatedUserStories,
+    updateUserStoryDetails
   };
 }
