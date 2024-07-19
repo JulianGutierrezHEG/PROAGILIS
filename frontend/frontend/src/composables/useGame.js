@@ -3,12 +3,10 @@ import websocketService from '@/services/websocketService';
 import gamesService from '@/services/gamesService';
 import usersService from '@/services/usersService';
 import EventBus from '@/services/eventBus';
-import { useGameStore } from '@/stores/gameStore';
 
 // COMPOSABLE POUR LES PARTIES, UTILISEE DANS LES VUES
 
 export function useGame(groupId, group) {
-  const gameStore = useGameStore();
   const groupMembers = ref([]);
   const lockedElements = ref({});
   const currentUser = ref(null);
@@ -97,6 +95,11 @@ export function useGame(groupId, group) {
     } catch (error) {
       console.error('Erreur lors de la récupération des statuts des phases du groupe:', error);
     }
+  };
+
+  // Récupère les détails du projet pour un groupe
+  const fetchProjectDetails = async (groupId) => {
+    return await gamesService.fetchProjectDetails(groupId);
   };
 
   // Mise en place des websockets et des événements
@@ -322,15 +325,28 @@ export function useGame(groupId, group) {
       console.error('Erreur lors de la récupération des User Stories:', error);
       throw error;
     }
+    
   };
 
   // Récupère les user stories à couper
   const fetchUserStoriesToCut = async (groupId) => {
     try {
       const userStories = await gamesService.fetchToCutUserStories(groupId);
-      existingUserStories.value = userStories;
+      return userStories;
     } catch (error) {
       console.error('Erreur lors de la récupération des user stories à couper:', error);
+    }
+  };
+
+  // Récupère les user stories créées
+  const fetchCreatedUserStories = async () => {
+    try {
+      const response = await gamesService.fetchCreatedUserStories(groupId);
+      console.log('User stories créées:', response);
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des user stories créées:', error);
+      throw error;
     }
   };
 
@@ -398,10 +414,12 @@ export function useGame(groupId, group) {
     checkValidationAndSendAnswer,
     fetchGroupPhaseAnswer,
     fetchGroupPhasesStatus,
+    fetchProjectDetails,
     fetchPhases,
     fetchPhaseDetails,
     validatePhase,
     fetchUserStoriesToCut,
+    fetchCreatedUserStories,
     addUserStory,
     deleteUserStory,
     fetchUserStories,

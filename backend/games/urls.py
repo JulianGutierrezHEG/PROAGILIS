@@ -13,7 +13,9 @@ from .views import (
     FetchToCutUserStoriesView,
     AddUserStoryView,
     DeleteUserStoryView,
-    UpdateUserStoryView
+    UpdateUserStoryView,
+    FetchProjectDetailsView,
+    FetchCreatedUserStoriesView
 )
 
 group_members_list = GroupMembersViewSet.as_view({
@@ -22,16 +24,18 @@ group_members_list = GroupMembersViewSet.as_view({
 
 urlpatterns = [
     path('phases/', GamePhaseListView.as_view(), name='phaseList'),
+    path('phase/<int:id>/', GamePhaseDetail.as_view(), name='gamePhaseDetail'),
+    path('fetch-userstories-to-cut/<int:group_id>/', FetchToCutUserStoriesView.as_view(), name='fetchUSToCut'),
     path('group/members/', group_members_list, name='groupMembersList'),
     path('group/<int:group_id>/current-phase/', GroupCurrentPhaseDetail.as_view(), name='groupCurrentPhase'),
-    path('phase/<int:id>/', GamePhaseDetail.as_view(), name='gamePhaseDetail'),
+    path('group/<int:group_id>/project-details/', FetchProjectDetailsView.as_view(), name='fetchProjectDetails'),
     path('group/<int:group_id>/phases-status/', GroupPhasesStatusView.as_view(), name='groupCurrentPhase'),
     path('group/<int:group_id>/phase/<int:phase_id>/submit-answer/', SubmitAnswerView.as_view(), name='submitAnswer'),
     path('group/<int:group_id>/phase/<int:phase_id>/answer/', GroupPhaseAnswerView.as_view(), name='groupPhaseAnswer'),
     path('group/<int:group_id>/phase/<int:phase_id>/update-status/', UpdatePhaseStatusView.as_view(), name='updatePhaseStatus'),
     path('group/<int:group_id>/create-project/', CreateProjectView.as_view(), name='createProject'),
     path('group/<int:group_id>/fetch-userstories/', FetchUserStoriesView.as_view(), name='fetchUserStories'),
-    path('fetch-US-To-Cut/<int:group_id>/', FetchToCutUserStoriesView.as_view(), name='fetchUSToCut'),
+    path('group/<int:group_id>/fetch-created-userstories/', FetchCreatedUserStoriesView.as_view(), name='fetchCreatedUserStories'),
     path('group/<int:group_id>/add-userstory/', AddUserStoryView.as_view(), name='addUserStory'),
     path('group/<int:group_id>/delete-userstory/<int:story_id>/', DeleteUserStoryView.as_view(), name='deleteUserStory'),
     path('group/<int:group_id>/update-userstory/<int:user_story_id>/', UpdateUserStoryView.as_view(), name='updateUserStory'),

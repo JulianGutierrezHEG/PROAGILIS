@@ -39,7 +39,7 @@
                     :class="{ locked: lockedElements.timeBound && lockedElements.timeBound !== currentUser }"
                     @focus="lock('timeBound')" @blur="unlock('timeBound')" @input="updateSmart" required></textarea>
         </div>
-        <button @click.prevent="submitProjectData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
+        <button @click.prevent="submitPhaseTwoAnswer" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
           Soumettre
         </button>
       </form>
@@ -102,18 +102,24 @@ const submitForm = async () => {
   console.log('SMART Objectives:', smartObjectives.value);
 };
 
-const submitProjectData = async () => {
-  showWaitingScreen(props.group.id, currentUser.value);
 
-  const answerData = {
-    specific: smartObjectives.value.specific,
-    measurable: smartObjectives.value.measurable,
-    achievable: smartObjectives.value.achievable,
-    relevant: smartObjectives.value.relevant,
-    timeBound: smartObjectives.value.timeBound
-  };
-
-  await checkValidationAndSendAnswer(answerData);
+const submitPhaseTwoAnswer = async () => {
+  try {
+    console.log('Group:', props.group);
+    console.log('Current user:', currentUser.value);
+    showWaitingScreen(props.group.id, currentUser.value);
+    const answerData = {
+      specific: smartObjectives.value.specific,
+      measurable: smartObjectives.value.measurable,
+      achievable: smartObjectives.value.achievable,
+      relevant: smartObjectives.value.relevant,
+      timeBound: smartObjectives.value.timeBound
+    };
+    await checkValidationAndSendAnswer(answerData);
+    console.log('Answer submitted for phase 2:', answerData);
+  } catch (error) {
+    console.error('Error in phase 2:', error);
+  }
 };
 
 onMounted(async () => {

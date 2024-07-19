@@ -8,18 +8,23 @@
       <p v-if="!isLoadingPhaseDetails" class="mb-6 text-center">
         {{ currentPhaseDetails.description }}
       </p>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-2">User Stories Existantes</h3>
-        <div class="overflow-y-auto max-h-80">
-          <div v-for="(story, index) in existingUserStories" :key="index" @click.stop="selectStoryForDivide(story)">
-            <UserStoryCard :story="story" :isSelected="story.id === selectedStoryId" />
+      <div class="flex justify-between mb-4">
+        <div class="w-1/2 pr-2">
+          <h3 class="text-xl font-semibold mb-2">User Stories Existantes</h3>
+          <div class="overflow-y-auto max-h-80">
+            <div v-for="(story, index) in existingUserStories" :key="index" @click.stop="selectStoryForDivide(story)" :class="{ isSelected: story.id === selectedStoryId }">
+              <UserStoryCard :story="story" :isSelected="story.id === selectedStoryId" />
+            </div>
           </div>
         </div>
-      </div>
-      <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-2">Nouvelles User Stories</h3>
-        <div class="overflow-y-auto max-h-80">
-          <UserStoryCard v-for="(story, index) in newUserStories" :key="index" :story="story" />
+        <div class="w-1/2 pl-2">
+          <h3 class="text-xl font-semibold mb-2">Nouvelles User Stories</h3>
+          <div class="overflow-y-auto max-h-80">
+            <div v-for="(story, index) in newUserStories" :key="index" class="relative flex items-center">
+              <UserStoryCard :story="story" class="flex-1" />
+              <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete" class="w-6 h-6 cursor-pointer ml-2" @click="confirmDeleteStory(story.id)">
+            </div>
+          </div>
         </div>
       </div>
       <div class="mb-4" :class="{ locked: lockedElements.storyName && lockedElements.storyName !== currentUser }">
@@ -45,10 +50,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useGame } from '@/composables/useGame';
-import EventBus from '@/services/eventBus';
 import WaitingScreen from '@/views/WaitingScreen.vue';
 import UserStoryCard from '@/components/interactables/UserStoryCard.vue';
-import { useGameStore } from '@/stores/gameStore';
 
 const props = defineProps({
   group: {
@@ -63,9 +66,9 @@ const {
   cleanupWebSocket, 
   fetchCurrentPhase, 
   fetchUserStoriesToCut,
+  fetchCreatedUserStories,
   addUserStory,
   deleteUserStory,
-  fetchUserStories,
   checkValidationAndSendAnswer,
   showWaitingScreen,
   lockElement,
@@ -73,44 +76,42 @@ const {
   waiting, 
   isLoadingPhaseDetails, 
   currentPhaseDetails,
-  existingUserStories,
   currentUser
 } = useGame(props.group.id, props.group);
 
-const gameStore = useGameStore();
+const existingUserStories = ref([]);
 const newUserStories = ref([]);
 const newStory = ref({ name: '', description: '' });
 const selectedStoryId = ref(null);
 const isDividing = ref(false);
 const divideCounter = ref(0);
-const createdUserStoryIds = ref([]);
-const initialUserStoriesFetched = ref(false);
 const lockedElements = ref({});
 
 const handleStoryAction = async () => {
   try {
     console.log('Handling story action on user stories:', newStory.value.name, selectedStoryId.value);
-    if (isDividing.value) {
+    
+    if (isDividing.value && selectedStoryId.value) {
       if (divideCounter.value === 0) {
-        newUserStories.value.push({ ...newStory.value });
-        newStory.value = { name: '', description: '' };
-        divideCounter.value = 1;
-      } else {
         const response = await addUserStory({
           groupId: props.group.id,
           name: newStory.value.name,
           description: newStory.value.description,
         });
-        createdUserStoryIds.value.push(response.id);
-        gameStore.addCreatedUserStoryId(response.id);
+        newUserStories.value.push({ ...newStory.value, id: response.id });
+        newStory.value = { name: '', description: '' };
+        divideCounter.value = 1;
+      } else if (divideCounter.value === 1) {
+        const response = await addUserStory({
+          groupId: props.group.id,
+          name: newStory.value.name,
+          description: newStory.value.description,
+        });
+        newUserStories.value.push({ ...newStory.value, id: response.id });
         
-        if (selectedStoryId.value) {
-          console.log(`Deleting user story with ID ${selectedStoryId.value} for group ${props.group.id}`);
-          await deleteUserStory(props.group.id, selectedStoryId.value);
-          existingUserStories.value = existingUserStories.value.filter(story => story.id !== selectedStoryId.value);
-        }
-
-        newUserStories.value.push({ ...newStory.value });
+        await deleteUserStory(props.group.id, selectedStoryId.value);
+        existingUserStories.value = existingUserStories.value.filter(story => story.id !== selectedStoryId.value);
+        
         newStory.value = { name: '', description: '' };
         isDividing.value = false;
         selectedStoryId.value = null;
@@ -122,9 +123,7 @@ const handleStoryAction = async () => {
         name: newStory.value.name,
         description: newStory.value.description
       });
-      createdUserStoryIds.value.push(response.id);
-      gameStore.addCreatedUserStoryId(response.id);
-      newUserStories.value.push({ ...newStory.value });
+      newUserStories.value.push({ ...newStory.value, id: response.id });
       newStory.value = { name: '', description: '' };
     }
   } catch (error) {
@@ -136,27 +135,38 @@ const selectStoryForDivide = (story) => {
   if (!isDividing.value) {
     isDividing.value = true;
     selectedStoryId.value = story.id;
+    divideCounter.value = 0; // Reset the divide counter
   } else if (isDividing.value && selectedStoryId.value !== story.id) {
     isDividing.value = false;
     selectedStoryId.value = null;
     isDividing.value = true;
     selectedStoryId.value = story.id;
+    divideCounter.value = 0; // Reset the divide counter
   }
 };
 
-const fetchCreatedUserStories = async () => {
-  if (gameStore.createdUserStoryIds.length > 0) {
-    console.log('Fetching created user stories with IDs:', gameStore.createdUserStoryIds);
-    const response = await fetchUserStories(props.group.id, gameStore.createdUserStoryIds);
-    newUserStories.value = response;
+const fetchCreatedUserStoriesFrontend = async () => {
+  try {
+    const response = await fetchCreatedUserStories(props.group.id);
+    newUserStories.value = response; // Update newUserStories with the response
     console.log('Fetched created user stories:', newUserStories.value);
+  } catch (error) {
+    console.error('Error fetching created user stories:', error);
   }
 };
 
 const fetchInitialUserStoriesToCut = async () => {
-  if (!initialUserStoriesFetched.value) {
-    await fetchUserStoriesToCut(props.group.id);
-    initialUserStoriesFetched.value = true;
+  try {
+    const response = await fetchUserStoriesToCut(props.group.id);
+    console.log('Fetched initial user stories to cut:', response);
+    if (!response || response.length === 0) {
+      console.log('No user stories available to cut.');
+    } else {
+      existingUserStories.value = response; 
+      console.log('Fetched user stories to cut:', existingUserStories.value);
+    }
+  } catch (error) {
+    console.error('Error fetching user stories to cut:', error);
   }
 };
 
@@ -164,7 +174,7 @@ const submitPhaseThreeAnswer = async () => {
   try {
     showWaitingScreen(props.group.id, currentUser.value);
     const answerData = {
-      userStories: gameStore.createdUserStoryIds
+      userStories: newUserStories.value.map(story => story.id)
     };
     await checkValidationAndSendAnswer(answerData);
     console.log('Answer submitted for phase 3:', answerData);
@@ -181,13 +191,27 @@ const unlock = (elementId) => {
   unlockElement(elementId);
 };
 
+const confirmDeleteStory = (storyId) => {
+  if (confirm('Êtes-vous sûr de vouloir supprimer cette User Story?')) {
+    deleteStory(storyId);
+  }
+};
+
+const deleteStory = async (storyId) => {
+  try {
+    await deleteUserStory(props.group.id, storyId);
+    newUserStories.value = newUserStories.value.filter(story => story.id !== storyId);
+  } catch (error) {
+    console.error('Error in deleteStory:', error);
+  }
+};
+
 onMounted(async () => {
-  gameStore.initializeStore();
   fetchGroupMembers();
   setupWebSocket();
   await fetchCurrentPhase();
   await fetchInitialUserStoriesToCut();
-  await fetchCreatedUserStories();
+  await fetchCreatedUserStoriesFrontend();
 });
 
 onUnmounted(() => {

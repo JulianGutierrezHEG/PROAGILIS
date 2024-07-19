@@ -82,6 +82,16 @@ const getGroupPhasesStatus = async (groupId) => {
   }
 };
 
+// Récupère les détails d'un projet pour un groupe
+const fetchProjectDetails = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/project-details/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 // Met à jour le statut d'une phase
 const updatePhaseStatus = async (groupId, phaseId, status) => {
   try {
@@ -115,7 +125,18 @@ const fetchUserStories = async (groupId, storyIds = []) => {
 // Récupère les user stories à découper
 const fetchToCutUserStories = async (groupId) => {
   try {
-    const response = await axios.get(`/api/games/fetch-US-To-Cut/${groupId}/`);
+    const response = await axios.get(`/api/games/fetch-userstories-to-cut/${groupId}/`);
+    console.log('User stories to cut:', response.data);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Récupère les user stories créées
+const fetchCreatedUserStories  = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/fetch-created-userstories/`);
     return response.data;
   } catch (error) {
     handleAxiosError(error);
@@ -168,6 +189,8 @@ export default {
   addUserStory,
   deleteUserStory,
   updateUserStoryDetails,
+  fetchProjectDetails,
+  fetchCreatedUserStories,
 };
 
 

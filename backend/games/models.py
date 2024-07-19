@@ -9,6 +9,7 @@ class Project(models.Model):
     scrum_master = models.CharField(max_length=100, blank=True, null=True)
     product_owner = models.CharField(max_length=100, blank=True, null=True)
     developers = models.JSONField(default=list)
+    current_sprint = models.IntegerField(default=1)
 
     def __str__(self):
         return self.name
@@ -55,6 +56,8 @@ class UserStory(models.Model):
     backlog = models.ForeignKey('Backlog', on_delete=models.CASCADE, related_name='user_stories')
     is_completed = models.BooleanField(default=False)
     sprint = models.ForeignKey('Sprint', on_delete=models.SET_NULL, null=True, blank=True, related_name='stories')
+    sprint_number = models.IntegerField(default=1)
+    has_been_created = models.BooleanField(default=False)
 
     def __str__(self):
         return self.description
@@ -89,6 +92,7 @@ class Event(models.Model):
         return self.description
 
 class UserStoryTemplate(models.Model):
+    name = models.CharField(max_length=200)
     description = models.TextField()
     business_value = models.IntegerField()
     time_estimation = models.DurationField()

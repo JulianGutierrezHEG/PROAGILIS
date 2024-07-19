@@ -16,6 +16,7 @@ import PhaseOneAnswer from '@/components/phasesAnswer/PhaseOneAnswer.vue';
 import PhaseTwoAnswer from '@/components/phasesAnswer/PhaseTwoAnswer.vue';
 import PhaseThreeAnswer from '@/components/phasesAnswer/PhaseThreeAnswer.vue';
 import PhaseFourAnswer from '@/components/phasesAnswer/PhaseFourAnswer.vue';
+import PhaseFiveAnswer from '@/components/phasesAnswer/PhaseFiveAnswer.vue';
 
 const isVisible = ref(false);
 const activeModalComponent = shallowRef(null);
@@ -26,7 +27,8 @@ const modalComponents = {
   Phase1Answer: PhaseOneAnswer,
   Phase2Answer: PhaseTwoAnswer,
   Phase3Answer: PhaseThreeAnswer,
-  Phase4Answer: PhaseFourAnswer
+  Phase4Answer: PhaseFourAnswer,
+  Phase5Answer: PhaseFiveAnswer
 };
 
 const openModalHandler = (event) => {

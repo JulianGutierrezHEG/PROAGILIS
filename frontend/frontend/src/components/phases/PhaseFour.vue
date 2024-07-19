@@ -10,35 +10,24 @@
       </p>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-2">User Stories Corrigées</h3>
-        <div class="overflow-y-auto" style="max-height: 700px;">
-          <table class="min-w-full bg-white">
-            <thead>
-              <tr>
-                <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">User Story</th>
-                <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">Valeur Métier</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(story, index) in userStories" :key="index">
-                <td class="py-2 px-4 border-b">
-                  <UserStoryCard :story="story" />
-                </td>
-                <td class="py-2 px-4 border-b" :class="{ locked: lockedElements['businessValue' + story.id] && lockedElements['businessValue' + story.id] !== currentUser }"
-                  @mouseover="lock('businessValue' + story.id)" @mouseout="unlock('businessValue' + story.id)">
-                  <input
-                    type="number"
-                    v-model="story.business_value"
-                    class="mt-1 block w-full p-2 border rounded-md"
-                    min="1"
-                    max="100"
-                    @input="updateUserStory(story.id)"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="overflow-y-auto max-h-96 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+          <div v-for="(story, index) in userStories" :key="index" class="p-4 border rounded-lg shadow-sm bg-white">
+            <UserStoryCard :story="story" />
+            <div :class="{ locked: lockedElements['businessValue' + story.id] && lockedElements['businessValue' + story.id] !== currentUser }"
+                 @mouseover="lock('businessValue' + story.id)" @mouseout="unlock('businessValue' + story.id)">
+              <label for="businessValue" class="block text-gray-700 mt-2">Valeur Métier</label>
+              <input
+                type="number"
+                v-model="story.business_value"
+                class="mt-1 block w-full p-2 border rounded-md"
+                min="1"
+                max="100"
+                @input="validateAndUpdateBusinessValue(story)"
+              />
+            </div>
+          </div>
         </div>
-        <button @click.prevent="submitPhaseFourData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
+        <button @click.prevent="submitPhaseFourData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mt-4">
           Soumettre
         </button>
       </div>
@@ -90,6 +79,14 @@ const unlock = (elementId) => {
   unlockElement(elementId);
 };
 
+const validateAndUpdateBusinessValue = async (story) => {
+  const numericValue = story.business_value.toString().replace(/[^0-9]/g, '');
+  story.business_value = numericValue ? parseInt(numericValue, 10) : '';
+  if (story.business_value) {
+    await updateUserStory(story.id);
+  }
+};
+
 const updateUserStory = async (storyId) => {
   const story = userStories.value.find(story => story.id === storyId);
   if (story) {
@@ -131,3 +128,15 @@ onUnmounted(() => {
 });
 </script>
 
+<style scoped>
+.custom-button {
+  display: block;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+</style>

@@ -46,6 +46,7 @@ class CreateProjectView(APIView):
         user_story_templates = UserStoryTemplate.objects.all()
         for template in user_story_templates:
             UserStory.objects.create(
+                name=template.name,
                 description=template.description,
                 business_value=template.business_value,
                 time_estimation=template.time_estimation,
@@ -57,7 +58,22 @@ class CreateProjectView(APIView):
 
         serializer = ProjectSerializer(project)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+    
+# Retourne les détails d'un projet pour un groupe
+class FetchProjectDetailsView(APIView):
+    def get(self, request, group_id):
+        try:
+            group = Group.objects.get(id=group_id)
+            project = group.assigned_project
+            if project:
+                return Response({
+                    'project_name': project.name,
+                    'current_sprint': project.current_sprint,
+                }, status=status.HTTP_200_OK)
+            return Response({"detail": "Projet pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
+        except Group.DoesNotExist:
+            return Response({"detail": "Groupe aps trouvé"}, status=status.HTTP_404_NOT_FOUND)
+        
 # Retourne les membres d'un groupe
 class GroupMembersViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path='group-members')
@@ -223,11 +239,10 @@ class FetchToCutUserStoriesView(APIView):
         if not backlog:
             return Response({"detail": "Pas de backlog trouvé pour ce projet"}, status=status.HTTP_404_NOT_FOUND)
 
-        user_stories = backlog.user_stories.all()[:2]  
-        if len(user_stories) < 2:
-            return Response({"detail": "Pas assez d'User stories dans le backlog"}, status=status.HTTP_404_NOT_FOUND)
+        user_stories = UserStory.objects.filter(backlog=backlog, name__in=["Consulter le catalogue", "Ajouter au panier"])
 
-        data = [{"id": story.id, "description": story.description, "business_value": story.business_value, "time_estimation": story.time_estimation} for story in user_stories]
+
+        data = [{"id": story.id, "description": story.description, "business_value": story.business_value, "time_estimation": story.time_estimation.total_seconds()} for story in user_stories]
         return Response(data, status=status.HTTP_200_OK)
 
 # Crée une nouvelle user story pour un groupe
@@ -237,23 +252,31 @@ class AddUserStoryView(APIView):
         project = group.project
         if not project:
             return Response({"detail": "Pas de projet trouvé pour ce groupe"}, status=status.HTTP_404_NOT_FOUND)
-        
+
         backlog = project.backlog
         if not backlog:
             return Response({"detail": "Pas de backlog trouvé pour ce projet"}, status=status.HTTP_404_NOT_FOUND)
 
         name = request.data.get('name')
         description = request.data.get('description')
+        sprint_id = request.data.get('sprint_id')
+
 
         if not name or not description:
             return Response({"detail": "Tous les champs sont requis"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        sprint = None
+        if sprint_id:
+            sprint = get_object_or_404(Sprint, id=sprint_id, project=project)
 
         user_story = UserStory.objects.create(
             name=name,
             description=description,
-            business_value=0,  
-            time_estimation=timedelta(0),  
-            backlog=backlog
+            business_value=0,
+            time_estimation=timedelta(0),
+            backlog=backlog,
+            has_been_created=True,
+            sprint=sprint
         )
 
         return Response({
@@ -261,7 +284,11 @@ class AddUserStoryView(APIView):
             "name": user_story.name,
             "description": user_story.description,
             "business_value": user_story.business_value,
-            "time_estimation": user_story.time_estimation.total_seconds()  
+            "time_estimation": user_story.time_estimation.total_seconds(),
+            "is_completed": user_story.is_completed,
+            "sprint": user_story.sprint_id,
+            "sprint_number": user_story.sprint_number,
+            "has_been_created": user_story.has_been_created
         }, status=status.HTTP_201_CREATED)
 
 # Supprime une user story pour un groupe
@@ -300,11 +327,17 @@ class UpdateUserStoryView(APIView):
         if 'description' in data:
             user_story.description = data['description']
         if 'time_estimation' in data:
-            user_story.time_estimation = data['time_estimation']
+            try:
+                hours = int(data['time_estimation'])
+                user_story.time_estimation = timedelta(hours=hours)
+            except ValueError:
+                return Response({"detail": "Invalid time estimation value"}, status=status.HTTP_400_BAD_REQUEST)
         if 'is_completed' in data:
             user_story.is_completed = data['is_completed']
         if 'sprint' in data:
             user_story.sprint_id = data['sprint']
+        if 'sprint_number' in data:
+            user_story.sprint_number = data['sprint_number']
 
         user_story.save()
         return Response({
@@ -312,7 +345,29 @@ class UpdateUserStoryView(APIView):
             "name": user_story.name,
             "description": user_story.description,
             "business_value": user_story.business_value,
-            "time_estimation": user_story.time_estimation,
+            "time_estimation": user_story.time_estimation.total_seconds() // 3600, 
             "is_completed": user_story.is_completed,
             "sprint": user_story.sprint_id,
+            "sprint_number": user_story.sprint_number
         }, status=status.HTTP_200_OK)
+
+# Retourne les user stories crées par un groupe
+class FetchCreatedUserStoriesView(APIView):
+    def get(self, request, group_id):
+        group = get_object_or_404(Group, id=group_id)
+        project = group.project
+        if not project:
+            return Response({"detail": "Pas de projet trouvé pour ce groupe"}, status=status.HTTP_404_NOT_FOUND)
+
+        user_stories = UserStory.objects.filter(backlog__project=project, has_been_created=True)
+        data = [
+            {
+                "id": story.id,
+                "name": story.name,
+                "description": story.description,
+                "business_value": story.business_value,
+                "time_estimation": story.time_estimation.total_seconds()
+            } for story in user_stories
+        ]
+
+        return Response(data, status=status.HTTP_200_OK)

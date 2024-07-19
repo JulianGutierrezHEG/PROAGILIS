@@ -19,7 +19,13 @@ class GroupPhaseStatusSerializer(serializers.ModelSerializer):
 class UserStorySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserStory
-        fields = ['id', 'description', 'business_value', 'time_estimation', 'project', 'is_completed', 'sprint']
+        fields = '__all__'
+
+    def update(self, instance, validated_data):
+        if 'time_estimation' in validated_data:
+            time_estimation = validated_data.pop('time_estimation')
+            validated_data['time_estimation'] = timedelta(hours=time_estimation)
+        return super().update(instance, validated_data)
 
 class BacklogSerializer(serializers.ModelSerializer):
     class Meta:

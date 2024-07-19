@@ -22,7 +22,7 @@
         "pk": 3,
         "fields": {
             "name": "User Stories",
-            "description": "Corriger et dépcouper les US",
+            "description": "Corriger et découper les US",
             "requires_validation": true
         }
     },
@@ -41,14 +41,14 @@
         "fields": {
             "name": "Sprint Planning",
             "description": "Planifier le sprint",
-            "requires_validation": true
+            "requires_validation": false
         }
     },
     {
         "model": "games.gamephase",
         "pk": 6,
         "fields": {
-            "name": "Sprint Execution",
+            "name": "Sprint",
             "description": "Exécuter le sprint",
             "requires_validation": true
         }
@@ -75,7 +75,8 @@
         "model": "games.userstorytemplate",
         "pk": 1,
         "fields": {
-            "description": "Consulter le catalogue",
+            "name": "Consulter le catalogue",
+            "description": "En tant qu'utilisateur, je veux pouvoir consulter le catalogue des produits disponibles sur le site de vente en ligne, pour pouvoir voir les produits proposés et leurs caractéristiques.",
             "business_value": 5,
             "time_estimation": "1:00:00"
         }
@@ -84,7 +85,8 @@
         "model": "games.userstorytemplate",
         "pk": 2,
         "fields": {
-            "description": "Ajouter au panier",
+            "name": "Ajouter au panier",
+            "description": "En tant qu'utilisateur, je veux pouvoir ajouter un produit au panier, pour pouvoir acheter le produit plus tard.",
             "business_value": 3,
             "time_estimation": "0:30:00"
         }
@@ -93,7 +95,8 @@
         "model": "games.userstorytemplate",
         "pk": 3,
         "fields": {
-            "description": "Passer la commande",
+            "name": "Passer la commande",
+            "description": "En tant qu'utilisateur, je veux pouvoir passer une commande, pour pouvoir acheter les produits que j'ai ajoutés au panier.",
             "business_value": 8,
             "time_estimation": "2:00:00"
         }
@@ -102,7 +105,8 @@
         "model": "games.userstorytemplate",
         "pk": 4,
         "fields": {
-            "description": "Créer un compte utilisateur",
+            "name": "Créer un compte utilisateur",
+            "description": "En tant qu'utilisateur, je veux pouvoir créer un compte sur le site de vente en ligne, pour pouvoir passer des commandes.",
             "business_value": 6,
             "time_estimation": "1:30:00"
         }
@@ -111,7 +115,8 @@
         "model": "games.userstorytemplate",
         "pk": 5,
         "fields": {
-            "description": "Rechercher un produit",
+            "name": "Rechercher un produit",
+            "description": "En tant qu'utilisateur, je veux pouvoir rechercher un produit sur le site de vente en ligne, pour pouvoir trouver rapidement le produit que je cherche.",
             "business_value": 4,
             "time_estimation": "0:45:00"
         }
@@ -120,7 +125,8 @@
         "model": "games.userstorytemplate",
         "pk": 6,
         "fields": {
-            "description": "Consulter l'historique des commandes",
+            "name": "Consulter l'historique des commandes",
+            "description": "En tant qu'utilisateur, je veux pouvoir consulter l'historique de mes commandes sur le site de vente en ligne, pour pouvoir voir les commandes que j'ai passées.",
             "business_value": 7,
             "time_estimation": "1:15:00"
         }
@@ -129,7 +135,8 @@
         "model": "games.userstorytemplate",
         "pk": 7,
         "fields": {
-            "description": "Modifier les informations du compte",
+            "name": "Modifier les informations du compte",
+            "description": "En tant qu'utilisateur, je veux pouvoir modifier les informations de mon compte sur le site de vente en ligne, pour pouvoir mettre à jour mes informations personnelles.",
             "business_value": 5,
             "time_estimation": "1:00:00"
         }
@@ -138,7 +145,8 @@
         "model": "games.userstorytemplate",
         "pk": 8,
         "fields": {
-            "description": "Ajouter une adresse de livraison",
+            "name": "Ajouter une adresse de livraison",
+            "description": "En tant qu'utilisateur, je veux pouvoir ajouter une adresse de livraison sur le site de vente en ligne, pour pouvoir recevoir mes commandes à cette adresse.",
             "business_value": 4,
             "time_estimation": "0:45:00"
         }
@@ -147,7 +155,8 @@
         "model": "games.userstorytemplate",
         "pk": 9,
         "fields": {
-            "description": "Consulter les avis des produits",
+            "name": "Consulter les avis des produits",
+            "description": "En tant qu'utilisateur, je veux pouvoir consulter les avis des produits sur le site de vente en ligne, pour pouvoir voir les avis des autres utilisateurs sur les produits.",
             "business_value": 6,
             "time_estimation": "1:15:00"
         }
@@ -156,7 +165,8 @@
         "model": "games.userstorytemplate",
         "pk": 10,
         "fields": {
-            "description": "Ajouter un produit aux favoris",
+            "name": "Ajouter un produit aux favoris",
+            "description": "En tant qu'utilisateur, je veux pouvoir ajouter un produit aux favoris sur le site de vente en ligne, pour pouvoir retrouver facilement les produits que j'aime.",
             "business_value": 3,
             "time_estimation": "0:30:00"
         }
