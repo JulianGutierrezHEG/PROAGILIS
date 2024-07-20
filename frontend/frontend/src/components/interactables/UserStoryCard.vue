@@ -1,5 +1,5 @@
 <template>
-  <div :class="['bg-white shadow-md rounded-lg p-4 mb-4', { 'bg-gray-400': isSelected }]">
+  <div :class="['bg-white shadow-md rounded-lg p-4 mb-4', { 'bg-blue-200': isSelected }]">
     <p class="text-lg font-semibold mb-2"> Nom: {{ story.name }}</p>
     <p class="text-lg font-semibold mb-2">Description: {{ story.description }}</p>
     <p class="text-sm text-gray-500 mb-2">Valeur: {{ story.business_value || '' }}</p>
