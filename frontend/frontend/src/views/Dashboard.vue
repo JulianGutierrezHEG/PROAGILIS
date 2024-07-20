@@ -91,6 +91,8 @@ const {
   removeEventListeners 
 } = useSession();
 
+
+
 const selectGroup = (group) => {
   selectedGroup.value = group;
 };

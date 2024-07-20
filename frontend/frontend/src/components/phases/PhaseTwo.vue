@@ -39,9 +39,15 @@
                     :class="{ locked: lockedElements.timeBound && lockedElements.timeBound !== currentUser }"
                     @focus="lock('timeBound')" @blur="unlock('timeBound')" @input="updateSmart" required></textarea>
         </div>
-        <button @click.prevent="submitPhaseTwoAnswer" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
+        <div v-if="isScrumMaster">
+          <button @click.prevent="submitPhaseTwoAnswer" 
+                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
           Soumettre
         </button>
+        </div>
+        <div v-else>
+          <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
+        </div>
       </form>
     </div>
   </div>
@@ -68,13 +74,14 @@ const {
   isLoadingPhaseDetails, 
   waiting,
   fetchGroupMembers, 
-  setupWebSocket, 
-  cleanupWebSocket, 
+  setupEvents, 
+  cleanupEvents, 
   lockElement, 
   unlockElement, 
   checkValidationAndSendAnswer,
   showWaitingScreen,
-  fetchCurrentPhase
+  fetchCurrentPhase,
+  fetchProjectDetails
 } = useGame(props.group.id, props.group);
 
 const smartObjectives = ref({
@@ -84,6 +91,8 @@ const smartObjectives = ref({
   relevant: '',
   timeBound: ''
 });
+
+const isScrumMaster = ref(false);
 
 const lock = (elementId) => {
   lockElement(elementId);
@@ -102,11 +111,8 @@ const submitForm = async () => {
   console.log('SMART Objectives:', smartObjectives.value);
 };
 
-
 const submitPhaseTwoAnswer = async () => {
   try {
-    console.log('Group:', props.group);
-    console.log('Current user:', currentUser.value);
     showWaitingScreen(props.group.id, currentUser.value);
     const answerData = {
       specific: smartObjectives.value.specific,
@@ -124,12 +130,16 @@ const submitPhaseTwoAnswer = async () => {
 
 onMounted(async () => {
   fetchGroupMembers();
-  setupWebSocket();
+  setupEvents();
   await fetchCurrentPhase();
+  
+  const projectDetails = await fetchProjectDetails(props.group.id);
+  if (projectDetails) {
+    isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
+  }
 });
 
 onUnmounted(() => {
-  cleanupWebSocket();
+  cleanupEvents();
 });
 </script>
-

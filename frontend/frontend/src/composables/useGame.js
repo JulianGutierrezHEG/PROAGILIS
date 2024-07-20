@@ -56,6 +56,12 @@ export function useGame(groupId, group) {
     try {
       isLoadingPhaseDetails.value = true; 
       const phaseStatus = await gamesService.getGroupCurrentPhase(groupId);
+  
+      if (!phaseStatus) {
+        console.log('Phase status is null or undefined.');
+        return;
+      }
+  
       currentPhase.value = phaseStatus;
       if (phaseStatus.status === 'pending') { 
         waiting.value = true;
@@ -66,8 +72,6 @@ export function useGame(groupId, group) {
         const phaseDetails = await gamesService.getPhaseDetails(phaseStatus.phase);
         currentPhaseDetails.value = phaseDetails;
       }
-      console.log('Phase actuelle:', currentPhase.value);
-      console.log('Détails de la phase actuelle:', currentPhaseDetails.value);
     } catch (error) {
       console.error('Erreur lors de la récupération de la phase actuelle:', error);
     } finally {
@@ -99,14 +103,16 @@ export function useGame(groupId, group) {
 
   // Récupère les détails du projet pour un groupe
   const fetchProjectDetails = async (groupId) => {
-    return await gamesService.fetchProjectDetails(groupId);
+    try {
+      const projectDetails = await gamesService.fetchProjectDetails(groupId);
+      return projectDetails;
+    } catch (error) {
+      console.error('Error fetching project details:', error);
+    }
   };
 
   // Mise en place des websockets et des événements
-  const setupWebSocket = () => {
-    console.log('Mise en place du WebSocket pour le groupe:', groupId);
-    websocketService.connectGroup(groupId);
-
+  const setupEvents = () => {
     EventBus.on('lock_element', handleLockElement);
     EventBus.on('unlock_element', handleUnlockElement);
     EventBus.on('project_update', handleProjectUpdate);
@@ -121,21 +127,18 @@ export function useGame(groupId, group) {
   };
 
   // Nettoyage des websockets et des événements
-  const cleanupWebSocket = () => {
-    console.log('Nettoyage du WebSocket pour le groupe:', groupId);
-    websocketService.disconnectGroup(groupId);
-
+  const cleanupEvents = () => {
     EventBus.off('lock_element', handleLockElement);
     EventBus.off('unlock_element', handleUnlockElement);
     EventBus.off('project_update', handleProjectUpdate);
     EventBus.off('smart_update', handleSmartUpdate);
-    EventBus.on('user_story_created_update', handleUserStoryUpdate);
+    EventBus.off('user_story_created_update', handleUserStoryUpdate);
     EventBus.off('user_story_update', handleUserStoryUpdate);
     EventBus.off('user_joined_group', handleUserJoinedGroup);
     EventBus.off('user_left_group', handleUserLeftGroup);
     EventBus.off('phase_status_update', handlePhaseStatusUpdate);
     EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
-    EventBus.on('show_waiting_screen', handleShowWaitingScreen);
+    EventBus.off('show_waiting_screen', handleShowWaitingScreen);
 
   };
 
@@ -240,6 +243,7 @@ export function useGame(groupId, group) {
 
   // Check si besoin validation et soumet les données de la phase
   const checkValidationAndSendAnswer = async (answerData) => {
+      handleShowWaitingScreen();
       try {
         await submitGroupAnswer(answerData);
   
@@ -319,7 +323,8 @@ export function useGame(groupId, group) {
   // Récupère les user stories
   const fetchUserStories = async (groupId, storyIds = []) => {
     try {
-      const response = await gamesService.fetchUserStories(groupId, storyIds);
+      const ids = storyIds.map(story => typeof story === 'object' ? story.id : story);
+      const response = await gamesService.fetchUserStories(groupId, ids);
       return response;
     } catch (error) {
       console.error('Erreur lors de la récupération des User Stories:', error);
@@ -404,8 +409,8 @@ export function useGame(groupId, group) {
     phases,
     existingUserStories,
     fetchGroupMembers,
-    setupWebSocket,
-    cleanupWebSocket,
+    setupEvents,
+    cleanupEvents,
     lockElement,
     unlockElement,
     showWaitingScreen,

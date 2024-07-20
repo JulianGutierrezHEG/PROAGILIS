@@ -32,37 +32,37 @@
   const { fetchGroupPhaseAnswer, fetchUserStories } = useGame(groupId.value);
   provide('phaseAnswer', localPhaseAnswer);
   
-  const fetchPhaseData = async () => {
-    try {
-      const answerData = await fetchGroupPhaseAnswer(groupId.value, phaseId.value);
-      console.log('answerData:', answerData);
-      if (answerData) {
-        localCurrentPhaseName.value = answerData.phase_name;
-        if (answerData.answer && answerData.answer.userStories) {
-          const userStoryIds = answerData.answer.userStories.map(story => story.id || story);
-          console.log('Fetching user stories for answer:', userStoryIds);
-          const response = await fetchUserStories(groupId.value, userStoryIds);
-          localPhaseAnswer.value.userStories = response;
-          console.log('Fetched user stories for phase answer:', response);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching phase data:', error);
-    }
-  };
-  
   const handlePhaseAnswerUpdate = async (data) => {
-    if (data.group_id === groupId.value && data.phase_id === phaseId.value) {
-      if (data.answer && data.answer.userStories) {
-        const userStoryIds = data.answer.userStories.map(story => story.id || story);
-        console.log('Handling phase answer update, fetching user stories:', userStoryIds);
+  if (data.group_id === groupId.value && data.phase_id === phaseId.value) {
+    if (data.answer && data.answer.userStories) {
+      const userStoryIds = data.answer.userStories.map(story => typeof story === 'object' ? story.id : story);
+      console.log('Handling phase answer update, fetching user stories:', userStoryIds);
+      const response = await fetchUserStories(groupId.value, userStoryIds);
+      localPhaseAnswer.value.userStories = response;
+    } else {
+      localPhaseAnswer.value.userStories = [];
+    }
+  }
+};
+
+const fetchPhaseData = async () => {
+  try {
+    const answerData = await fetchGroupPhaseAnswer(groupId.value, phaseId.value);
+    console.log('answerData:', answerData);
+    if (answerData) {
+      localCurrentPhaseName.value = answerData.phase_name;
+      if (answerData.answer && answerData.answer.userStories) {
+        const userStoryIds = answerData.answer.userStories.map(story => typeof story === 'object' ? story.id : story);
+        console.log('Fetching user stories for answer:', userStoryIds);
         const response = await fetchUserStories(groupId.value, userStoryIds);
         localPhaseAnswer.value.userStories = response;
-      } else {
-        localPhaseAnswer.value.userStories = [];
+        console.log('Fetched user stories for phase answer:', response);
       }
     }
-  };
+  } catch (error) {
+    console.error('Error fetching phase data:', error);
+  }
+};
   
   onMounted(() => {
     fetchPhaseData();

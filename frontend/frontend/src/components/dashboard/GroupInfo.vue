@@ -36,7 +36,7 @@ const props = defineProps({
   }
 });
 
-const { fetchPhases, fetchGroupPhasesStatus, fetchPhaseDetails } = useGame(props.group.id);
+const { fetchPhases, fetchGroupPhasesStatus, fetchPhaseDetails} = useGame(props.group.id);
 
 const phases = ref([]);
 const phaseStatus = ref({});

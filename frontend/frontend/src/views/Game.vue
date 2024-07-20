@@ -22,7 +22,7 @@
         </div>
       </div>
       <hr class="my-4 border-black" />
-      <div class="phase-container flex-grow overflow-auto">
+      <div class="phase-container flex-grow ">
         <component v-if="sessionStatus === 'active'" :is="currentPhaseComponent" :group="selectedGroup" />
         <WaitingScreen v-else-if="sessionStatus === 'not_started' || sessionStatus === 'paused' " />
       </div>
@@ -110,7 +110,6 @@ const nextPhase = () => {
 };
 
 onMounted(async () => {
-  console.log('Préparation des données');
   await fetchUserSessionInfo();
   setupEventListeners();
 
@@ -130,21 +129,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  console.log('Nettoyage des données');
   removeEventListeners();
-  if (sessionId.value) {
-    websocketService.offMessage(sessionId.value, handleWebSocketMessage);
-    websocketService.disconnectSession(sessionId.value);
-  }
-  if (currentUser.value && currentUser.value.group_id) {
-    websocketService.disconnectGroup(currentUser.value.group_id);
-  } else if (currentUser.value && currentUser.value.groupname) {
-    websocketService.disconnectGroup(currentUser.value.groupname);
-  }
-
-  if (selectedGroup.value && selectedGroup.value.id) {
-    websocketService.disconnectGroup(selectedGroup.value.id);
-  }
   EventBus.off('phase_status_update', handlePhaseStatusUpdate);
 });
 </script>

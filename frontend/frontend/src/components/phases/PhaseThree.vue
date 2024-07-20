@@ -37,13 +37,19 @@
         <textarea id="storyDescription" v-model="newStory.description" class="mt-1 block w-full p-2 border rounded-md" rows="3"
                   @focus="lock('storyDescription')" @blur="unlock('storyDescription')"></textarea>
       </div>
-      <button @click="handleStoryAction" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 mt-2">
+      <button @click="handleStoryAction" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 mt-2 mb-10">
         {{ isDividing ? (divideCounter === 1 ? 'Valider et créer la deuxième' : 'Diviser la User Story') : 'Ajouter une User Story' }}
       </button>
-      <button @click="submitPhaseThreeAnswer" class="bg-blue-500 text-white px-4 py-2 m-9 rounded-md hover:bg-blue-600">
-        Soumettre la réponse
-      </button>
-    </div>
+      <div v-if="isScrumMaster">
+          <button @click.prevent="submitPhaseThreeAnswer" 
+                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
+          Soumettre
+        </button>
+        </div>
+        <div v-else>
+          <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
+        </div>
+     </div>
   </div>
 </template>
 
@@ -62,11 +68,12 @@ const props = defineProps({
 
 const { 
   fetchGroupMembers, 
-  setupWebSocket, 
-  cleanupWebSocket, 
+  setupEvents, 
+  cleanupEvents, 
   fetchCurrentPhase, 
   fetchUserStoriesToCut,
   fetchCreatedUserStories,
+  fetchProjectDetails,
   addUserStory,
   deleteUserStory,
   checkValidationAndSendAnswer,
@@ -79,6 +86,7 @@ const {
   currentUser
 } = useGame(props.group.id, props.group);
 
+const isScrumMaster = ref(false);
 const existingUserStories = ref([]);
 const newUserStories = ref([]);
 const newStory = ref({ name: '', description: '' });
@@ -208,19 +216,17 @@ const deleteStory = async (storyId) => {
 
 onMounted(async () => {
   fetchGroupMembers();
-  setupWebSocket();
+  setupEvents();
   await fetchCurrentPhase();
   await fetchInitialUserStoriesToCut();
   await fetchCreatedUserStoriesFrontend();
+  const projectDetails = await fetchProjectDetails(props.group.id);
+  if (projectDetails) {
+    isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
+  }
 });
 
 onUnmounted(() => {
-  cleanupWebSocket();
+  cleanupEvents();
 });
 </script>
-
-<style scoped>
-.isSelected {
-  background-color: rgba(0, 123, 255, 0.1);
-}
-</style>

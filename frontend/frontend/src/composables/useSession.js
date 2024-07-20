@@ -284,7 +284,7 @@ export function useSession() {
     EventBus.off('user_left_group', updateGroupMembers);
     EventBus.off('session_status_changed', updateSessionStatus);
     EventBus.off('session_deleted', handleSessionDeleted);
-    websocketService.disconnectAll();
+   // websocketService.disconnectAll();
   };
 
   return {

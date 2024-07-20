@@ -46,7 +46,8 @@
           </div>
         </div>
         <p class="text-center mb-6 text-lg">Tous les autres membres du groupe seront des développeurs.</p>
-        <button @click.prevent="submitProjectData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
+        <button @click.prevent="submitProjectData" 
+                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
           Soumettre
         </button>
       </form>
@@ -58,7 +59,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useGame } from '@/composables/useGame';
 import websocketService from '@/services/websocketService';
-import EventBus from '@/services/eventBus';
 import WaitingScreen from '@/views/WaitingScreen.vue';
 
 const props = defineProps({
@@ -76,8 +76,8 @@ const {
   isLoadingPhaseDetails, 
   waiting,
   fetchGroupMembers, 
-  setupWebSocket, 
-  cleanupWebSocket, 
+  setupEvents, 
+  cleanupEvents, 
   lockElement, 
   unlockElement, 
   checkValidationAndSendAnswer,
@@ -156,11 +156,11 @@ const submitProjectData = async () => {
 
 onMounted(async () => {
   fetchGroupMembers();
-  setupWebSocket();
+  setupEvents();
   await fetchCurrentPhase();
 });
 
 onUnmounted(() => {
-  cleanupWebSocket();
+  cleanupEvents();
 });
 </script>

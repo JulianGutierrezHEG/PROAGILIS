@@ -69,6 +69,9 @@ class FetchProjectDetailsView(APIView):
                 return Response({
                     'project_name': project.name,
                     'current_sprint': project.current_sprint,
+                    'scrum_master': project.scrum_master,
+                    'product_owner': project.product_owner,
+                    'developers': project.developers
                 }, status=status.HTTP_200_OK)
             return Response({"detail": "Projet pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
         except Group.DoesNotExist:

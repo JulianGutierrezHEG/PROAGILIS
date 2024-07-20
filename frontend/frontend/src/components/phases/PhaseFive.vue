@@ -11,19 +11,19 @@
           Ouvrir Trello
         </a>
       </div>
-      <div class="mb-4">
+      <div class="mb-10">
         <h3 class="text-xl font-semibold mb-2">User Stories Sélectionnées</h3>
         <span> Clickez sur une carte d'User Story pour la séléctionnée pour le prochain sprint</span>
-        <div class="overflow-y-auto max-h-96">
-          <table class="min-w-full bg-white">
+        <div class="overflow-y-auto max-h-96 ">
+          <table class="min-w-full bg-white ">
             <thead>
               <tr>
                 <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">User Story</th>
-                <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">Temps Estimé (h)</th>
+                <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">Temps Estimé (s)</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(story, index) in userStories" :key="index" :class="{ 'bg-green-100': selectedUserStoryIds.includes(story.id) }">
+              <tr v-for="(story, index) in userStories" :key="index" :class="{ 'bg-white': selectedUserStoryIds.includes(story.id) }">
                 <td class="py-2 px-4 border-b">
                   <UserStoryCard :story="story" :isSelected="selectedUserStoryIds.includes(story.id)" @click="toggleStorySelection(story.id)" />
                 </td>
@@ -36,9 +36,15 @@
             </tbody>
           </table>
         </div>
-        <button @click.prevent="submitPhaseFiveData" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
+        <div v-if="isScrumMaster" class="mt-10">
+          <button @click.prevent="submitPhaseFiveData" 
+                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
           Soumettre
         </button>
+        </div>
+        <div v-else>
+          <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
+        </div>
       </div>
     </div>
   </div>
@@ -66,8 +72,9 @@ const {
   isLoadingPhaseDetails, 
   waiting,
   fetchGroupMembers, 
-  setupWebSocket, 
-  cleanupWebSocket, 
+  fetchProjectDetails,
+  setupEvents, 
+  cleanupEvents, 
   lockElement, 
   unlockElement, 
   checkValidationAndSendAnswer,
@@ -77,6 +84,7 @@ const {
   updateUserStoryDetails
 } = useGame(props.group.id, props.group);
 
+const isScrumMaster = ref(false);
 const userStories = ref([]);
 const selectedUserStoryIds = ref([]);
 const initialUserStoriesFetched = ref(false);
@@ -134,18 +142,16 @@ const fetchUserStoriesForPhase = async () => {
 
 onMounted(async () => {
   fetchGroupMembers();
-  setupWebSocket();
+  setupEvents();
   await fetchCurrentPhase();
   await fetchUserStoriesForPhase();
+  const projectDetails = await fetchProjectDetails(props.group.id);
+  if (projectDetails) {
+    isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
+  }
 });
 
 onUnmounted(() => {
-  cleanupWebSocket();
+  cleanupEvents();
 });
 </script>
-
-<style scoped>
-.bg-green-100 {
-  background-color: rgba(105, 214, 169, 0.5);
-}
-</style>

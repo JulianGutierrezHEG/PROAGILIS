@@ -174,3 +174,4 @@ class SessionConsumer(BaseConsumer):
 
     async def session_deleted(self, event):
         await self.send_message('session_deleted', event)
+    

@@ -4,8 +4,16 @@ import axios from 'axios';
 
 // Gère les erreurs renvoyées par Axios
 const handleAxiosError = (error) => {
-  const errorMessage = error.response?.data?.detail || 'Erreur inconnue';
-  throw new Error(errorMessage);
+  if (error.response) {
+    console.error('Erreur de réponse:', error.response);
+    if (error.response.status === 404) {
+      console.error('Pas trouvé.');
+    }
+  } else if (error.request) {
+    console.error('Pas de réponse reçue:', error.request);
+  } else {
+    console.error('Erreur:', error.message);
+  }
 };
 
 // Récupère les détails d'une phase
@@ -36,6 +44,7 @@ const getGroupCurrentPhase = async (groupId) => {
     return response.data;
   } catch (error) {
     handleAxiosError(error);
+    return null;
   }
 };
 
