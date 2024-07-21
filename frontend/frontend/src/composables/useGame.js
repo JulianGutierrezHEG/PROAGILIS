@@ -30,6 +30,19 @@ export function useGame(groupId, group) {
     timeBound: ''
   });
   const existingUserStories = ref([]);
+  const currentSprintDetails = ref({});
+  const sprintUserStories = ref([]);
+  const gameTimeControl = ref({ game_hours: 1, real_minutes: 1 });
+
+  // Récupère le contrôle du temps de jeu
+  const fetchGameTimeControl = async () => {
+    try {
+        const response = await gamesService.getGameTimeControl();
+        gameTimeControl.value = response;
+    } catch (error) {
+        console.error('Erreur lors de la récupération du contrôle du temps de jeu:', error);
+    }
+};
 
   // Récupère les membres du groupe
   const fetchGroupMembers = async () => {
@@ -54,6 +67,7 @@ export function useGame(groupId, group) {
   // Récupère la phase actuelle
   const fetchCurrentPhase = async () => {
     try {
+      console.log('Récupération de la phase actuelle pour le groupe:', groupId);
       isLoadingPhaseDetails.value = true; 
       const phaseStatus = await gamesService.getGroupCurrentPhase(groupId);
   
@@ -297,8 +311,10 @@ export function useGame(groupId, group) {
       websocketService.sendPhaseStatusUpdate(groupId, phaseId, status);
   
       if (isCorrect) {
-        if (phaseId === 1) {
-          await gamesService.createProject(groupId, answerData);
+        if (phaseId === 5) {
+          await gamesService.createSprint(groupId, answerData);
+          const userStoryIds = answerData.userStories; 
+          await gamesService.updateSprintFields(groupId, userStoryIds, 1);
         }
         const nextPhaseId = phaseId + 1;
         await gamesService.updatePhaseStatus(groupId, nextPhaseId, 'in_progress');
@@ -382,12 +398,31 @@ export function useGame(groupId, group) {
   // Met à jour les détails d'une user story
   const updateUserStoryDetails = async (storyId, storyData) => {
     try {
-      console.log(`Updating user story with ID ${storyId} for group ${groupId}`);
       const response = await gamesService.updateUserStoryDetails(groupId, storyId, storyData);
       return response;
     } catch (error) {
-      console.error('Error updating user story details:', error);
+      console.error('Erreur lors de la mise à jour des détails de la User Story:', error);
       throw error;
+    }
+  };
+
+  // Récupère les détails du sprint actuel
+  const fetchSprintDetails = async (groupId) => {
+    try {
+      const data = await gamesService.getSprintDetails(groupId);
+      currentSprintDetails.value = data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des détails du sprint:', error);
+    }
+  };
+
+  // Récupère les user stories du sprint
+  const fetchSprintUserStories = async (groupId) => {
+    try {
+      const data = await gamesService.getSprintUserStories(groupId);
+      sprintUserStories.value = data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des user stories du sprint:', error);
     }
   };
 
@@ -397,6 +432,7 @@ export function useGame(groupId, group) {
   });
 
   return {
+    gameTimeControl,
     groupMembers,
     lockedElements,
     currentUser,
@@ -408,6 +444,9 @@ export function useGame(groupId, group) {
     phasesStatus,
     phases,
     existingUserStories,
+    currentSprintDetails,
+    sprintUserStories,
+    fetchGameTimeControl,
     fetchGroupMembers,
     setupEvents,
     cleanupEvents,
@@ -429,6 +468,8 @@ export function useGame(groupId, group) {
     deleteUserStory,
     fetchUserStories,
     updateCreatedUserStories,
-    updateUserStoryDetails
+    updateUserStoryDetails,
+    fetchSprintDetails,
+    fetchSprintUserStories,
   };
 }

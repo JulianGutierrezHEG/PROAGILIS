@@ -82,7 +82,7 @@ const {
   unlockElement, 
   checkValidationAndSendAnswer,
   showWaitingScreen,
-  fetchCurrentPhase
+  fetchCurrentPhase,
 } = useGame(props.group.id, props.group);
 
 const projectName = ref('');
@@ -155,9 +155,9 @@ const submitProjectData = async () => {
 
 
 onMounted(async () => {
+  await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
-  await fetchCurrentPhase();
 });
 
 onUnmounted(() => {

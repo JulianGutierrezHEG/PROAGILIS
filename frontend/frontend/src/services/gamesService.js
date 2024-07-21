@@ -16,6 +16,16 @@ const handleAxiosError = (error) => {
   }
 };
 
+// Récupère le contrôle du temps de jeu
+const getGameTimeControl = async () => {
+  try {
+      const response = await axios.get(`/api/games/game-time-control/`);
+      return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 // Récupère les détails d'une phase
 const getPhaseDetails = async (phaseId) => {
   try {
@@ -183,6 +193,49 @@ const updateUserStoryDetails = async (groupId, storyId, storyData) => {
   }
 };
 
+// Met à jour les champs d'un sprint d'une user story
+const updateSprintFields = async (groupId, userStoryIds, originalSprintNumber) => {
+  try {
+    const response = await axios.put(`/api/games/group/${groupId}/update-sprint-fields/`, {
+      user_story_ids: userStoryIds,
+      original_sprint_number: originalSprintNumber
+    });
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Crée un sprint pour un groupe
+const createSprint = async (groupId, sprintData) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/create-sprint/`, sprintData);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Récupère les détails d'un sprint
+const getSprintDetails = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/sprint-details/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Récupère les user stories d'un sprint
+const getSprintUserStories = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/sprint-user-stories/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 export default {
   getGroupMembers,
   getGroupCurrentPhase,
@@ -200,6 +253,11 @@ export default {
   updateUserStoryDetails,
   fetchProjectDetails,
   fetchCreatedUserStories,
+  createSprint,
+  getSprintDetails,
+  getSprintUserStories,
+  updateSprintFields,
+  getGameTimeControl,
 };
 
 

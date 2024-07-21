@@ -32,7 +32,15 @@ const localCurrentPhaseName = ref('');
 const localPhaseAnswer = ref({ userStories: [] });
 const currentSprint = ref(1);
 const { fetchGroupPhaseAnswer, fetchUserStories, fetchProjectDetails } = useGame(groupId.value);
-provide('phaseAnswer', localPhaseAnswer);
+const preparedPhaseAnswer = ref({});
+
+const preparePhaseAnswer = () => {
+    preparedPhaseAnswer.value = {
+        userStories: localPhaseAnswer.value.userStories.map(story => story.id)
+    };
+};
+
+provide('phaseAnswer', preparedPhaseAnswer);
 
 const fetchPhaseData = async () => {
     try {
@@ -45,6 +53,7 @@ const fetchPhaseData = async () => {
                 console.log('Fetching user stories for answer:', userStoryIds);
                 const response = await fetchUserStories(groupId.value, userStoryIds);
                 localPhaseAnswer.value.userStories = response;
+                preparePhaseAnswer(); 
                 console.log('Fetched user stories for phase answer:', response);
             }
         }
@@ -65,8 +74,10 @@ const handlePhaseAnswerUpdate = async (data) => {
             console.log('Handling phase answer update, fetching user stories:', userStoryIds);
             const response = await fetchUserStories(groupId.value, userStoryIds);
             localPhaseAnswer.value.userStories = response;
+            preparePhaseAnswer(); 
         } else {
             localPhaseAnswer.value.userStories = [];
+            preparePhaseAnswer(); 
         }
     }
 };

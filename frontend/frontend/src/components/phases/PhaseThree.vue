@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useGame } from '@/composables/useGame';
 import WaitingScreen from '@/views/WaitingScreen.vue';
 import UserStoryCard from '@/components/interactables/UserStoryCard.vue';
@@ -67,6 +67,10 @@ const props = defineProps({
 });
 
 const { 
+  waiting, 
+  isLoadingPhaseDetails, 
+  currentPhaseDetails,
+  currentUser,
   fetchGroupMembers, 
   setupEvents, 
   cleanupEvents, 
@@ -80,10 +84,6 @@ const {
   showWaitingScreen,
   lockElement,
   unlockElement,
-  waiting, 
-  isLoadingPhaseDetails, 
-  currentPhaseDetails,
-  currentUser
 } = useGame(props.group.id, props.group);
 
 const isScrumMaster = ref(false);
@@ -95,10 +95,28 @@ const isDividing = ref(false);
 const divideCounter = ref(0);
 const lockedElements = ref({});
 
+const fetchInitialData = async () => {
+  if (!props.group || !props.group.id) {
+    console.error('Group ID is not defined');
+    return;
+  }
+
+  try {
+    await fetchCurrentPhase();
+    fetchGroupMembers();
+    await fetchInitialUserStoriesToCut();
+    await fetchCreatedUserStoriesFrontend();
+    const projectDetails = await fetchProjectDetails(props.group.id);
+    if (projectDetails) {
+      isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
+    }
+  } catch (error) {
+    console.error('Error fetching initial data:', error);
+  }
+};
+
 const handleStoryAction = async () => {
   try {
-    console.log('Handling story action on user stories:', newStory.value.name, selectedStoryId.value);
-    
     if (isDividing.value && selectedStoryId.value) {
       if (divideCounter.value === 0) {
         const response = await addUserStory({
@@ -135,7 +153,7 @@ const handleStoryAction = async () => {
       newStory.value = { name: '', description: '' };
     }
   } catch (error) {
-    console.error('Error in handleStoryAction:', error);
+    console.error('Erreur lors de la création de la User Story:', error);
   }
 };
 
@@ -143,38 +161,34 @@ const selectStoryForDivide = (story) => {
   if (!isDividing.value) {
     isDividing.value = true;
     selectedStoryId.value = story.id;
-    divideCounter.value = 0; // Reset the divide counter
+    divideCounter.value = 0; 
   } else if (isDividing.value && selectedStoryId.value !== story.id) {
     isDividing.value = false;
     selectedStoryId.value = null;
     isDividing.value = true;
     selectedStoryId.value = story.id;
-    divideCounter.value = 0; // Reset the divide counter
+    divideCounter.value = 0; 
   }
 };
 
 const fetchCreatedUserStoriesFrontend = async () => {
   try {
     const response = await fetchCreatedUserStories(props.group.id);
-    newUserStories.value = response; // Update newUserStories with the response
-    console.log('Fetched created user stories:', newUserStories.value);
+    newUserStories.value = response; 
   } catch (error) {
-    console.error('Error fetching created user stories:', error);
+    console.error('Erreur lors de la récupération des User Stories créées:', error);
   }
 };
 
 const fetchInitialUserStoriesToCut = async () => {
   try {
     const response = await fetchUserStoriesToCut(props.group.id);
-    console.log('Fetched initial user stories to cut:', response);
     if (!response || response.length === 0) {
-      console.log('No user stories available to cut.');
     } else {
       existingUserStories.value = response; 
-      console.log('Fetched user stories to cut:', existingUserStories.value);
     }
   } catch (error) {
-    console.error('Error fetching user stories to cut:', error);
+    console.error('Erreur lors de la récupération des User Stories à découper:', error);
   }
 };
 
@@ -185,9 +199,8 @@ const submitPhaseThreeAnswer = async () => {
       userStories: newUserStories.value.map(story => story.id)
     };
     await checkValidationAndSendAnswer(answerData);
-    console.log('Answer submitted for phase 3:', answerData);
   } catch (error) {
-    console.error('Error in submitPhaseThreeAnswer:', error);
+    console.error('Erreur lors de la soumission de la réponse pour la phase 3:', error);
   }
 };
 
@@ -215,18 +228,22 @@ const deleteStory = async (storyId) => {
 };
 
 onMounted(async () => {
-  fetchGroupMembers();
+  await fetchInitialData();
   setupEvents();
-  await fetchCurrentPhase();
-  await fetchInitialUserStoriesToCut();
-  await fetchCreatedUserStoriesFrontend();
-  const projectDetails = await fetchProjectDetails(props.group.id);
-  if (projectDetails) {
-    isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
-  }
 });
 
 onUnmounted(() => {
   cleanupEvents();
 });
+
+watch(
+  () => props.group,
+  async (newGroup, oldGroup) => {
+    if (newGroup && newGroup.id) {
+      console.log('Group changed:', newGroup.id);
+      await fetchInitialData();
+    }
+  },
+  { immediate: true }
+);
 </script>

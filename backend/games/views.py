@@ -11,9 +11,21 @@ from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from games_sessions.models import Group
-from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate
-from .serializers import GroupPhaseStatusSerializer,GamePhaseSerializer,ProjectSerializer
+from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate,Sprint,GameTimeControl
+from .serializers import GroupPhaseStatusSerializer,GamePhaseSerializer,ProjectSerializer,SprintSerializer,UserStorySerializer
 from .utils import update_group_phase_status
+
+# Retourne les détails de la configuration du temps de jeu
+class GameTimeControlView(APIView):
+    def get(self, request):
+        try:
+            game_time_control = GameTimeControl.objects.first()  
+            return Response({
+                "game_hours": game_time_control.game_hours,
+                "real_minutes": game_time_control.real_minutes
+            }, status=status.HTTP_200_OK)
+        except GameTimeControl.DoesNotExist:
+            return Response({"detail": "GameTimeControl pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
 
 # Retourne la liste des phases de jeu
 class GamePhaseListView(ListAPIView):
@@ -289,8 +301,8 @@ class AddUserStoryView(APIView):
             "business_value": user_story.business_value,
             "time_estimation": user_story.time_estimation.total_seconds(),
             "is_completed": user_story.is_completed,
-            "sprint": user_story.sprint_id,
-            "sprint_number": user_story.sprint_number,
+            "sprint": user_story.sprint,
+            "original_sprint_number": user_story.original_sprint_number,
             "has_been_created": user_story.has_been_created
         }, status=status.HTTP_201_CREATED)
 
@@ -331,16 +343,16 @@ class UpdateUserStoryView(APIView):
             user_story.description = data['description']
         if 'time_estimation' in data:
             try:
-                hours = int(data['time_estimation'])
-                user_story.time_estimation = timedelta(hours=hours)
+               total_seconds = int(data['time_estimation'])
+               user_story.time_estimation = timedelta(seconds=total_seconds)
             except ValueError:
                 return Response({"detail": "Invalid time estimation value"}, status=status.HTTP_400_BAD_REQUEST)
         if 'is_completed' in data:
             user_story.is_completed = data['is_completed']
         if 'sprint' in data:
             user_story.sprint_id = data['sprint']
-        if 'sprint_number' in data:
-            user_story.sprint_number = data['sprint_number']
+        if 'original_sprint_number' in data:
+            user_story.original_sprint_number = data['original_sprint_number']
 
         user_story.save()
         return Response({
@@ -348,11 +360,32 @@ class UpdateUserStoryView(APIView):
             "name": user_story.name,
             "description": user_story.description,
             "business_value": user_story.business_value,
-            "time_estimation": user_story.time_estimation.total_seconds() // 3600, 
+            "time_estimation": user_story.time_estimation.total_seconds(),  
             "is_completed": user_story.is_completed,
-            "sprint": user_story.sprint_id,
-            "sprint_number": user_story.sprint_number
+            "sprint": user_story.sprint.id if user_story.sprint else None,
+            "original_sprint_number": user_story.original_sprint_number
         }, status=status.HTTP_200_OK)
+
+# Met à jour les champs de sprint pour les user stories d'un groupe
+class UpdateSprintFieldsView(APIView):
+    def put(self, request, group_id):
+        data = request.data
+        user_story_ids = data.get('user_story_ids', [])
+        original_sprint_number = data.get('original_sprint_number', 1)
+
+        if not user_story_ids:
+            return Response({"detail": "User story IDs must be provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        backlog = get_object_or_404(Backlog, project__group__id=group_id)
+        sprint = get_object_or_404(Sprint, backlog=backlog, sprint_number=original_sprint_number)
+
+        user_stories = UserStory.objects.filter(id__in=user_story_ids, backlog=backlog)
+        for story in user_stories:
+            story.sprint = sprint
+            story.original_sprint_number = original_sprint_number
+            story.save()
+
+        return Response({"detail": "User stories updated successfully."}, status=status.HTTP_200_OK)
 
 # Retourne les user stories crées par un groupe
 class FetchCreatedUserStoriesView(APIView):
@@ -374,3 +407,38 @@ class FetchCreatedUserStoriesView(APIView):
         ]
 
         return Response(data, status=status.HTTP_200_OK)
+
+# Crée un nouveau sprint pour un groupe
+class CreateSprintView(APIView):
+    def post(self, request, group_id):
+        backlog = get_object_or_404(Backlog, project__group_id=group_id)
+        sprint_number = request.data.get('sprint_number', 1)
+
+        sprint = Sprint.objects.create(
+            backlog=backlog,
+            sprint_number=sprint_number
+        )
+
+        serializer = SprintSerializer(sprint)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# Retourne les détails du sprint actuel pour un groupe
+class GetSprintDetailsView(APIView):
+    def get(self, request, group_id):
+        sprint = get_object_or_404(Sprint, backlog__project__group_id=group_id, is_completed=False)
+        serializer = SprintSerializer(sprint)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# Retourne les user stories du sprint actuel pour un groupe
+class SprintUserStoriesView(APIView):
+    def get(self, request, group_id):
+        try:
+            sprint = Sprint.objects.get(backlog__project__group_id=group_id, is_completed=False)
+            user_stories = UserStory.objects.filter(
+                backlog=sprint.backlog,
+                original_sprint_number=sprint.sprint_number
+            )
+            serializer = UserStorySerializer(user_stories, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Sprint.DoesNotExist:
+            return Response({"error": "Sprint not found."}, status=status.HTTP_404_NOT_FOUND)

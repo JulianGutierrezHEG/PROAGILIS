@@ -125,9 +125,9 @@ const fetchUserStoriesForPhase = async () => {
 };
 
 onMounted(async () => {
+  await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
-  await fetchCurrentPhase();
   await fetchUserStoriesForPhase();
   const projectDetails = await fetchProjectDetails(props.group.id);
   if (projectDetails) {

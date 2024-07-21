@@ -1,5 +1,10 @@
 from rest_framework import serializers
-from .models import Project, GamePhase, UserStory, Backlog, Sprint, SprintUserStory, Event, UserStoryTemplate, BacklogTemplate, GroupPhaseStatus
+from .models import GameTimeControl,Project, GamePhase, UserStory, Backlog, Sprint, Event, UserStoryTemplate, GroupPhaseStatus
+
+class GameTimeControlSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameTimeControl
+        fields = '__all__'
 
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,33 +37,17 @@ class BacklogSerializer(serializers.ModelSerializer):
         model = Backlog
         fields = '__all__'
 
-class SprintUserStorySerializer(serializers.ModelSerializer):
-    user_story = UserStorySerializer()
-    
-    class Meta:
-        model = SprintUserStory
-        fields = ['id', 'sprint', 'user_story', 'description', 'time_estimation', 'completed', 'progress_time']
-
 class SprintSerializer(serializers.ModelSerializer):
-    user_stories = SprintUserStorySerializer(source='sprintuserstory_set', many=True, read_only=True)
-    
     class Meta:
         model = Sprint
-        fields = ['id', 'start_time', 'end_time', 'project', 'user_stories', 'current_progress']
+        fields = '__all__'
 
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
-        fields = ['id', 'description', 'effect', 'sprint']
+        fields = '__all__'
 
 class UserStoryTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserStoryTemplate
-        fields = ['id', 'description', 'business_value', 'time_estimation']
-
-class BacklogTemplateSerializer(serializers.ModelSerializer):
-    user_stories = UserStoryTemplateSerializer(many=True, read_only=True)
-    
-    class Meta:
-        model = BacklogTemplate
-        fields = ['id', 'user_stories']
+        fields = '__all__'

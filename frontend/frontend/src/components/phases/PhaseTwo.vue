@@ -67,7 +67,6 @@ const props = defineProps({
 });
 
 const { 
-  groupMembers, 
   lockedElements, 
   currentUser, 
   currentPhaseDetails, 
@@ -129,9 +128,10 @@ const submitPhaseTwoAnswer = async () => {
 };
 
 onMounted(async () => {
+  console.log(props.group.id);
+  await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
-  await fetchCurrentPhase();
   
   const projectDetails = await fetchProjectDetails(props.group.id);
   if (projectDetails) {

@@ -15,7 +15,12 @@ from .views import (
     DeleteUserStoryView,
     UpdateUserStoryView,
     FetchProjectDetailsView,
-    FetchCreatedUserStoriesView
+    FetchCreatedUserStoriesView,
+    CreateSprintView,
+    GetSprintDetailsView,
+    SprintUserStoriesView,
+    UpdateSprintFieldsView,
+    GameTimeControlView
 )
 
 group_members_list = GroupMembersViewSet.as_view({
@@ -23,6 +28,7 @@ group_members_list = GroupMembersViewSet.as_view({
 })
 
 urlpatterns = [
+    path('game-time-control/', GameTimeControlView.as_view(), name='gameTimeControl'),
     path('phases/', GamePhaseListView.as_view(), name='phaseList'),
     path('phase/<int:id>/', GamePhaseDetail.as_view(), name='gamePhaseDetail'),
     path('fetch-userstories-to-cut/<int:group_id>/', FetchToCutUserStoriesView.as_view(), name='fetchUSToCut'),
@@ -39,4 +45,8 @@ urlpatterns = [
     path('group/<int:group_id>/add-userstory/', AddUserStoryView.as_view(), name='addUserStory'),
     path('group/<int:group_id>/delete-userstory/<int:story_id>/', DeleteUserStoryView.as_view(), name='deleteUserStory'),
     path('group/<int:group_id>/update-userstory/<int:user_story_id>/', UpdateUserStoryView.as_view(), name='updateUserStory'),
+    path('group/<int:group_id>/create-sprint/', CreateSprintView.as_view(), name='createSprint'),
+    path('group/<int:group_id>/sprint-details/', GetSprintDetailsView.as_view(), name='SprintDetails'),
+    path('group/<int:group_id>/sprint-user-stories/', SprintUserStoriesView.as_view(), name='SprintUserStories'),
+    path('group/<int:group_id>/update-sprint-fields/', UpdateSprintFieldsView.as_view(), name='updateSprintFields'),
 ]

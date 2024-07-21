@@ -3,6 +3,13 @@ from django.db.models import CASCADE, SET_NULL
 from games_sessions.models import Group
 from datetime import timedelta
 
+class GameTimeControl(models.Model):
+    game_hours = models.IntegerField(default=1)  
+    real_minutes = models.IntegerField(default=1)  
+
+    def __str__(self):
+        return f"{self.real_minutes} minutes réel = {self.game_hours} heurs en jeu"
+
 class Project(models.Model):
     name = models.CharField(max_length=200)
     group = models.OneToOneField(Group, on_delete=SET_NULL, null=True, blank=True, related_name='assigned_project')
@@ -47,7 +54,16 @@ class Backlog(models.Model):
 
     def __str__(self):
         return f"Backlog for {self.project.name}"
-    
+
+class Sprint(models.Model):
+    backlog = models.ForeignKey(Backlog, on_delete=models.CASCADE)
+    sprint_number = models.IntegerField(default=1)
+    current_progress = models.DurationField(default=timedelta)
+    is_completed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Sprint {self.sprint_number} for {self.backlog.project.name}"
+
 class UserStory(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
@@ -56,32 +72,12 @@ class UserStory(models.Model):
     backlog = models.ForeignKey('Backlog', on_delete=models.CASCADE, related_name='user_stories')
     is_completed = models.BooleanField(default=False)
     sprint = models.ForeignKey('Sprint', on_delete=models.SET_NULL, null=True, blank=True, related_name='stories')
-    sprint_number = models.IntegerField(default=1)
+    original_sprint_number = models.IntegerField(default=0)
     has_been_created = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.description
-
-class Sprint(models.Model):
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    user_stories = models.ManyToManyField(UserStory, through='SprintUserStory', related_name='related_sprints')
-    current_progress = models.DurationField(default=timedelta)
-
-    def __str__(self):
-        return f"Sprint from {self.start_time} to {self.end_time}"
-
-class SprintUserStory(models.Model):
-    sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE)
-    user_story = models.ForeignKey(UserStory, on_delete=models.CASCADE)
-    description = models.TextField()
-    time_estimation = models.DurationField()
-    completed = models.BooleanField(default=False)
     progress_time = models.DurationField(default=timedelta)
 
     def __str__(self):
-        return f"Task: {self.description}"
+        return self.description
 
 class Event(models.Model):
     description = models.TextField()
@@ -100,8 +96,4 @@ class UserStoryTemplate(models.Model):
     def __str__(self):
         return self.description
 
-class BacklogTemplate(models.Model):
-    user_stories = models.ManyToManyField(UserStoryTemplate)
 
-    def __str__(self):
-        return "Backlog Template"

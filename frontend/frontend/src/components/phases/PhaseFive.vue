@@ -13,13 +13,13 @@
       </div>
       <div class="mb-10">
         <h3 class="text-xl font-semibold mb-2">User Stories Sélectionnées</h3>
-        <span> Clickez sur une carte d'User Story pour la séléctionnée pour le prochain sprint</span>
-        <div class="overflow-y-auto max-h-96 ">
+        <span class="mb-5"> Clickez sur une carte d'User Story pour la séléctionnée pour le prochain sprint.Rappel: {{gameTimeControl.game_hours }}H en jeu = {{gameTimeControl.real_minutes}} minute en réel </span>
+        <div class="overflow-y-auto max-h-96 mt-10 ">
           <table class="min-w-full bg-white ">
             <thead>
               <tr>
                 <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">User Story</th>
-                <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">Temps Estimé (s)</th>
+                <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">Temps Estimé</th>
               </tr>
             </thead>
             <tbody>
@@ -29,8 +29,8 @@
                 </td>
                 <td class="py-2 px-4 border-b"
                   :class="{ locked: lockedElements['timeEstimate' + story.id] && lockedElements['timeEstimate' + story.id] !== currentUser }"
-                  @mouseover="lock('timeEstimate' + story.id)" @mouseout="unlock('timeEstimate' + story.id)">
-                  <input type="number" v-model="story.time_estimation" class="mt-1 block w-full p-2 border rounded-md" min="1" @input="validateAndUpdateTimeEstimation(story)" />
+                  >
+                  <input type="time" v-model="story.time_estimation" class="mt-1 block w-full p-2 border rounded-md" min="00:00" max="23:59" @blur="validateAndUpdateTimeEstimation(story)" />
                 </td>
               </tr>
             </tbody>
@@ -66,6 +66,8 @@ const props = defineProps({
 
 const { 
   groupMembers, 
+  gameTimeControl,
+  fetchGameTimeControl,
   lockedElements, 
   currentUser, 
   currentPhaseDetails, 
@@ -98,8 +100,12 @@ const unlock = (elementId) => {
 };
 
 const validateAndUpdateTimeEstimation = async (story) => {
-  const numericValue = story.time_estimation.toString().replace(/[^0-9]/g, '');
-  story.time_estimation = numericValue ? parseInt(numericValue, 10) : '';
+  const [hours, minutes] = story.time_estimation.split(':').map(part => parseInt(part, 10));
+  const totalSeconds = (hours * 3600) + (minutes * 60);
+
+  story.time_estimation = totalSeconds;
+  console.log('Time Estimation:', story.time_estimation);
+
   if (story.time_estimation) {
     await updateUserStory(story.id);
   }
@@ -135,16 +141,23 @@ const submitPhaseFiveData = async () => {
 const fetchUserStoriesForPhase = async () => {
   if (!initialUserStoriesFetched.value) {
     const response = await fetchUserStories(props.group.id);
-    userStories.value = response;
+    userStories.value = response.map(story => {
+      const totalMinutes = Math.floor(story.time_estimation / 60);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      story.time_estimation_string = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+      return story;
+    });
     initialUserStoriesFetched.value = true;
   }
 };
 
 onMounted(async () => {
-  fetchGroupMembers();
+  await fetchGroupMembers();
   setupEvents();
   await fetchCurrentPhase();
   await fetchUserStoriesForPhase();
+  await fetchGameTimeControl();
   const projectDetails = await fetchProjectDetails(props.group.id);
   if (projectDetails) {
     isScrumMaster.value = projectDetails.scrum_master === currentUser.value;

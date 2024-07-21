@@ -1,18 +1,17 @@
 <template>
-    <div class="p-4">
-      <h2 class="text-2xl font-bold mb-4">Phase 6: Sprint</h2>
+  <div class="p-4">
+    <h2 v-if="!isLoadingPhaseDetails" class="text-3xl font-bold">{{ currentPhaseDetails.name }}</h2>
+    <p v-if="!isLoadingPhaseDetails" class="mb-4">{{ currentPhaseDetails.description }}</p>
+    <div v-if="currentSprintDetails && Object.keys(currentSprintDetails).length > 0">
       <p class="mb-4">
-        Gérez les tâches de votre sprint en les déplaçant sur la timeline. Réagissez aux événements aléatoires qui peuvent affecter vos tâches.
-      </p>
-      <p class="mb-4">
-        Sprint 1 sur 3
+        Sprint {{ currentSprintDetails.sprint_number }} sur 3
       </p>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-2">Timeline du Sprint</h3>
         <div class="relative mb-4">
           <div class="flex justify-between mb-1">
             <span class="text-base font-medium text-blue-700 dark:text-black">Progression Globale</span>
-            <span class="text-sm font-medium text-blue-700 dark:text-black">{{ formatTime(globalProgress) }}</span>
+            <span class="text-sm font-medium text-blue-700 dark:text-black">{{ convertToGameTime(globalProgress) }}</span>
           </div>
           <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
             <div class="h-6 bg-green-500 rounded-full dark:bg-green-500" :style="{ width: globalProgressPercent + '%' }"></div>
@@ -23,11 +22,11 @@
           <div class="overflow-y-auto max-h-96">
             <div v-for="(story, index) in sprintTasks" :key="index" class="mb-4">
               <div class="flex justify-between mb-1">
-                <span class="text-sm font-medium">{{ story.description }} ({{ story.timeEstimate }}h)</span>
-                <span class="text-xs text-gray-600">({{ story.timeEstimate }} min en réalité)</span>
+                <span class="text-sm font-medium">{{ story.name }} ({{ story.time_estimation }} en temps réel)</span>
+                <span class="text-xs text-gray-600">({{ convertToGameTime(story.time_estimation) }} en jeu)</span>
               </div>
               <div class="flex justify-between mb-1">
-                <span class="text-sm font-medium">{{ formatTime(story.progressTime) }}</span>
+                <span class="text-sm font-medium">{{ story.progress_time }}</span>
               </div>
               <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
                 <div class="h-6 bg-green-800 rounded-full dark:bg-green-500" :style="{ width: story.progress + '%' }"></div>
@@ -51,96 +50,146 @@
             </div>
           </div>
         </div>
+        <div v-if="isScrumMaster" class="mt-10">
+          <button @click.prevent="sendSprintData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
+            Terminer le Sprint
+          </button>
+        </div>
+        <div v-else>
+          <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
+        </div>
       </div>
     </div>
-  </template>
+    <div v-else>
+      <WaitingScreen />
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useGame } from '@/composables/useGame';
+import websocketService from '@/services/websocketService';
+import WaitingScreen from '@/views/WaitingScreen.vue';
+
+const props = defineProps({
+  group: {
+    type: Object,
+    required: true
+  }
+});
+
+const { 
+  currentUser,
+  gameTimeControl,
+  fetchGameTimeControl,
+  fetchCurrentPhase, 
+  setupEvents, 
+  cleanupEvents, 
+  checkValidationAndSendAnswer,  
+  fetchGroupMembers, 
+  fetchProjectDetails, 
+  isLoadingPhaseDetails, 
+  currentPhaseDetails,
+  fetchSprintDetails,
+  currentSprintDetails,
+  fetchSprintUserStories,
+  sprintUserStories
+} = useGame(props.group.id, props.group);
+
+const isScrumMaster = ref(false);
+const sprintTasks = ref([]);
+const globalProgress = ref(0);
+const globalProgressPercent = ref(0);
+const eventLog = ref([]);
+let sprintInterval;
+const sprintDurationRealTime = 14 * 24 * 60; 
+
+const convertToGameTime = (realTime) => {
+  if (typeof realTime === 'number') {
+    const hours = Math.floor(realTime / 3600).toString().padStart(2, '0');
+    const minutes = Math.floor((realTime % 3600) / 60).toString().padStart(2, '0');
+    realTime = `${hours}:${minutes}`;
+  }
   
-  <script setup>
-  import { ref } from 'vue';
-  
-  const sprintDuration = 14 * 24; // Two weeks in hours
-  const sprintDurationRealTime = 14 * 24 * 60; // Two weeks in minutes (real-time)
-  const sprintTasks = ref([
-    { description: 'Consulter le catalogue', timeEstimate: 8, progress: 0, progressTime: 0, status: 'À faire' },
-    { description: 'Ajouter au panier', timeEstimate: 5, progress: 0, progressTime: 0, status: 'À faire' },
-    { description: 'Gérer les paiements', timeEstimate: 10, progress: 0, progressTime: 0, status: 'À faire' }
-  ]);
-  
-  const globalProgress = ref(0); // in minutes (real-time)
-  const globalProgressPercent = ref(0);
-  const eventLog = ref([]);
-  let sprintInterval;
-  
-  const formatTime = (time) => {
-    const days = Math.floor(time / 1440); // 1440 minutes in a day
-    const hours = Math.floor((time % 1440) / 60);
-    const minutes = Math.floor(time % 60);
-    if (days > 0) return `${days}j ${hours}h ${minutes}m`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  };
-  
-  const startSprint = () => {
-    clearInterval(sprintInterval);
-    globalProgress.value = 0;
-    globalProgressPercent.value = 0;
-    eventLog.value = [];
-    sprintTasks.value.forEach(task => {
-      task.progress = 0;
-      task.progressTime = 0;
-    });
-  
-    sprintInterval = setInterval(() => {
-      if (globalProgress.value < sprintDurationRealTime) {
-        globalProgress.value += 1; // 1 minute increments in real-time
-        globalProgressPercent.value = (globalProgress.value / sprintDurationRealTime) * 100;
-  
-        sprintTasks.value.forEach(task => {
-          if (task.progressTime < task.timeEstimate * 60) {
-            task.progressTime += 1; // Increase by 1 minute in real-time
-            task.progress = (task.progressTime / (task.timeEstimate * 60)) * 100;
-            if (task.progressTime >= task.timeEstimate * 60) task.status = 'Terminé';
+  const parts = realTime.split(':');
+  const realHours = parseInt(parts[0], 10);
+  const realMinutes = parseInt(parts[1], 10);
+  const totalRealMinutes = realHours * 60 + realMinutes;
+  const gameMinutesPerRealMinute = gameTimeControl.value.game_hours / gameTimeControl.value.real_minutes;
+  const totalGameHours = totalRealMinutes * gameMinutesPerRealMinute;
+  const gameDays = Math.floor(totalGameHours / 24);
+  const gameHours = Math.floor(totalGameHours % 24);
+
+  return `${gameDays}j ${gameHours}h`;
+};
+
+const startSprint = () => {
+  clearInterval(sprintInterval);
+  globalProgress.value = 0;
+  globalProgressPercent.value = 0;
+  eventLog.value = [];
+  sprintTasks.value.forEach(task => {
+    task.progress = 0;
+    task.progress_time = 0;
+  });
+
+  sprintInterval = setInterval(() => {
+    if (globalProgress.value < sprintDurationRealTime) {
+      globalProgress.value += 1;
+      globalProgressPercent.value = (globalProgress.value / sprintDurationRealTime) * 100;
+
+      sprintTasks.value.forEach(task => {
+        if (task.progress_time < task.time_estimation) {
+          task.progress_time += 60; 
+          task.progress = (task.progress_time / task.time_estimation) * 100;
+          if (task.progress_time >= task.time_estimation) {
+            task.is_completed = true;
+            task.status = 'Terminé';
+            updateUserStory(task.id);
           }
-        });
-      } else {
-        clearInterval(sprintInterval);
-      }
-    }, 1000); // Adjust interval as needed
-  };
-  
-  const simulateEvent = () => {
-    const eventType = Math.floor(Math.random() * 3); // 0: block, 1: add time, 2: remove time
-    const taskIndex = Math.floor(Math.random() * sprintTasks.value.length);
-    const task = sprintTasks.value[taskIndex];
-  
-    let eventMessage = '';
-  
-    if (eventType === 0) {
-      // Block task
-      task.status = 'Bloqué';
-      clearInterval(sprintInterval); // Pause the sprint
-      eventMessage = `Tâche "${task.description}" bloquée.`;
-    } else if (eventType === 1) {
-      // Add time
-      task.timeEstimate += 2; // Add 2 hours as an example
-      task.progressTime = Math.min(task.progressTime, task.timeEstimate * 60);
-      task.progress = (task.progressTime / (task.timeEstimate * 60)) * 100; // Adjust progress
-      task.status = 'En cours';
-      eventMessage = `2 heures ajoutées à la tâche "${task.description}".`;
-    } else if (eventType === 2) {
-      // Remove time
-      task.timeEstimate = Math.max(task.timeEstimate - 2, 0); // Remove 2 hours as an example
-      task.progressTime = Math.min(task.progressTime, task.timeEstimate * 60);
-      task.progress = (task.progressTime / (task.timeEstimate * 60)) * 100; // Adjust progress
-      task.status = 'En cours';
-      eventMessage = `2 heures retirées de la tâche "${task.description}".`;
+        }
+      });
+    } else {
+      clearInterval(sprintInterval);
     }
-  
-    eventLog.value.push(eventMessage);
+  }, 1000);
+};
+
+const fetchSprintDetailsPhase = async () => {
+  await fetchSprintDetails(props.group.id);
+  console.log('Current Sprint Details:', currentSprintDetails.value);
+};
+
+const fetchSprintUserStoriesPhase = async () => {
+  await fetchSprintUserStories(props.group.id);
+  sprintTasks.value = sprintUserStories.value;
+  console.log('Sprint User Stories:', sprintTasks.value);
+};
+
+const sendSprintData = async () => {
+  const completedStories = sprintTasks.value.filter(story => story.is_completed);
+  const answerData = {
+    userStories: completedStories.map(story => story.id)
   };
-  </script>
-  
-  <style scoped>
-  /* Add any custom styles if needed */
-  </style>
-  
+  console.log('Sending Sprint Data:', answerData);
+  await checkValidationAndSendAnswer(answerData);
+};
+
+onMounted(async () => {
+  await fetchSprintDetailsPhase();
+  await fetchGameTimeControl();
+  await fetchGroupMembers();
+  setupEvents();
+  await fetchCurrentPhase();
+  await fetchSprintUserStoriesPhase();
+  const projectDetails = await fetchProjectDetails(props.group.id);
+  if (projectDetails) {
+    isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
+  }
+});
+
+onUnmounted(() => {
+  cleanupEvents();
+});
+</script>

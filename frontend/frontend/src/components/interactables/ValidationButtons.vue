@@ -22,6 +22,7 @@
   
   const handleValidation = async (isCorrect) => {
     const answerData = phaseAnswer.value;
+    console.log('Validation:',answerData);
     await validatePhase(groupId.value, phaseId.value, isCorrect, answerData);
   
     if (isCorrect) {
