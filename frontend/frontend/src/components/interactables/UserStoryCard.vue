@@ -1,5 +1,6 @@
 <template>
-  <div :class="['bg-white shadow-md rounded-lg p-4 mb-4', { 'bg-blue-400': isSelected }]">
+  <div :class="['bg-white shadow-md rounded-lg p-4 mb-4']" 
+       :style="{ backgroundColor: isSelected ? '#3b82f6' : 'white' }">
     <p class="text-lg font-semibold mb-2"> Nom: {{ story.name }}</p>
     <p class="text-lg font-semibold mb-2">Description: {{ story.description }}</p>
     <p class="text-sm text-gray-500 mb-2">Valeur: {{ story.business_value || '' }}</p>
@@ -9,7 +10,7 @@
 </template>
 
 <script setup>
-import { defineProps, computed, onMounted } from 'vue';
+import { watch,defineProps, computed, onMounted } from 'vue';
 import { useGame } from '@/composables/useGame';
 
 const props = defineProps({
@@ -28,6 +29,10 @@ const { gameTimeControl, fetchGameTimeControl } = useGame();
 
 onMounted(async () => {
   await fetchGameTimeControl();
+});
+
+watch(() => props.isSelected, (newVal) => {
+  console.log(`UserStoryCard: isSelected changed to ${newVal} for story ${props.story.id}`);
 });
 
 const formattedRealTimeEstimation = computed(() => {
@@ -51,4 +56,6 @@ const formattedGameTimeEstimation = computed(() => {
 
   return `${days}j ${hours}h`;
 });
+
 </script>
+

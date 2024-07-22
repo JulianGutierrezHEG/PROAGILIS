@@ -117,6 +117,7 @@ export function useGame(groupId, group) {
 
   // Récupère les détails du projet pour un groupe
   const fetchProjectDetails = async (groupId) => {
+    //fetchCurrentUser();
     try {
       const projectDetails = await gamesService.fetchProjectDetails(groupId);
       return projectDetails;
@@ -229,6 +230,7 @@ export function useGame(groupId, group) {
 
   // Verrouille un élément (websockets)
   const lockElement = (elementId) => {
+    //fetchCurrentUser();
     if (currentUser.value) {
       websocketService.lockElement(groupId, elementId, currentUser.value);
     } else {
@@ -238,6 +240,7 @@ export function useGame(groupId, group) {
 
   // Déverrouille un élément (websockets)
   const unlockElement = (elementId) => {
+    //fetchCurrentUser();
     if (currentUser.value) {
       websocketService.unlockElement(groupId, elementId, currentUser.value);
     } else {
@@ -247,6 +250,7 @@ export function useGame(groupId, group) {
 
   // Soumet une réponse de groupe
   const submitGroupAnswer = async (answerData) => {
+    //fetchCurrentUser();
     try {
       const phaseId = currentPhaseDetails.value.id;
       await gamesService.submitAnswer(groupId,phaseId, answerData, currentUser.value);
@@ -273,8 +277,9 @@ export function useGame(groupId, group) {
           websocketService.sendPhaseStatusUpdate(groupId, nextPhaseId, 'in_progress');
   
           websocketService.sendPhaseAnswerUpdate(groupId, currentPhaseDetails.value.id, answerData);
-
-          await gamesService.createProject(groupId, answerData);
+          if(nextPhaseId===2){
+            await gamesService.createProject(groupId, answerData);
+          } 
         }
       } catch (error) {
         console.error('Erreur lors de la validation et soumission des données de la phase:', error);
@@ -329,6 +334,7 @@ export function useGame(groupId, group) {
 
   // Affiche l'écran d'attente
   const showWaitingScreen = () => {
+    //fetchCurrentUser();
     if (currentUser.value) {
       websocketService.showWaitingScreen(groupId, currentUser.value);
     } else {
@@ -428,7 +434,7 @@ export function useGame(groupId, group) {
 
   onMounted(() => {
     fetchCurrentUser();
-    fetchCurrentPhase();
+    //fetchCurrentPhase();
   });
 
   return {

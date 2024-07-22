@@ -3,21 +3,23 @@
     <div class="mt-8">
       <h3 class="font-bold text-xl text-center mb-4">Phase du groupe</h3>
       <i class="block text-center text-sm"> Cliquez sur le numéro de la phase pour voir les réponses</i>
-      <ol class="items-center w-full space-y-4 sm:flex sm:space-x-8 sm:space-y-0 rtl:space-x-reverse">
-        <li v-for="(phase, index) in phases" :key="phase.id" :class="getPhaseClass(phaseStatus[phase.id]?.status)">
-          <span 
-            class="flex items-center justify-center w-8 h-8 border rounded-full shrink-0 cursor-pointer"
-            :class="getPhaseBorderClass(phaseStatus[phase.id]?.status)"
-            @click="() => openPhaseModal(phase)"
-          >
-            {{ index + 1 }}
-          </span>
-          <span>
-            <h3 class="font-medium leading-tight">{{ phase.name }}</h3>
-            <p class="text-sm">{{ getStatusText(phaseStatus[phase.id]?.status) }}</p>
-          </span>
-        </li>
-      </ol>
+      <div class="overflow-x-auto">
+        <ol class="flex items-center space-x-4 sm:space-x-8 rtl:space-x-reverse">
+          <li v-for="(phase, index) in phases" :key="phase.id" :class="getPhaseClass(phaseStatus[phase.id]?.status)">
+            <span 
+              class="flex items-center justify-center w-8 h-8 border rounded-full shrink-0 cursor-pointer"
+              :class="getPhaseBorderClass(phaseStatus[phase.id]?.status)"
+              @click="() => openPhaseModal(phase)"
+            >
+              {{ index + 1 }}
+            </span>
+            <span>
+              <h3 class="font-medium leading-tight">{{ phase.name }}</h3>
+              <p class="text-sm">{{ getStatusText(phaseStatus[phase.id]?.status) }}</p>
+            </span>
+          </li>
+        </ol>
+      </div>
     </div>
     <Modal />
   </div>
@@ -36,7 +38,7 @@ const props = defineProps({
   }
 });
 
-const { fetchPhases, fetchGroupPhasesStatus, fetchPhaseDetails} = useGame(props.group.id);
+const { fetchPhases, fetchGroupPhasesStatus, fetchPhaseDetails } = useGame(props.group.id);
 
 const phases = ref([]);
 const phaseStatus = ref({});
@@ -130,3 +132,11 @@ onUnmounted(() => {
 
 watch(() => props.group.id, fetchPhaseData, { immediate: true });
 </script>
+
+<style scoped>
+.ol {
+  display: flex;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+</style>

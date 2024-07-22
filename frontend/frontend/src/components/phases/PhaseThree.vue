@@ -20,7 +20,7 @@
         <div class="w-1/2 pl-2">
           <h3 class="text-xl font-semibold mb-2">Nouvelles User Stories</h3>
           <div class="overflow-y-auto max-h-80">
-            <div v-for="(story, index) in newUserStories" :key="index" class="relative flex items-center">
+            <div v-for="(story, index) in newUserStories" :key="index" class=" flex items-center">
               <UserStoryCard :story="story" class="flex-1" />
               <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete" class="w-6 h-6 cursor-pointer ml-2" @click="confirmDeleteStory(story.id)">
             </div>
@@ -158,6 +158,8 @@ const handleStoryAction = async () => {
 };
 
 const selectStoryForDivide = (story) => {
+  selectedStoryId.value = story.id; 
+  console.log('Selected story:', story.id);
   if (!isDividing.value) {
     isDividing.value = true;
     selectedStoryId.value = story.id;
