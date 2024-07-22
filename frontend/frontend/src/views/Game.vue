@@ -1,5 +1,5 @@
 <template>
-  <div class="w-4/5 max-h-screen overflow-hidden bg-gray-200 shadow-lg rounded-lg p-2 mx-auto my-8 flex flex-col justify-between">
+  <div class="w-4/5 h-screen bg-gray-200 shadow-lg rounded-lg p-2 mx-auto my-8 flex flex-col">
     <div>
       <div class="flex justify-between items-center">
         <div>
@@ -22,10 +22,10 @@
         </div>
       </div>
       <hr class="my-4 border-black" />
-      <div class="phase-container flex-grow ">
-        <component v-if="sessionStatus === 'active'" :is="currentPhaseComponent" :group="selectedGroup" />
-        <WaitingScreen v-else-if="sessionStatus === 'not_started' || sessionStatus === 'paused' " />
-      </div>
+    </div>
+    <div class="phase-container flex-grow overflow-y-auto">
+      <component v-if="sessionStatus === 'active'" :is="currentPhaseComponent" :group="selectedGroup" />
+      <WaitingScreen v-else-if="sessionStatus === 'not_started' || sessionStatus === 'paused' " />
     </div>
     <hr class="my-4 border-black" />
     <div class="flex justify-center space-x-4">
@@ -134,5 +134,3 @@ onUnmounted(() => {
   EventBus.off('phase_status_update', handlePhaseStatusUpdate);
 });
 </script>
-
-
