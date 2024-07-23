@@ -20,7 +20,12 @@ from .views import (
     GetSprintDetailsView,
     SprintUserStoriesView,
     UpdateSprintFieldsView,
-    GameTimeControlView
+    GameTimeControlView,
+    UpdateSprintProgressView,
+    UpdateUserStoryProgressView,
+    GetSprintProgressView,
+    GetUserStoriesProgressView,
+    CompleteUserStoryView
 )
 
 group_members_list = GroupMembersViewSet.as_view({
@@ -49,4 +54,10 @@ urlpatterns = [
     path('group/<int:group_id>/sprint-details/', GetSprintDetailsView.as_view(), name='SprintDetails'),
     path('group/<int:group_id>/sprint-user-stories/', SprintUserStoriesView.as_view(), name='SprintUserStories'),
     path('group/<int:group_id>/update-sprint-fields/', UpdateSprintFieldsView.as_view(), name='updateSprintFields'),
+    path('group/<int:group_id>/update-sprint-progress/<int:sprint_id>/', UpdateSprintProgressView.as_view(), name='updateSprintProgress'),
+    path('group/<int:group_id>/update-user-story-progress/<int:sprint_id>/<int:user_story_id>/', UpdateUserStoryProgressView.as_view(), name='updateUserStoryProgress'),
+    path('group/<int:group_id>/sprint-progress/<int:sprint_id>/', GetSprintProgressView.as_view(), name='sprintProgress'),
+    path('group/<int:group_id>/user-stories-progress/<int:sprint_id>/', GetUserStoriesProgressView.as_view(), name='getUserStoriesProgress'),  
+    path('group/<int:group_id>/sprint/<int:sprint_id>/complete-user-story/<int:story_id>/', CompleteUserStoryView.as_view(), name='completeUserStory'),
+   
 ]

@@ -4,7 +4,8 @@
         "pk": 1,
         "fields": {
             "game_hours": 1,
-            "real_minutes": 1
+            "real_minutes": 1,
+            "sprint_duration": 14
         }
     },
     {

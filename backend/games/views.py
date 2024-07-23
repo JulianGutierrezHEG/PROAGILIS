@@ -10,6 +10,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
+from django.utils import timezone
 from games_sessions.models import Group
 from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate,Sprint,GameTimeControl
 from .serializers import GroupPhaseStatusSerializer,GamePhaseSerializer,ProjectSerializer,SprintSerializer,UserStorySerializer
@@ -22,7 +23,8 @@ class GameTimeControlView(APIView):
             game_time_control = GameTimeControl.objects.first()  
             return Response({
                 "game_hours": game_time_control.game_hours,
-                "real_minutes": game_time_control.real_minutes
+                "real_minutes": game_time_control.real_minutes,
+                "sprint_duration": game_time_control.sprint_duration
             }, status=status.HTTP_200_OK)
         except GameTimeControl.DoesNotExist:
             return Response({"detail": "GameTimeControl pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
@@ -332,7 +334,7 @@ class UpdateUserStoryView(APIView):
         try:
             user_story = get_object_or_404(UserStory, id=user_story_id, backlog__project__group__id=group_id)
         except UserStory.DoesNotExist:
-            return Response({"detail": "User Story not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "User Story pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
 
         data = request.data
         if 'business_value' in data:
@@ -346,7 +348,7 @@ class UpdateUserStoryView(APIView):
                total_seconds = int(data['time_estimation'])
                user_story.time_estimation = timedelta(seconds=total_seconds)
             except ValueError:
-                return Response({"detail": "Invalid time estimation value"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"detail": "Temps ivalide"}, status=status.HTTP_400_BAD_REQUEST)
         if 'is_completed' in data:
             user_story.is_completed = data['is_completed']
         if 'sprint' in data:
@@ -374,7 +376,7 @@ class UpdateSprintFieldsView(APIView):
         original_sprint_number = data.get('original_sprint_number', 1)
 
         if not user_story_ids:
-            return Response({"detail": "User story IDs must be provided."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "User story IDs doit être renseigné"}, status=status.HTTP_400_BAD_REQUEST)
 
         backlog = get_object_or_404(Backlog, project__group__id=group_id)
         sprint = get_object_or_404(Sprint, backlog=backlog, sprint_number=original_sprint_number)
@@ -385,7 +387,7 @@ class UpdateSprintFieldsView(APIView):
             story.original_sprint_number = original_sprint_number
             story.save()
 
-        return Response({"detail": "User stories updated successfully."}, status=status.HTTP_200_OK)
+        return Response({"detail": "User stories mis à jour"}, status=status.HTTP_200_OK)
 
 # Retourne les user stories crées par un groupe
 class FetchCreatedUserStoriesView(APIView):
@@ -441,4 +443,96 @@ class SprintUserStoriesView(APIView):
             serializer = UserStorySerializer(user_stories, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Sprint.DoesNotExist:
-            return Response({"error": "Sprint not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Sprint pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
+
+# Met à jour le progrès du sprint actuel pour un groupe
+class UpdateSprintProgressView(APIView):
+    def post(self, request, group_id, sprint_id):
+        try:
+            group = Group.objects.get(id=group_id)
+            sprint = Sprint.objects.get(id=sprint_id, backlog__project__group=group)
+            game_time_control = GameTimeControl.objects.first()
+            sprint_duration_real_time = game_time_control.sprint_duration * 24 * 60 
+
+            if not sprint.is_completed:
+                sprint.current_progress += timedelta(seconds=1)
+                sprint.save()
+
+                if sprint.current_progress.total_seconds() / 60 >= sprint_duration_real_time:
+                    sprint.is_completed = True
+                    sprint.save()
+
+            return Response({"detail": "Sprint progrès mis à jour"}, status=status.HTTP_200_OK)
+        except (Sprint.DoesNotExist, Group.DoesNotExist, GameTimeControl.DoesNotExist):
+            return Response({"detail": "Sprint, Groupe, ou GameTimeControl pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
+
+# Met à jour le progrès des user stories du sprint actuel pour un groupe
+class UpdateUserStoryProgressView(APIView):
+    def post(self, request, group_id, sprint_id, user_story_id):
+        try:
+            group = Group.objects.get(id=group_id)
+            sprint = Sprint.objects.get(id=sprint_id, backlog__project__group=group)
+            story = UserStory.objects.get(id=user_story_id, sprint=sprint)
+            if not story.is_completed:
+                story.progress_time += timedelta(seconds=1)  
+                if story.progress_time >= story.time_estimation:
+                    story.is_completed = True
+                story.save()
+
+            return Response({"detail": "User story progrès mis à jour"}, status=status.HTTP_200_OK)
+        except (Sprint.DoesNotExist, Group.DoesNotExist, UserStory.DoesNotExist):
+            return Response({"detail": "Sprint, Groupe, ou GameTimeControl pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
+
+# Retourne le progrès du sprint actuel pour un groupe
+class GetSprintProgressView(APIView):
+    def get(self, request, group_id, sprint_id):
+        try:
+            group = Group.objects.get(id=group_id)
+            sprint = Sprint.objects.get(id=sprint_id, backlog__project__group=group)
+            
+            progress_data = {
+                "sprint_number": sprint.sprint_number,
+                "current_progress": sprint.current_progress,
+                "is_completed": sprint.is_completed,
+            }
+
+            return Response(progress_data, status=status.HTTP_200_OK)
+        except (Sprint.DoesNotExist, Group.DoesNotExist):
+            return Response({"detail": "Sprint ou Groupe pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
+
+# Retourne le progrès des user stories du sprint actuel pour un groupe
+class GetUserStoriesProgressView(APIView):
+    def get(self, request, group_id, sprint_id):
+        try:
+            group = Group.objects.get(id=group_id)
+            sprint = Sprint.objects.get(id=sprint_id, backlog__project__group=group)
+            stories = sprint.stories.all()
+
+            user_stories_data = [
+                {
+                    "id": story.id,
+                    "name": story.name,
+                    "progress_time": story.progress_time,
+                    "time_estimation": story.time_estimation,
+                    "is_completed": story.is_completed,
+                }
+                for story in stories
+            ]
+
+            return Response(user_stories_data, status=status.HTTP_200_OK)
+        except (Sprint.DoesNotExist, Group.DoesNotExist):
+            return Response({"detail": "Sprint ou Groupe pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Marque une user story comme complétée
+class CompleteUserStoryView(APIView):
+    def post(self, request, group_id, sprint_id, story_id):
+        try:
+            group = Group.objects.get(id=group_id)
+            sprint = Sprint.objects.get(id=sprint_id, backlog__project__group=group)
+            user_story = UserStory.objects.get(id=story_id, sprint=sprint)
+            user_story.is_completed = True
+            user_story.save()
+            return Response({"detail": "User story complétée"}, status=status.HTTP_200_OK)
+        except (Group.DoesNotExist, Sprint.DoesNotExist, UserStory.DoesNotExist):
+            return Response({"detail": "Groupe, Sprint, ou User Story aps trouvé"}, status=status.HTTP_404_NOT_FOUND)

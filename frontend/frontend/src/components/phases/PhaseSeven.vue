@@ -22,9 +22,6 @@
               <p class="text-sm text-gray-600">{{ story.details }}</p>
             </div>
           </div>
-          <button @click="moveToBacklog" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
-            Envoyer dans le Product Backlog
-          </button>
         </div>
       </div>
       <div class="mb-4">
@@ -34,19 +31,17 @@
         </div>
       </div>
       <div class="mb-4">
-        <h3 class="text-xl font-semibold mb-2">Ajouter de Nouvelles User Stories</h3>
-        <button @click="openCreateModal" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 mt-2">
-          Ajouter une User Story
-        </button>
+        <h3 class="text-xl font-semibold mb-2">Votre réponse</h3>
+        <div class="bg-white p-4 rounded-lg shadow-md">
+          <p class="text-sm text-gray-600">Réponse de l'étudiant</p>
+        </div>
       </div>
-      <Modal />
     </div>
   </template>
   
   <script setup>
   import { ref } from 'vue';
   import EventBus from '@/services/eventBus';
-  import Modal from '@/components/modals/Modal.vue';
   
   const completedUserStories = ref([
     { description: 'Consulter le catalogue', details: 'Le client peut consulter le catalogue des produits.' },

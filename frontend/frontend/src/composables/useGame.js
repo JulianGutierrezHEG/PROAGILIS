@@ -32,7 +32,9 @@ export function useGame(groupId, group) {
   const existingUserStories = ref([]);
   const currentSprintDetails = ref({});
   const sprintUserStories = ref([]);
-  const gameTimeControl = ref({ game_hours: 1, real_minutes: 1 });
+  const gameTimeControl = ref({}); 
+  const currentSprintProgress = ref(null);
+  const isSprintRunning = ref(false);
 
   // Récupère le contrôle du temps de jeu
   const fetchGameTimeControl = async () => {
@@ -117,7 +119,6 @@ export function useGame(groupId, group) {
 
   // Récupère les détails du projet pour un groupe
   const fetchProjectDetails = async (groupId) => {
-    //fetchCurrentUser();
     try {
       const projectDetails = await gamesService.fetchProjectDetails(groupId);
       return projectDetails;
@@ -230,7 +231,6 @@ export function useGame(groupId, group) {
 
   // Verrouille un élément (websockets)
   const lockElement = (elementId) => {
-    //fetchCurrentUser();
     if (currentUser.value) {
       websocketService.lockElement(groupId, elementId, currentUser.value);
     } else {
@@ -240,7 +240,6 @@ export function useGame(groupId, group) {
 
   // Déverrouille un élément (websockets)
   const unlockElement = (elementId) => {
-    //fetchCurrentUser();
     if (currentUser.value) {
       websocketService.unlockElement(groupId, elementId, currentUser.value);
     } else {
@@ -250,7 +249,7 @@ export function useGame(groupId, group) {
 
   // Soumet une réponse de groupe
   const submitGroupAnswer = async (answerData) => {
-    //fetchCurrentUser();
+    
     try {
       const phaseId = currentPhaseDetails.value.id;
       await gamesService.submitAnswer(groupId,phaseId, answerData, currentUser.value);
@@ -334,7 +333,6 @@ export function useGame(groupId, group) {
 
   // Affiche l'écran d'attente
   const showWaitingScreen = () => {
-    //fetchCurrentUser();
     if (currentUser.value) {
       websocketService.showWaitingScreen(groupId, currentUser.value);
     } else {
@@ -432,9 +430,70 @@ export function useGame(groupId, group) {
     }
   };
 
+  // Commence un sprint
+  const startSprint = async (groupId, sprintId) => {
+    try {
+      currentSprintProgress.value = 0;
+      isSprintRunning.value = true;
+      await updateSprintProgress(groupId, sprintId);
+      for (const story of sprintUserStories.value) {
+        if (!story.is_completed) {
+          await updateUserStoryProgress(groupId, sprintId, story.id);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du démarrage du sprint:', error);
+    }
+  };
+
+  // Met à jour la progression du sprint
+  const updateSprintProgress = async (groupId, sprintId) => {
+    try {
+      const response = await gamesService.updateSprintProgress(groupId, sprintId);
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la progression du sprint:', error);
+    }
+  };
+
+  // Met à jour la progression de la user story
+  const updateUserStoryProgress = async (groupId, sprintId, userStoryId) => {
+    try {
+      await gamesService.updateUserStoryProgress(groupId, sprintId, userStoryId);
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la progression de la user story:', error);
+    }
+  };
+  
+  // Récupère la progression du sprint
+  const fetchSprintProgress = async (groupId, sprintId) => {
+    try {
+      const response = await gamesService.getSprintProgress(groupId, sprintId);
+      currentSprintProgress.value = response;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la progression du sprint:', error);
+    }
+  };
+
+  // Récupère la progression des user stories
+  const fetchUserStoriesProgress = async (groupId, sprintId) => {
+    try {
+      const response = await gamesService.getUserStoriesProgress(groupId, sprintId);
+      sprintUserStories.value = response;
+      console.log('User stories progress:', response);
+    } catch (error) {
+      console.error('Error fetching user stories progress:', error);
+    }
+  };
+
+  // Termine une user story
+  const completeUserStory = async (groupId, sprintId, storyId) => {
+    await gamesService.completeUserStory(groupId, sprintId, storyId);
+    await fetchUserStoriesProgress(groupId, sprintId);
+  };
+
   onMounted(() => {
     fetchCurrentUser();
-    //fetchCurrentPhase();
   });
 
   return {
@@ -452,6 +511,8 @@ export function useGame(groupId, group) {
     existingUserStories,
     currentSprintDetails,
     sprintUserStories,
+    currentSprintProgress,
+    isSprintRunning,
     fetchGameTimeControl,
     fetchGroupMembers,
     setupEvents,
@@ -477,5 +538,11 @@ export function useGame(groupId, group) {
     updateUserStoryDetails,
     fetchSprintDetails,
     fetchSprintUserStories,
+    startSprint,
+    updateSprintProgress,
+    updateUserStoryProgress,
+    fetchSprintProgress,
+    fetchUserStoriesProgress,
+    completeUserStory
   };
 }

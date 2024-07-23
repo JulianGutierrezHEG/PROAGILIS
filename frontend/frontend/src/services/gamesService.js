@@ -236,6 +236,58 @@ const getSprintUserStories = async (groupId) => {
   }
 };
 
+// Met à jour le progrès d'un sprint
+const updateSprintProgress = async (groupId, sprintId) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/update-sprint-progress/${sprintId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Met à jour le progrès d'une user story
+const updateUserStoryProgress = async (groupId, sprintId, userStoryId) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/update-user-story-progress/${sprintId}/${userStoryId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Récupère le progrès d'un sprint
+const getSprintProgress = async (groupId, sprintId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/sprint-progress/${sprintId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Récupère le progrès des user stories d'un sprint
+const getUserStoriesProgress = async (groupId, sprintId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/user-stories-progress/${sprintId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Termine une user story
+const completeUserStory = async (groupId, sprintId, storyId) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/sprint/${sprintId}/complete-user-story/${storyId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+
+
 export default {
   getGroupMembers,
   getGroupCurrentPhase,
@@ -258,6 +310,11 @@ export default {
   getSprintUserStories,
   updateSprintFields,
   getGameTimeControl,
+  updateSprintProgress,
+  updateUserStoryProgress,
+  getSprintProgress,
+  getUserStoriesProgress,
+  completeUserStory
 };
 
 

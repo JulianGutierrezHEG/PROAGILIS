@@ -6,9 +6,10 @@ from datetime import timedelta
 class GameTimeControl(models.Model):
     game_hours = models.IntegerField(default=1)  
     real_minutes = models.IntegerField(default=1)  
+    sprint_duration = models.IntegerField(default=14)
 
     def __str__(self):
-        return f"{self.real_minutes} minutes réel = {self.game_hours} heurs en jeu"
+        return f"{self.real_minutes} minutes réel = {self.game_hours} heurs en jeu pour un sprint de {self.sprint_duration} jours en jeu"
 
 class Project(models.Model):
     name = models.CharField(max_length=200)
