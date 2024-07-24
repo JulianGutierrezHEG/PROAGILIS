@@ -28,11 +28,6 @@
       <WaitingScreen v-else-if="sessionStatus === 'not_started' || sessionStatus === 'paused' " />
     </div>
     <hr class="my-4 border-black" />
-    <div class="flex justify-center space-x-4">
-      <button @click="nextPhase" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
-        Continuer
-      </button>
-    </div>
   </div>
 </template>
 
@@ -101,12 +96,6 @@ const handlePhaseStatusUpdate = async (data) => {
       await updateCurrentPhaseComponent();
       websocketService.connectGroup(selectedGroup.value.id);
     }
-  }
-};
-
-const nextPhase = () => {
-  if (currentPhaseIndex.value < phases.length - 1) {
-    currentPhaseIndex.value++;
   }
 };
 

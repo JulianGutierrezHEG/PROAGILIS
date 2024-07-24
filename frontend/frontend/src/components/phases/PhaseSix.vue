@@ -15,7 +15,7 @@
           <div class="relative mb-4">
             <div class="flex justify-between mb-1">
               <span class="text-base font-medium text-blue-700 dark:text-black">Progression Globale</span>
-              <span class="text-sm font-medium text-blue-700 dark:text-black">{{ globalProgress + '/' + sprintDurationRealTime }}</span>
+              <span class="text-sm font-medium text-blue-700 dark:text-black">{{ convertSprintProgress(globalProgress, sprintDurationRealTime) }}</span>
             </div>
             <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
               <div class="h-6 bg-green-800 rounded-full dark:bg-yellow-500" :style="{ width: globalProgressPercent + '%' }"></div>
@@ -28,7 +28,7 @@
               <div v-for="(story, index) in sprintUserStories" :key="index" class="mb-4">
                 <div class="flex justify-between mb-1 items-center">
                   <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete" class="w-6 h-6 cursor-pointer ml-2" @click="completeUserStoryHandler(story.id)">
-                  <span class="text-sm font-medium">{{ story.name }} ({{ story.time_estimation }} en temps réel et {{ story.time_estimation }} en jeu )</span>
+                  <span class="text-sm font-medium">{{ story.name }} ({{ convertUserStoryTime(story.time_estimation) }} )</span>
                   <span class="text-xs text-gray-600">({{ Math.round(story.progress) }} %)</span>
                 </div>
                 <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
@@ -116,6 +116,27 @@ const resetProgress = () => {
     progress_time: '00:00:00',
     is_completed: false,
   }));
+};
+
+const convertSprintProgress = (progress, sprintDuration) => {
+  const totalSprintDays = sprintDuration / (24 * 60);
+
+  const gameMinutesProgress = progress; 
+  const gameDaysProgress = Math.floor(gameMinutesProgress / (24 * 60));
+  const gameHoursProgress = Math.floor((gameMinutesProgress % (24 * 60)) / 60);
+  const gameMinutesRemaining = gameMinutesProgress % 60;
+
+  return `${gameDaysProgress}j${gameHoursProgress}h${gameMinutesRemaining}m/${totalSprintDays}j`;
+};
+
+const convertUserStoryTime = (timeSeconds) => {
+  const realMinutes = Math.round(timeSeconds / 60); 
+  const gameHours = realMinutes; 
+
+  const days = Math.floor(gameHours / 24);
+  const hours = gameHours % 24;
+
+  return `${realMinutes}m en temps réel et ${days}j${hours}h en jeu`;
 };
 
 const timeStringToSeconds = (timeString) => {

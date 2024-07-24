@@ -47,14 +47,14 @@
                   :class="{ locked: lockedElements.studentResponse && lockedElements.studentResponse !== currentUser }"
                   @focus="lock('studentResponse')" @blur="unlock('studentResponse')" required></textarea>
       </div>
-      <div v-if="isScrumMaster">
+      <div v-if="isScrumMaster || isProductOwner">
         <button @click.prevent="submitPhaseSevenAnswer" 
               class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
           Soumettre
         </button>
       </div>
       <div v-else>
-        <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
+        <p class="text-center text-lg mb-10">Seul le Scrum Master et le Product Owner peuvent répondre au client</p>
       </div>
     </div>
   </div>
@@ -99,6 +99,7 @@ const completedUserStories = ref([]);
 const incompleteUserStories = ref([]);
 
 const isScrumMaster = ref(false);
+const isProductOwner = ref(false);
 
 const lock = (elementId) => {
   lockElement(elementId);
@@ -130,6 +131,7 @@ onMounted(async () => {
   const projectDetails = await fetchProjectDetails(props.group.id);
   if (projectDetails) {
     isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
+    isProductOwner.value = projectDetails.product_owner === currentUser.value;
   }
 
   completedUserStories.value = await fetchCompletedUserStories(props.group.id);
