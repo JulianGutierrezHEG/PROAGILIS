@@ -175,7 +175,6 @@ const addUserStory = async (storyData) => {
 // Supprime une user story
 const deleteUserStory = async (groupId, storyId) => {
   try {
-    console.log(`Request to delete user story with ID ${storyId} for group ${groupId}`); // Debugging
     const response = await axios.delete(`/api/games/group/${groupId}/delete-userstory/${storyId}/`);
     return response.data;
   } catch (error) {

@@ -228,6 +228,7 @@ class FetchUserStoriesView(APIView):
             user_stories = UserStory.objects.filter(id__in=ids)
         else:
             user_stories = backlog.user_stories.all()
+    
         
         data = [
             {

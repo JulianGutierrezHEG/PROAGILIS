@@ -492,6 +492,18 @@ export function useGame(groupId, group) {
     await fetchUserStoriesProgress(groupId, sprintId);
   };
 
+  // Récupère les user stories complétées
+  const fetchCompletedUserStories = async (groupId) => {
+    await fetchSprintUserStories(groupId);
+    return sprintUserStories.value.filter(story => story.is_completed);
+  };
+
+  // Récupère les user stories incomplètes
+  const fetchIncompleteUserStories = async (groupId) => {
+    await fetchSprintUserStories(groupId);
+    return sprintUserStories.value.filter(story => !story.is_completed);
+  };
+
   onMounted(() => {
     fetchCurrentUser();
   });
@@ -543,6 +555,8 @@ export function useGame(groupId, group) {
     updateUserStoryProgress,
     fetchSprintProgress,
     fetchUserStoriesProgress,
-    completeUserStory
+    completeUserStory,
+    fetchCompletedUserStories,
+    fetchIncompleteUserStories
   };
 }
