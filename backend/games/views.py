@@ -11,9 +11,10 @@ from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
 from django.utils import timezone
+import random
 from games_sessions.models import Group
-from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate,Sprint,GameTimeControl
-from .serializers import GroupPhaseStatusSerializer,GamePhaseSerializer,ProjectSerializer,SprintSerializer,UserStorySerializer
+from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate,Sprint,GameTimeControl,EventTemplate,Event
+from .serializers import GroupPhaseStatusSerializer,GamePhaseSerializer,ProjectSerializer,SprintSerializer,UserStorySerializer,EventSerializer
 from .utils import update_group_phase_status
 
 # Retourne les détails de la configuration du temps de jeu
@@ -41,12 +42,14 @@ class GamePhaseDetail(RetrieveAPIView):
     lookup_field = 'id'
 
 # Crée un nouveau projet pour un groupe
+# Crée un backlog, des user stories, un sprint et des événements pour le projet
 class CreateProjectView(APIView):
     def post(self, request, group_id):
         group = get_object_or_404(Group, id=group_id)
         project_name = request.data.get('projectName')
         roles = request.data.get('roles')
 
+    
         project = Project.objects.create(
             name=project_name,
             group=group,
@@ -55,8 +58,10 @@ class CreateProjectView(APIView):
             developers=roles.get('developers', [])
         )
 
+        
         backlog = Backlog.objects.create(project=project)
 
+        
         user_story_templates = UserStoryTemplate.objects.all()
         for template in user_story_templates:
             UserStory.objects.create(
@@ -67,11 +72,32 @@ class CreateProjectView(APIView):
                 backlog=backlog
             )
 
+        
+        sprint = Sprint.objects.create(
+            backlog=backlog,
+            sprint_number=1
+        )
+
+        event_templates = EventTemplate.objects.all()
+        for template in event_templates:
+            Event.objects.create(
+                description=template.description,
+                effect=template.effect,
+                project=project
+            )
+
         group.project = project
         group.save()
 
-        serializer = ProjectSerializer(project)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        project_serializer = ProjectSerializer(project)
+        sprint_serializer = SprintSerializer(sprint)
+        response_data = {
+            'project': project_serializer.data,
+            'sprint': sprint_serializer.data
+        }
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
     
 # Retourne les détails d'un projet pour un groupe
 class FetchProjectDetailsView(APIView):
@@ -536,4 +562,37 @@ class CompleteUserStoryView(APIView):
             user_story.save()
             return Response({"detail": "User story complétée"}, status=status.HTTP_200_OK)
         except (Group.DoesNotExist, Sprint.DoesNotExist, UserStory.DoesNotExist):
-            return Response({"detail": "Groupe, Sprint, ou User Story aps trouvé"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Groupe, Sprint, ou User Story pas trouvé"}, status=status.HTTP_404_NOT_FOUND)
+
+# Récupère un événement aléatoire pour un groupe
+class FetchSprintRandomEventView(APIView):
+    def get(self, request, group_id):
+        project = get_object_or_404(Project, group_id=group_id)
+        events = Event.objects.filter(project=project, effect__isnull=False)
+        
+        if not events.exists():
+            return Response({"detail": "Pas d'événements trouvés"}, status=status.HTTP_404_NOT_FOUND)
+        
+        event = random.choice(events)
+        serializer = EventSerializer(event)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# Met à jour la réponse d'un événement pour un groupe
+class UpdateEventAnswerView(APIView):
+    def post(self, request, group_id, event_id):
+        event = get_object_or_404(Event, id=event_id, project__group_id=group_id)
+        answer = request.data.get('answer')
+        
+        if answer is not None:
+            event.answer = answer
+            event.save()
+            return Response({"detail": "Réponse mise à jour"}, status=status.HTTP_200_OK)
+        return Response({"detail": "Réponse requise"}, status=status.HTTP_400_BAD_REQUEST)
+
+# Retourne les événements pour un groupe
+class GetEventsView(APIView):
+    def post(self, request, group_id):
+        event_ids = request.data.get('eventIds', [])
+        events = Event.objects.filter(id__in=event_ids, project__group_id=group_id)
+        serializer = EventSerializer(events, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

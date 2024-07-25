@@ -1,0 +1,122 @@
+[
+    {
+        "model": "games.eventtemplate",
+        "pk": 1,
+        "fields": {
+            "description": "Le serveur de base de données est tombé en panne",
+            "effect": "negatif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 2,
+        "fields": {
+            "description": "Un bug critique a été trouvé dans le système",
+            "effect": "negatif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 3,
+        "fields": {
+            "description": "Une mise à jour de sécurité est disponible",
+            "effect": "positif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 4,
+        "fields": {
+            "description": "Le client demande une nouvelle fonctionnalité",
+            "effect": "negatif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 5,
+        "fields": {
+            "description": "L'équipe avance plus rapidement que prévu",
+            "effect": "positif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 6,
+        "fields": {
+            "description": "L'infrastructure serveur a été améliorée",
+            "effect": "positif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 7,
+        "fields": {
+            "description": "Le projet a reçu des commentaires positifs",
+            "effect": "positif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 8,
+        "fields": {
+            "description": "Une erreur de calcul a été découverte dans les résultats",
+            "effect": "negatif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 9,
+        "fields": {
+            "description": "Les temps de réponse du système ont été optimisés",
+            "effect": "positif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 10,
+        "fields": {
+            "description": "Un membre de l'équipe est tombé malade",
+            "effect": "negatif"
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 11,
+        "fields": {
+            "description": "Le client demande des améliorations de l'interface utilisateur",
+            "effect": null
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 12,
+        "fields": {
+            "description": "Le client se plaint de la lenteur du système",
+            "effect": null
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 13,
+        "fields": {
+            "description": "Le client demande une meilleure documentation",
+            "effect": null
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 14,
+        "fields": {
+            "description": "Le client veut une fonctionnalité de recherche améliorée",
+            "effect": null
+        }
+    },
+    {
+        "model": "games.eventtemplate",
+        "pk": 15,
+        "fields": {
+            "description": "Le client souhaite une meilleure intégration mobile",
+            "effect": null
+        }
+    }
+]

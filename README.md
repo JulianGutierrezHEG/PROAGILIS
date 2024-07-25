@@ -10,10 +10,12 @@ cd backend
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
+# Données (ecommerce.json et evenements.json peut être modifié pour changer le type de données):
 python manage.py makemigrations
 python manage.py migrate
-commande pour remplir la bdd (Ce fichier peut être changé ou dupliqué pour changer le type de données):
 python manage.py loaddata ecommerce.json
+python manage.py loaddata evenements.json
+# Démarrage du serveur
 python manage.py runserver
 # Redis & Docker
 avoir docker desktop installé et actif

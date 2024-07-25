@@ -15,10 +15,12 @@
           <div class="relative mb-4">
             <div class="flex justify-between mb-1">
               <span class="text-base font-medium text-blue-700 dark:text-black">Progression Globale</span>
-              <span class="text-sm font-medium text-blue-700 dark:text-black">{{ convertSprintProgress(globalProgress, sprintDurationRealTime) }}</span>
+              <span class="text-sm font-medium text-blue-700 dark:text-black">{{ convertSprintProgress(globalProgress,
+                sprintDurationRealTime) }}</span>
             </div>
             <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
-              <div class="h-6 bg-green-800 rounded-full dark:bg-yellow-500" :style="{ width: globalProgressPercent + '%' }"></div>
+              <div class="h-6 bg-green-800 rounded-full dark:bg-yellow-500"
+                :style="{ width: globalProgressPercent + '%' }"></div>
             </div>
           </div>
           <div class="mb-4">
@@ -27,27 +29,49 @@
             <div class="overflow-y-auto max-h-96">
               <div v-for="(story, index) in sprintUserStories" :key="index" class="mb-4">
                 <div class="flex justify-between mb-1 items-center">
-                  <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete" class="w-6 h-6 cursor-pointer ml-2" @click="completeUserStoryHandler(story.id)">
-                  <span class="text-sm font-medium">{{ story.name }} ({{ convertUserStoryTime(story.time_estimation) }} )</span>
+                  <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete"
+                    class="w-6 h-6 cursor-pointer ml-2" @click="completeUserStoryHandler(story.id)">
+                  <span class="text-sm font-medium">{{ story.name }} ({{ convertUserStoryTime(story.time_estimation) }}
+                    )</span>
                   <span class="text-xs text-gray-600">({{ Math.round(story.progress) }} %)</span>
                 </div>
                 <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
-                  <div :class="{'bg-green-500': story.is_completed, 'bg-yellow-500': !story.is_completed}" class="h-6 rounded-full" :style="{ width: story.progress + '%' }"></div>
+                  <div :class="{'bg-green-500': story.is_completed, 'bg-yellow-500': !story.is_completed}"
+                    class="h-6 rounded-full" :style="{ width: story.progress + '%' }"></div>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div class="mt-4">
             <h3 class="text-xl font-semibold mb-2">Journal des événements</h3>
             <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
               <div v-for="(event, index) in eventLog" :key="index" class="mb-2">
-                <span class="text-sm">{{ event }}</span>
+                <table class="w-full">
+                  <tr>
+                    <td class="text-sm">{{ event.description }}</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <textarea v-model="event.answer" class="text-sm w-full mb-2"></textarea>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-right">
+                      <button @click="handleEventResponse(event)"
+                        class="bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 custom-button">
+                        Envoyer
+                      </button>
+                    </td>
+                  </tr>
+                </table>
+                <hr class="my-4 border-black" />
               </div>
             </div>
           </div>
           <div v-if="isScrumMaster" class="mt-10">
-            <button @click.prevent="sendSprintData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
+            <button @click.prevent="sendSprintData"
+              class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
               Terminer le Sprint
             </button>
           </div>
@@ -96,13 +120,15 @@ const {
   fetchUserStoriesProgress,
   completeUserStory,
   showWaitingScreen,
-  waiting
-} = useGame(props.group.id, props.group);
+  waiting,
+  eventLog,
+  fetchSprintRandomEvent,
+  updateEventAnswer
+} = useGame(props.group.id);
 
 const isScrumMaster = ref(false);
 const globalProgress = ref(0);
 const globalProgressPercent = ref(0);
-const eventLog = ref([]);
 const isSprintRunning = ref(false);
 const sprintDurationRealTime = ref(0); 
 const intervals = ref([]); 
@@ -215,17 +241,32 @@ const completeUserStoryHandler = async (storyId) => {
   await fetchUserStoriesProgress(props.group.id, currentSprintDetails.value.id);
 };
 
-const sendSprintData = async () => {
-  const completedStories = sprintUserStories.value.filter(story => story.is_completed);
-  
+const sendData = async (isSprintCompletion = false) => {
   const answerData = {
-    completedUserStories: completedStories.map(story => story.id)
+    events: eventLog.value.filter(event => event.answer).map(event => ({
+      id: event.id,
+      answer: event.answer
+    }))
   };
-  
-  if (confirm("Êtes-vous sûr de vouloir terminer le sprint ?")) {
-    showWaitingScreen(props.group.id, currentUser.value);
-    await checkValidationAndSendAnswer(answerData);
+
+  if (isSprintCompletion) {
+    if (confirm("Êtes-vous sûr de vouloir terminer le sprint ?")) {
+      showWaitingScreen(props.group.id, currentUser.value);
+      await checkValidationAndSendAnswer(answerData);
+    }
   }
+  else {
+    websocketService.sendPhaseAnswerUpdate(groupId, currentPhaseDetails.value.id, answerData);
+  }
+};
+
+const sendSprintData = async () => {
+  await sendData(true);
+};
+
+const handleEventResponse = async (event) => {
+  await updateEventAnswer(props.group.id, event.id, event.answer);
+  await sendData(false);
 };
 
 const fetchInitialData = async () => {
@@ -250,6 +291,9 @@ const fetchInitialData = async () => {
   if (currentSprintProgress.value.current_progress < sprintDurationRealTime.value) {
     SprintStart(); 
   }
+
+  const eventFetchInterval = setInterval(() => fetchSprintRandomEvent(props.group.id), 60000); // Fetch event every 60 seconds
+  intervals.value.push(eventFetchInterval);
 };
 
 onMounted(async () => {

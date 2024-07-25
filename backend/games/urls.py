@@ -25,7 +25,10 @@ from .views import (
     UpdateUserStoryProgressView,
     GetSprintProgressView,
     GetUserStoriesProgressView,
-    CompleteUserStoryView
+    CompleteUserStoryView,
+    FetchSprintRandomEventView,
+    UpdateEventAnswerView,
+    GetEventsView
 )
 
 group_members_list = GroupMembersViewSet.as_view({
@@ -59,5 +62,9 @@ urlpatterns = [
     path('group/<int:group_id>/sprint-progress/<int:sprint_id>/', GetSprintProgressView.as_view(), name='sprintProgress'),
     path('group/<int:group_id>/user-stories-progress/<int:sprint_id>/', GetUserStoriesProgressView.as_view(), name='getUserStoriesProgress'),  
     path('group/<int:group_id>/sprint/<int:sprint_id>/complete-user-story/<int:story_id>/', CompleteUserStoryView.as_view(), name='completeUserStory'),
+    path('group/<int:group_id>/fetch-random-event/', FetchSprintRandomEventView.as_view(), name='fetchRandomEvent'),
+    path('group/<int:group_id>/event/<int:event_id>/update-answer/', UpdateEventAnswerView.as_view(), name='updateEventAnswer'),
+    path('group/<int:group_id>/get-events/', GetEventsView.as_view(), name='getEvents'),
+
    
 ]

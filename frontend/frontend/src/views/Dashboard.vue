@@ -1,7 +1,7 @@
 <template>
   <div class="w-4/5 max-h-screen overflow-hidden bg-gray-200 shadow-lg rounded-lg p-2 mx-auto my-8">
     <div class="flex justify-between items-center mb-8">
-      <div v-if="sessions.length > 0" class="relative">
+      <div v-if="sessions.length > 0" >
         <select v-model="selectedSession" @change="fetchGroups"
           class="bg-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500">
           <option v-for="session in sessions" :key="session.id" :value="session">{{ session.name }}</option>

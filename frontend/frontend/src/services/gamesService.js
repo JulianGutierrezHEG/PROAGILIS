@@ -285,6 +285,36 @@ const completeUserStory = async (groupId, sprintId, storyId) => {
   }
 };
 
+// Récupère un événement aléatoire
+const fetchSprintRandomEvent = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/fetch-random-event/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Met à jour la réponse à un événement
+const updateEventAnswer = async (groupId, eventId, answer) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/event/${eventId}/update-answer/`, { answer });
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Récupère les événements
+const getEvents = async (groupId, eventIds) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/get-events/`, { eventIds });
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 
 
 export default {
@@ -313,7 +343,10 @@ export default {
   updateUserStoryProgress,
   getSprintProgress,
   getUserStoriesProgress,
-  completeUserStory
+  completeUserStory,
+  fetchSprintRandomEvent,
+  updateEventAnswer,
+  getEvents
 };
 
 

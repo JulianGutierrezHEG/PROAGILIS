@@ -80,14 +80,6 @@ class UserStory(models.Model):
     def __str__(self):
         return self.description
 
-class Event(models.Model):
-    description = models.TextField()
-    effect = models.JSONField()  
-    sprint = models.ForeignKey(Sprint, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.description
-
 class UserStoryTemplate(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
@@ -96,5 +88,23 @@ class UserStoryTemplate(models.Model):
 
     def __str__(self):
         return self.description
+
+class Event(models.Model):
+    description = models.TextField()
+    effect = models.TextField(null=True, blank=True)  
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    answer = models.TextField(null=True, blank=True)  
+
+    def __str__(self):
+        return self.description
+
+class EventTemplate(models.Model):
+    description = models.TextField()
+    effect = models.TextField(null=True, blank=True) 
+
+    def __str__(self):
+        return self.description
+
+
 
 

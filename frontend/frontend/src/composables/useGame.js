@@ -35,6 +35,7 @@ export function useGame(groupId, group) {
   const gameTimeControl = ref({}); 
   const currentSprintProgress = ref(null);
   const isSprintRunning = ref(false);
+  const eventLog = ref([]);
 
   // Récupère le contrôle du temps de jeu
   const fetchGameTimeControl = async () => {
@@ -45,6 +46,39 @@ export function useGame(groupId, group) {
         console.error('Erreur lors de la récupération du contrôle du temps de jeu:', error);
     }
 };
+
+  // Récupère un événement aléatoire pour le sprint
+  const fetchSprintRandomEvent = async (groupId) => {
+    try {
+      const data = await gamesService.fetchSprintRandomEvent(groupId);
+      eventLog.value.push({ ...data, answer: "" });
+    } catch (error) {
+      console.error("Erreur lors de la récupération de l'événement:", error);
+    }
+  };
+
+  // Met à jour la réponse de l'événement
+  const updateEventAnswer = async (groupId, eventId, answer) => {
+    try {
+      await gamesService.updateEventAnswer(groupId, eventId, answer);
+      const updatedEventLog = eventLog.value.map(e => 
+        e.id === eventId ? { ...e, answer } : e
+      );
+      eventLog.value = updatedEventLog;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la réponse de l\'événement:', error);
+    }
+  };
+
+  // Récupère les événements
+  const fetchEvents = async (groupId, eventIds) => {
+    try {
+      const data = await gamesService.getEvents(groupId, eventIds);
+      return data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des événements:', error);
+    }
+  };
 
   // Récupère les membres du groupe
   const fetchGroupMembers = async () => {
@@ -316,7 +350,6 @@ export function useGame(groupId, group) {
   
       if (isCorrect) {
         if (phaseId === 5) {
-          await gamesService.createSprint(groupId, answerData);
           const userStoryIds = answerData.userStories; 
           await gamesService.updateSprintFields(groupId, userStoryIds, 1);
         }
@@ -510,6 +543,7 @@ export function useGame(groupId, group) {
 
   return {
     gameTimeControl,
+    eventLog,
     groupMembers,
     lockedElements,
     currentUser,
@@ -557,6 +591,9 @@ export function useGame(groupId, group) {
     fetchUserStoriesProgress,
     completeUserStory,
     fetchCompletedUserStories,
-    fetchIncompleteUserStories
+    fetchIncompleteUserStories,
+    fetchSprintRandomEvent,
+    updateEventAnswer,
+    fetchEvents
   };
 }
