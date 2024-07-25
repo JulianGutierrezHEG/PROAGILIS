@@ -46,17 +46,17 @@
           <div class="mt-4">
             <h3 class="text-xl font-semibold mb-2">Journal des événements</h3>
             <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
-              <div v-for="(event, index) in eventLog" :key="index" class="mb-2">
+              <div v-for="(event, index) in sortedEvents" :key="index" class="mb-2">
                 <table class="w-full">
                   <tr>
                     <td class="text-sm">{{ event.description }}</td>
                   </tr>
                   <tr>
                     <td>
-                      <textarea v-model="event.answer" class="text-sm w-full mb-2"></textarea>
+                      <textarea v-model="event.answer" class="text-sm w-full mb-2" :disabled="event.answered" :class="{ 'bg-gray-200': event.answered }"></textarea>
                     </td>
                   </tr>
-                  <tr>
+                  <tr v-if="!event.answered">
                     <td class="text-right">
                       <button @click="handleEventResponse(event)"
                         class="bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 custom-button">
@@ -85,9 +85,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useGame } from '@/composables/useGame';
 import WaitingScreen from '@/views/WaitingScreen.vue';
+import websocketService from '@/services/websocketService';
 
 const props = defineProps({
   group: {
@@ -131,7 +132,8 @@ const globalProgress = ref(0);
 const globalProgressPercent = ref(0);
 const isSprintRunning = ref(false);
 const sprintDurationRealTime = ref(0); 
-const intervals = ref([]); 
+const userStoryInterval = ref(null); // Separate interval for user story progress
+const eventFetchInterval = ref(null); // Separate interval for event fetching
 
 const resetProgress = () => {
   globalProgress.value = 0;
@@ -199,10 +201,14 @@ const updateUserStoryProgressOnly = async () => {
       };
     });
 
-    for (const story of sprintUserStories.value) {
-      if (!story.is_completed) {
-        console.log(`Updating user story progress for story ID: ${story.id}`);
-        await updateUserStoryProgress(props.group.id, currentSprintDetails.value.id, story.id);
+    if (sprintUserStories.value.every(story => story.is_completed)) {
+      console.log('All user stories are completed. Stopping user story interval.');
+    } else {
+      for (const story of sprintUserStories.value) {
+        if (!story.is_completed) {
+          console.log(`Updating user story progress for story ID: ${story.id}`);
+          await updateUserStoryProgress(props.group.id, currentSprintDetails.value.id, story.id);
+        }
       }
     }
   } catch (error) {
@@ -219,8 +225,7 @@ const SprintStart = async () => {
   isSprintRunning.value = true;
   resetProgress();
   await startSprint(props.group.id, currentSprintDetails.value.id);
-  const intervalId = setInterval(updateProgress, 1000);
-  intervals.value.push(intervalId); 
+  userStoryInterval.value = setInterval(updateProgress, 1000); // Use userStoryInterval for user story progress
 };
 
 const fetchSprintDetailsPhase = async () => {
@@ -242,21 +247,21 @@ const completeUserStoryHandler = async (storyId) => {
 };
 
 const sendData = async (isSprintCompletion = false) => {
+  const answeredEventIds = eventLog.value.filter(event => event.answer).map(event => event.id);
+
   const answerData = {
-    events: eventLog.value.filter(event => event.answer).map(event => ({
-      id: event.id,
-      answer: event.answer
-    }))
+    answeredEvents: answeredEventIds
   };
+
+  websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
 
   if (isSprintCompletion) {
     if (confirm("Êtes-vous sûr de vouloir terminer le sprint ?")) {
       showWaitingScreen(props.group.id, currentUser.value);
       await checkValidationAndSendAnswer(answerData);
     }
-  }
-  else {
-    websocketService.sendPhaseAnswerUpdate(groupId, currentPhaseDetails.value.id, answerData);
+  } else {
+    websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
   }
 };
 
@@ -266,7 +271,12 @@ const sendSprintData = async () => {
 
 const handleEventResponse = async (event) => {
   await updateEventAnswer(props.group.id, event.id, event.answer);
+  event.answered = true; 
   await sendData(false);
+  setTimeout(() => {
+    eventLog.value = eventLog.value.filter(e => e.id !== event.id);
+    eventLog.value.push(event); 
+  }, 3000);
 };
 
 const fetchInitialData = async () => {
@@ -292,9 +302,12 @@ const fetchInitialData = async () => {
     SprintStart(); 
   }
 
-  const eventFetchInterval = setInterval(() => fetchSprintRandomEvent(props.group.id), 60000); // Fetch event every 60 seconds
-  intervals.value.push(eventFetchInterval);
+  eventFetchInterval.value = setInterval(() => fetchSprintRandomEvent(props.group.id), 10000 ); 
 };
+
+const sortedEvents = computed(() => {
+  return [...eventLog.value.filter(event => !event.answered), ...eventLog.value.filter(event => event.answered)];
+});
 
 onMounted(async () => {
   await fetchInitialData();
@@ -302,6 +315,13 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupEvents();
-  intervals.value.forEach(clearInterval); 
+  if (userStoryInterval.value) {
+    clearInterval(userStoryInterval.value);
+    userStoryInterval.value = null;
+  }
+  if (eventFetchInterval.value) {
+    clearInterval(eventFetchInterval.value);
+    eventFetchInterval.value = null;
+  }
 });
 </script>

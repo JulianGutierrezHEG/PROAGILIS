@@ -51,22 +51,29 @@ const { fetchGroupPhaseAnswer, fetchEvents } = useGame(groupId.value);
 provide('phaseAnswer', localPhaseAnswer);
 
 const handlePhaseAnswerUpdate = async (data) => {
+  console.debug('Received phase answer update:', data);
   if (data.group_id === groupId.value && data.phase_id === phaseId.value) {
     const { answeredEvents } = data.answer || {};
     if (answeredEvents) {
+      console.debug('Fetching events for answered events:', answeredEvents);
       localPhaseAnswer.value.answeredEvents = await fetchEvents(groupId.value, answeredEvents);
+      console.debug('Updated answered events:', localPhaseAnswer.value.answeredEvents);
     }
   }
 };
 
 const fetchPhaseData = async () => {
   try {
+    console.debug('Fetching phase data for group:', groupId.value, 'phase:', phaseId.value);
     const answerData = await fetchGroupPhaseAnswer(groupId.value, phaseId.value);
+    console.debug('Fetched phase data:', answerData);
     if (answerData) {
       localCurrentPhaseName.value = answerData.phase_name;
       const { answeredEvents } = answerData.answer || {};
       if (answeredEvents) {
+        console.debug('Fetching events for answered events:', answeredEvents);
         localPhaseAnswer.value.answeredEvents = await fetchEvents(groupId.value, answeredEvents);
+        console.debug('Updated answered events:', localPhaseAnswer.value.answeredEvents);
       }
     }
   } catch (error) {
@@ -83,4 +90,3 @@ onUnmounted(() => {
   EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
 });
 </script>
-

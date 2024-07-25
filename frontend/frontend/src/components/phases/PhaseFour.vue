@@ -27,15 +27,10 @@
             </div>
           </div>
         </div>
-        <div v-if="isScrumMaster">
           <button @click.prevent="submitPhaseFourData" 
                 class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
           Soumettre
         </button>
-        </div>
-        <div v-else>
-          <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
-        </div>
       </div>
     </div>
   </div>
@@ -75,7 +70,6 @@ const {
   updateUserStoryDetails
 } = useGame(props.group.id, props.group);
 
-const isScrumMaster = ref(false);
 const userStories = ref([]);
 const initialUserStoriesFetched = ref(false);
 
@@ -129,10 +123,6 @@ onMounted(async () => {
   fetchGroupMembers();
   setupEvents();
   await fetchUserStoriesForPhase();
-  const projectDetails = await fetchProjectDetails(props.group.id);
-  if (projectDetails) {
-    isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
-  }
 });
 
 onUnmounted(() => {

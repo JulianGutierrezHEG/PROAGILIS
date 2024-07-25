@@ -40,15 +40,10 @@
       <button @click="handleStoryAction" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 mt-2 mb-10">
         {{ isDividing ? (divideCounter === 1 ? 'Valider et créer la deuxième' : 'Diviser la User Story') : 'Ajouter une User Story' }}
       </button>
-      <div v-if="isScrumMaster">
           <button @click.prevent="submitPhaseThreeAnswer" 
                 class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
           Soumettre
         </button>
-        </div>
-        <div v-else>
-          <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
-        </div>
      </div>
   </div>
 </template>
@@ -86,7 +81,6 @@ const {
   unlockElement,
 } = useGame(props.group.id, props.group);
 
-const isScrumMaster = ref(false);
 const existingUserStories = ref([]);
 const newUserStories = ref([]);
 const newStory = ref({ name: '', description: '' });
@@ -106,10 +100,6 @@ const fetchInitialData = async () => {
     fetchGroupMembers();
     await fetchInitialUserStoriesToCut();
     await fetchCreatedUserStoriesFrontend();
-    const projectDetails = await fetchProjectDetails(props.group.id);
-    if (projectDetails) {
-      isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
-    }
   } catch (error) {
     console.error('Error fetching initial data:', error);
   }
