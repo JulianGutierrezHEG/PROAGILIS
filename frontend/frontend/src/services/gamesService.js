@@ -335,6 +335,36 @@ const fetchAnsweredEvents = async (groupId) => {
   }
 };
 
+// Sauvegarde les données de la partie
+const saveGameData = async (groupId) => {
+  try {
+    const response = await axios.post(`/api/games/save-game-data/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Supprime un projet
+const deleteProject = async (groupId) => {
+  try {
+    const response = await axios.delete(`/api/games/delete-project/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Boucle la partier pour passer au sprint suivant
+const loopGame = async (groupId) => {
+  try {
+    const response = await axios.post(`/api/games/loop/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 
 
 export default {
@@ -368,7 +398,10 @@ export default {
   fetchSprintRandomClientComment,
   updateEventAnswer,
   getEvents,
-  fetchAnsweredEvents
+  fetchAnsweredEvents,
+  saveGameData,
+  deleteProject,
+  loopGame,
 };
 
 

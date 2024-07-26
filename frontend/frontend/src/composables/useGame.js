@@ -374,15 +374,64 @@ export function useGame(groupId, group) {
       const status = isCorrect ? 'completed' : 'wrong';
       await gamesService.updatePhaseStatus(groupId, phaseId, status);
       websocketService.sendPhaseStatusUpdate(groupId, phaseId, status);
+      console.log(`Phase ${phaseId} set to ${status}`);
   
       if (isCorrect) {
         if (phaseId === 5) {
           const userStoryIds = answerData.userStories; 
           await gamesService.updateSprintFields(groupId, userStoryIds, 1);
         }
-        const nextPhaseId = phaseId + 1;
-        await gamesService.updatePhaseStatus(groupId, nextPhaseId, 'in_progress');
-        websocketService.sendPhaseStatusUpdate(groupId, nextPhaseId, 'in_progress');
+  
+        if (phaseId === 8) {
+          const savedGameData = await gamesService.saveGameData(groupId);
+          console.log('Saved game data:', savedGameData);
+  
+          const deletedProject = await gamesService.deleteProject(groupId);
+          console.log('Deleted project:', deletedProject);
+  
+          const loopedGame = await gamesService.loopGame(groupId);
+          console.log('Looped game:', loopedGame);
+  
+          await gamesService.updatePhaseStatus(groupId, phaseId, 'completed');
+          websocketService.sendPhaseStatusUpdate(groupId, phaseId, 'completed');
+  
+          await gamesService.updatePhaseStatus(groupId, 1, 'completed');
+          websocketService.sendPhaseStatusUpdate(groupId, 1, 'completed');
+  
+          await gamesService.updatePhaseStatus(groupId, 2, 'completed');
+          websocketService.sendPhaseStatusUpdate(groupId, 2, 'completed');
+  
+          await gamesService.updatePhaseStatus(groupId, 3, 'in_progress');
+          websocketService.sendPhaseStatusUpdate(groupId, 3, 'in_progress');
+          console.log('Phase 3 set to in_progress');
+  
+          await gamesService.updatePhaseStatus(groupId, 4, 'not_started');
+          websocketService.sendPhaseStatusUpdate(groupId, 4, 'not_started');
+  
+          await gamesService.updatePhaseStatus(groupId, 5, 'not_started');
+          websocketService.sendPhaseStatusUpdate(groupId, 5, 'not_started');
+  
+          await gamesService.updatePhaseStatus(groupId, 6, 'not_started');
+          websocketService.sendPhaseStatusUpdate(groupId, 6, 'not_started');
+  
+          await gamesService.updatePhaseStatus(groupId, 7, 'not_started');
+          websocketService.sendPhaseStatusUpdate(groupId, 7, 'not_started');
+  
+          await gamesService.updatePhaseStatus(groupId, phaseId, 'not_started');
+          websocketService.sendPhaseStatusUpdate(groupId, phaseId, 'not_started');
+  
+          if (savedGameData.current_sprint === 3) {
+            alert("Fin du jeu");
+            showWaitingScreen();
+            return;
+          }
+  
+        } else {
+          const nextPhaseId = phaseId + 1;
+          await gamesService.updatePhaseStatus(groupId, nextPhaseId, 'in_progress');
+          websocketService.sendPhaseStatusUpdate(groupId, nextPhaseId, 'in_progress');
+          console.log(`Phase ${nextPhaseId} set to in_progress`);
+        }
       } else {
         waiting.value = false;
       }

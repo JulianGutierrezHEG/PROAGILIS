@@ -4,16 +4,18 @@ from rest_framework.generics import RetrieveAPIView
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
+from django.http import HttpRequest
+from django.http import JsonResponse
 from rest_framework.decorators import action
 from rest_framework import status
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from datetime import timedelta
-from django.utils import timezone
+from django.http import QueryDict
 import random
 from games_sessions.models import Group
-from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate,Sprint,GameTimeControl,EventTemplate,Event
+from .models import GamePhase, GroupPhaseStatus,Project,Backlog,UserStory,UserStoryTemplate,Sprint,GameTimeControl,EventTemplate,Event,SavedGameData
 from .serializers import GroupPhaseStatusSerializer,GamePhaseSerializer,ProjectSerializer,SprintSerializer,UserStorySerializer,EventSerializer
 from .utils import update_group_phase_status
 
@@ -622,3 +624,178 @@ class FetchAnsweredEventsView(APIView):
 
         serializer = EventSerializer(answered_events, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+# Sauvegarde les données du jeu pour un groupe
+class SaveGameDataView(APIView):
+    def post(self, request, group_id):
+        group = get_object_or_404(Group, id=group_id)
+        project = get_object_or_404(Project, group=group)
+
+        phase_1_status = GroupPhaseStatus.objects.filter(group=group, phase_id=1).first()
+        phase_2_status = GroupPhaseStatus.objects.filter(group=group, phase_id=2).first()
+
+        phase_1_answer = phase_1_status.answer if phase_1_status else None
+        phase_2_answer = phase_2_status.answer if phase_2_status else None
+
+        completed_user_stories = UserStory.objects.filter(backlog__project__group=group, is_completed=True, has_been_created=False)
+        completed_user_story_names = list(completed_user_stories.values_list('name', flat=True))
+
+        created_user_stories = UserStory.objects.filter(backlog__project__group=group, has_been_created=True, is_completed=False)
+        created_user_story_infos = list(created_user_stories.values('name', 'description', 'business_value', 'is_completed', 'sprint_id', 'original_sprint_number', 'time_estimation', 'progress_time'))
+
+        print("Created user story infos before serialization:", created_user_story_infos)  # Debug print
+
+        for story in created_user_story_infos:
+            story['time_estimation'] = story['time_estimation'].total_seconds()
+            story['progress_time'] = story['progress_time'].total_seconds()
+
+        print("Created user story infos after serialization:", created_user_story_infos)  # Debug print
+
+        group_users = group.users.all()
+        user_details = list(group_users.values('id', 'username', 'email'))
+
+        data = {
+            "group": {
+                "id": group.id,
+                "name": group.name,
+                "users": user_details
+            },
+            "phase_1_answer": phase_1_answer,
+            "phase_2_answer": phase_2_answer,
+            "completed_user_story_names": completed_user_story_names,
+            "created_user_stories": created_user_story_infos,
+            "current_sprint": project.current_sprint
+        }
+
+        SavedGameData.objects.create(
+            group=group,
+            phase_1_answer=phase_1_answer,
+            phase_2_answer=phase_2_answer,
+            completed_user_story_names=completed_user_story_names,
+            created_user_stories=created_user_story_infos,
+            current_sprint=project.current_sprint
+        )
+
+        print("Saved game data:", data)  # Debug print
+        return JsonResponse(data)
+    
+# Supprime un projet pour un groupe
+class DeleteProjectView(APIView):
+    def delete(self, request, group_id):
+        try:
+            group = get_object_or_404(Group, id=group_id)
+            project = get_object_or_404(Project, group=group)
+
+            project.delete()
+
+            return JsonResponse({"detail": "Project and related data deleted successfully."}, status=200)
+        except Group.DoesNotExist:
+            return JsonResponse({"detail": "Group not found."}, status=404)
+        except Project.DoesNotExist:
+            return JsonResponse({"detail": "Project not found."}, status=404)
+
+# Crée la boucle de jeu pour un groupe
+class LoopView(APIView):
+    def post(self, request, group_id):
+        # Get the saved game data for the group
+        saved_data = get_object_or_404(SavedGameData, group_id=group_id)
+
+        # Get the group
+        group = saved_data.group
+
+        # Clear answers and set statuses to 'not_started'
+        GroupPhaseStatus.objects.filter(group=group).update(answer=None, status='not_started')
+
+        # Set the current phase to phase 3
+        phase_3 = get_object_or_404(GamePhase, id=3)
+        group.current_phase = phase_3
+        group.save()
+
+        # Set phase 1 and phase 2 as completed and fill the saved answers
+        phase_1 = get_object_or_404(GamePhase, id=1)
+        phase_2 = get_object_or_404(GamePhase, id=2)
+
+        GroupPhaseStatus.objects.update_or_create(
+            group=group,
+            phase=phase_1,
+            defaults={'answer': saved_data.phase_1_answer, 'status': 'completed'}
+        )
+
+        GroupPhaseStatus.objects.update_or_create(
+            group=group,
+            phase=phase_2,
+            defaults={'answer': saved_data.phase_2_answer, 'status': 'completed'}
+        )
+
+        GroupPhaseStatus.objects.update_or_create(
+            group=group,
+            phase=phase_3,
+            defaults={'status': 'in_progress'}
+        )
+
+        # Prepare data for creating a new project
+        phase_1_answer = saved_data.phase_1_answer or {}
+        project_name = phase_1_answer.get('projectName', 'Default Project Name')
+        roles = phase_1_answer.get('roles', {})
+        
+        # Create the project
+        project = Project.objects.create(
+            name=project_name,
+            group=group,
+            scrum_master=roles.get('scrumMaster'),
+            product_owner=roles.get('productOwner'),
+            developers=roles.get('developers', [])
+        )
+
+        # Create the backlog
+        backlog = Backlog.objects.create(project=project)
+
+        # Create user stories from templates
+        user_story_templates = UserStoryTemplate.objects.all()
+        for template in user_story_templates:
+            UserStory.objects.create(
+                name=template.name,
+                description=template.description,
+                business_value=template.business_value,
+                time_estimation=template.time_estimation,
+                backlog=backlog
+            )
+
+        # Create a new sprint
+        sprint_number = saved_data.current_sprint + 1
+        sprint = Sprint.objects.create(
+            backlog=backlog,
+            sprint_number=sprint_number
+        )
+
+        # Create events from templates
+        event_templates = EventTemplate.objects.all()
+        for template in event_templates:
+            Event.objects.create(
+                description=template.description,
+                effect=template.effect,
+                project=project
+            )
+
+        group.project = project
+        group.save()
+
+        # Mark saved user stories as completed
+        for name in saved_data.completed_user_story_names:
+            UserStory.objects.filter(backlog=backlog, name=name).update(is_completed=True)
+
+        # Create new user stories
+        for story_data in saved_data.created_user_stories:
+            UserStory.objects.create(
+                name=story_data['name'],
+                description=story_data['description'],
+                business_value=story_data['business_value'],
+                time_estimation=timedelta(seconds=story_data['time_estimation']),
+                backlog=backlog,
+                is_completed=story_data['is_completed'],
+                sprint_id=sprint.id,
+                original_sprint_number=story_data['original_sprint_number'],
+                progress_time=timedelta(seconds=story_data['progress_time'])
+            )
+
+        return JsonResponse({"detail": "Loop done"}, status=200)

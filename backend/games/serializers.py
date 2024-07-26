@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import GameTimeControl,Project, GamePhase, UserStory, Backlog, Sprint, Event, UserStoryTemplate, GroupPhaseStatus
+from .models import GameTimeControl,Project, GamePhase, UserStory, Backlog, Sprint, Event, UserStoryTemplate, GroupPhaseStatus,SavedGameData
 
 class GameTimeControlSerializer(serializers.ModelSerializer):
     class Meta:
@@ -50,4 +50,9 @@ class EventSerializer(serializers.ModelSerializer):
 class UserStoryTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserStoryTemplate
+        fields = '__all__'
+
+class SavedGameDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavedGameData
         fields = '__all__'

@@ -30,7 +30,10 @@ from .views import (
     FetchSprintRandomClientCommentView,
     UpdateEventAnswerView,
     GetEventsView,
-    FetchAnsweredEventsView
+    FetchAnsweredEventsView,
+    SaveGameDataView,
+    DeleteProjectView,
+    LoopView
 )
 
 group_members_list = GroupMembersViewSet.as_view({
@@ -69,6 +72,8 @@ urlpatterns = [
     path('group/<int:group_id>/event/<int:event_id>/update-answer/', UpdateEventAnswerView.as_view(), name='updateEventAnswer'),
     path('group/<int:group_id>/get-events/', GetEventsView.as_view(), name='getEvents'),
     path('group/<int:group_id>/fetch-answered-events/', FetchAnsweredEventsView.as_view(), name='fetchAnsweredEvents'),
+    path('save-game-data/<int:group_id>/', SaveGameDataView.as_view(), name='saveGameData'),
+    path('delete-project/<int:group_id>/', DeleteProjectView.as_view(), name='deleteProject'),
+    path('loop/<int:group_id>/', LoopView.as_view(), name='loop'),
 
-   
 ]

@@ -85,6 +85,7 @@ const handleWebSocketMessage = (event) => {
 
 const handlePhaseStatusUpdate = async (data) => {
   if (selectedGroup.value.id === data.group_id) {
+    console.log('handlePhaseStatusUpdate triggered');
     if (!selectedGroup.value.current_phase) {
       selectedGroup.value.current_phase = { id: null, name: '', description: '', status: '' };
     }

@@ -106,5 +106,13 @@ class EventTemplate(models.Model):
         return self.description
 
 
+class SavedGameData(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='saved_game_data')
+    phase_1_answer = models.JSONField(blank=True, null=True)
+    phase_2_answer = models.JSONField(blank=True, null=True)
+    completed_user_story_names = models.JSONField()
+    created_user_stories = models.JSONField(blank=True, null=True)
+    current_sprint = models.IntegerField()
 
-
+    def __str__(self):
+        return f"Saved game data for group {self.group.name} at {self.timestamp}"
