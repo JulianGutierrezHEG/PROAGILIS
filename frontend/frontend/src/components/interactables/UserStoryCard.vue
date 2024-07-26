@@ -3,7 +3,7 @@
        :style="{ backgroundColor: isSelected ? '#3b82f6' : 'white' }">
     <p class="text-lg font-semibold mb-2"> Nom: {{ story.name }}</p>
     <p class="text-lg font-semibold mb-2">Description: {{ story.description }}</p>
-    <p class="text-sm text-gray-500 mb-2">Valeur: {{ story.business_value || '' }}</p>
+    <p class="text-sm text-gray-500 mb-2">Valeur: {{ story.business_value || '' }} , Sprint: {{ story.original_sprint_number}}</p>
     <p class="text-gray-700">Estimation de temps réel: {{ formattedRealTimeEstimation || '' }}</p>
     <p class="text-gray-700">Estimation de temps en jeu: {{ formattedGameTimeEstimation || '' }}</p>
   </div>

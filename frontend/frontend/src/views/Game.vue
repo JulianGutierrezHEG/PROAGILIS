@@ -46,7 +46,7 @@ import PhaseSix from '@/components/phases/PhaseSix.vue';
 import PhaseSeven from '@/components/phases/PhaseSeven.vue';
 import PhaseEight from '@/components/phases/PhaseEight.vue';
 
-const { currentUser, sessionStatus, leaveSession, fetchUserSessionInfo, fetchSessionStatus, setupEventListeners, removeEventListeners, selectedGroup, fetchGroupDetail, } = useSession();
+const { currentUser, sessionStatus, leaveSession, fetchUserSessionInfo, fetchSessionStatus, setupEventListeners, removeEventListeners, selectedGroup, fetchGroupDetail } = useSession();
 const sessionId = ref(null);
 const currentPhaseIndex = ref(0);
 

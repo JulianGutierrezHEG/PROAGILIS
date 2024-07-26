@@ -10,7 +10,7 @@
       </p>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-2">User Stories Corrigées</h3>
-        <div class="overflow-y-auto max-h-96 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+        <div class="overflow-y-auto max-h-[45vh] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
           <div v-for="(story, index) in userStories" :key="index" class="p-4 border rounded-lg shadow-sm bg-white">
             <UserStoryCard :story="story" />
             <div :class="{ locked: lockedElements['businessValue' + story.id] && lockedElements['businessValue' + story.id] !== currentUser }"

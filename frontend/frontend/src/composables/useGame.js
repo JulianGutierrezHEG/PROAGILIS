@@ -30,12 +30,15 @@ export function useGame(groupId, group) {
     timeBound: ''
   });
   const existingUserStories = ref([]);
+  const backlog = ref([]);
   const currentSprintDetails = ref({});
   const sprintUserStories = ref([]);
   const gameTimeControl = ref({}); 
   const currentSprintProgress = ref(null);
   const isSprintRunning = ref(false);
   const eventLog = ref([]);
+  const clientComment = ref([]);
+  const answeredEvents = ref([]);
 
   // Récupère le contrôle du temps de jeu
   const fetchGameTimeControl = async () => {
@@ -54,6 +57,17 @@ export function useGame(groupId, group) {
       eventLog.value.push({ ...data, answer: "" });
     } catch (error) {
       console.error("Erreur lors de la récupération de l'événement:", error);
+    }
+  };
+
+  // Récupère un commentaire client aléatoire pour le sprint
+  const fetchSprintRandomClientComment = async (groupId) => {
+    try {
+      const data = await gamesService.fetchSprintRandomClientComment(groupId);
+      clientComment.value = data;
+      console.log('Commentaire client:', clientComment.value);
+    } catch (error) {
+      console.error("Erreur lors de la récupération du commentaire clien:", error);
     }
   };
 
@@ -80,6 +94,8 @@ export function useGame(groupId, group) {
     }
   };
 
+  
+
   // Récupère les membres du groupe
   const fetchGroupMembers = async () => {
     try {
@@ -97,6 +113,17 @@ export function useGame(groupId, group) {
       currentUser.value = user.username;
     } catch (error) {
       console.error('Erreur lors de la récupération de l\'utilisateur actuel:', error);
+    }
+  };
+
+  // Récupère les événements répondus
+  const fetchAnsweredEvents = async (groupId) => {
+    try {
+      const data = await gamesService.fetchAnsweredEvents(groupId);
+      answeredEvents.value = data;
+      console.log('Evénements répondus:', answeredEvents.value);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des événements répondus:", error);
     }
   };
 
@@ -386,6 +413,15 @@ export function useGame(groupId, group) {
     
   };
 
+  // Récupère le backlog
+  const fetchBacklog = async (groupId) => {
+    const response = await gamesService.fetchUserStories(groupId);
+    const filteredBacklog = response.filter(story => !story.is_completed);
+    backlog.value = filteredBacklog;
+    console.log('Backlog:', backlog.value);
+    return filteredBacklog;
+  };
+
   // Récupère les user stories à couper
   const fetchUserStoriesToCut = async (groupId) => {
     try {
@@ -513,7 +549,6 @@ export function useGame(groupId, group) {
     try {
       const response = await gamesService.getUserStoriesProgress(groupId, sprintId);
       sprintUserStories.value = response;
-      console.log('User stories progress:', response);
     } catch (error) {
       console.error('Error fetching user stories progress:', error);
     }
@@ -531,7 +566,7 @@ export function useGame(groupId, group) {
     return sprintUserStories.value.filter(story => story.is_completed);
   };
 
-  // Récupère les user stories incomplètes
+  // Récupère les user stories incomplètes d'un sprint
   const fetchIncompleteUserStories = async (groupId) => {
     await fetchSprintUserStories(groupId);
     return sprintUserStories.value.filter(story => !story.is_completed);
@@ -544,6 +579,8 @@ export function useGame(groupId, group) {
   return {
     gameTimeControl,
     eventLog,
+    answeredEvents,
+    clientComment,
     groupMembers,
     lockedElements,
     currentUser,
@@ -555,6 +592,7 @@ export function useGame(groupId, group) {
     phasesStatus,
     phases,
     existingUserStories,
+    backlog,
     currentSprintDetails,
     sprintUserStories,
     currentSprintProgress,
@@ -594,6 +632,9 @@ export function useGame(groupId, group) {
     fetchIncompleteUserStories,
     fetchSprintRandomEvent,
     updateEventAnswer,
-    fetchEvents
+    fetchEvents,
+    fetchAnsweredEvents,
+    fetchSprintRandomClientComment,
+    fetchBacklog
   };
 }

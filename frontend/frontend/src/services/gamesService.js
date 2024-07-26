@@ -295,6 +295,16 @@ const fetchSprintRandomEvent = async (groupId) => {
   }
 };
 
+// Récupère un commentaire client aléatoire
+const fetchSprintRandomClientComment = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/fetch-random-client-comment/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+}
+
 // Met à jour la réponse à un événement
 const updateEventAnswer = async (groupId, eventId, answer) => {
   try {
@@ -309,6 +319,16 @@ const updateEventAnswer = async (groupId, eventId, answer) => {
 const getEvents = async (groupId, eventIds) => {
   try {
     const response = await axios.post(`/api/games/group/${groupId}/get-events/`, { eventIds });
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+// Récupère les événements répondus
+const fetchAnsweredEvents = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/group/${groupId}/fetch-answered-events/`);
     return response.data;
   } catch (error) {
     handleAxiosError(error);
@@ -345,8 +365,10 @@ export default {
   getUserStoriesProgress,
   completeUserStory,
   fetchSprintRandomEvent,
+  fetchSprintRandomClientComment,
   updateEventAnswer,
-  getEvents
+  getEvents,
+  fetchAnsweredEvents
 };
 
 

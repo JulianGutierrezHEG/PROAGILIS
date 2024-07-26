@@ -13,8 +13,8 @@
       </div>
       <div class="mb-10">
         <h3 class="text-xl font-semibold mb-2">User Stories Sélectionnées</h3>
-        <span class="mb-5"> Clickez sur une carte d'User Story pour la séléctionnée pour le prochain sprint.Rappel: {{gameTimeControl.game_hours }}H en jeu = {{gameTimeControl.real_minutes}} minute en réel </span>
-        <div class="overflow-y-auto max-h-96 mt-10 ">
+        <span class="mb-5"> Cliquez sur une carte d'User Story pour la séléctionnée pour le prochain sprint.Rappel: {{gameTimeControl.game_hours }}H en jeu = {{gameTimeControl.real_minutes}} minute en réel </span>
+        <div class="overflow-y-auto max-h-[45vh] mt-10 ">
           <table class="min-w-full bg-white ">
             <thead>
               <tr>
@@ -37,7 +37,7 @@
           </table>
         </div>
           <button @click.prevent="submitPhaseFiveData" 
-                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
+                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mt-4">
           Soumettre
         </button>
       </div>

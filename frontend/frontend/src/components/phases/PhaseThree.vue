@@ -10,9 +10,10 @@
       </p>
       <div class="flex justify-between mb-4">
         <div class="w-1/2 pr-2">
-          <h3 class="text-xl font-semibold mb-2">User Stories Existantes</h3>
+          <h3 class="text-xl font-semibold mb-2">User Stories Existantes ( Backlog )</h3>
           <div class="overflow-y-auto max-h-80">
-            <div v-for="(story, index) in existingUserStories" :key="index" @click.stop="selectStoryForDivide(story)" :class="{ isSelected: story.id === selectedStoryId }">
+            <div v-for="(story, index) in existingUserStories" :key="index" @click.stop="selectStoryForDivide(story)"
+              :class="{ isSelected: story.id === selectedStoryId }">
               <UserStoryCard :story="story" :isSelected="story.id === selectedStoryId" />
             </div>
           </div>
@@ -20,31 +21,39 @@
         <div class="w-1/2 pl-2">
           <h3 class="text-xl font-semibold mb-2">Nouvelles User Stories</h3>
           <div class="overflow-y-auto max-h-80">
-            <div v-for="(story, index) in newUserStories" :key="index" class=" flex items-center">
+            <div v-for="(story, index) in newUserStories" :key="index" class="flex items-center">
               <UserStoryCard :story="story" class="flex-1" />
-              <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete" class="w-6 h-6 cursor-pointer ml-2" @click="confirmDeleteStory(story.id)">
+              <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete"
+                class="w-6 h-6 cursor-pointer ml-2" @click="confirmDeleteStory(story.id)">
             </div>
           </div>
         </div>
       </div>
       <div class="mb-4" :class="{ locked: lockedElements.storyName && lockedElements.storyName !== currentUser }">
         <label for="storyName" class="block text-gray-700">Nom de la User Story</label>
-        <input type="text" id="storyName" v-model="newStory.name" class="mt-1 block w-full p-2 border rounded-md" 
-               @focus="lock('storyName')" @blur="unlock('storyName')" />
+        <input type="text" id="storyName" v-model="newStory.name" class="mt-1 block w-full p-2 border rounded-md"
+          @focus="lock('storyName')" @blur="unlock('storyName')" />
       </div>
-      <div class="mb-4" :class="{ locked: lockedElements.storyDescription && lockedElements.storyDescription !== currentUser }">
+      <div class="mb-4"
+        :class="{ locked: lockedElements.storyDescription && lockedElements.storyDescription !== currentUser }">
         <label for="storyDescription" class="block text-gray-700">Description</label>
-        <textarea id="storyDescription" v-model="newStory.description" class="mt-1 block w-full p-2 border rounded-md" rows="3"
-                  @focus="lock('storyDescription')" @blur="unlock('storyDescription')"></textarea>
+        <textarea id="storyDescription" v-model="newStory.description" class="mt-1 block w-full p-2 border rounded-md"
+          rows="3" @focus="lock('storyDescription')" @blur="unlock('storyDescription')"></textarea>
       </div>
-      <button @click="handleStoryAction" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 mt-2 mb-10">
+      <button @click="handleStoryAction"
+        class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 mt-2 mb-10">
         {{ isDividing ? (divideCounter === 1 ? 'Valider et créer la deuxième' : 'Diviser la User Story') : 'Ajouter une User Story' }}
       </button>
-          <button @click.prevent="submitPhaseThreeAnswer" 
-                class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
+      <div v-if="isScrumMaster || isProductOwner">
+        <button @click.prevent="submitPhaseThreeAnswer"
+          class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
           Soumettre
         </button>
-     </div>
+      </div>
+      <div v-else>
+        <p class="text-center text-lg mb-10">Seul le Product Owner peut soumettre la réponse (enlever a la fin Scrum master dans le code)</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -61,16 +70,16 @@ const props = defineProps({
   }
 });
 
-const { 
-  waiting, 
-  isLoadingPhaseDetails, 
+const {
+  waiting,
+  isLoadingPhaseDetails,
   currentPhaseDetails,
   currentUser,
-  fetchGroupMembers, 
-  setupEvents, 
-  cleanupEvents, 
-  fetchCurrentPhase, 
-  fetchUserStoriesToCut,
+  fetchGroupMembers,
+  setupEvents,
+  cleanupEvents,
+  fetchCurrentPhase,
+  fetchBacklog,
   fetchCreatedUserStories,
   fetchProjectDetails,
   addUserStory,
@@ -88,6 +97,8 @@ const selectedStoryId = ref(null);
 const isDividing = ref(false);
 const divideCounter = ref(0);
 const lockedElements = ref({});
+const isProductOwner = ref(false);
+const isScrumMaster = ref(false);
 
 const fetchInitialData = async () => {
   if (!props.group || !props.group.id) {
@@ -98,10 +109,25 @@ const fetchInitialData = async () => {
   try {
     await fetchCurrentPhase();
     fetchGroupMembers();
-    await fetchInitialUserStoriesToCut();
+    await fetchBacklogData();
     await fetchCreatedUserStoriesFrontend();
+    const projectDetails = await fetchProjectDetails(props.group.id);
+    if (projectDetails) {
+      isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
+      isProductOwner.value = projectDetails.product_owner === currentUser.value;
+    }
   } catch (error) {
     console.error('Error fetching initial data:', error);
+  }
+};
+
+const fetchBacklogData = async () => {
+  try {
+    const response = await fetchBacklog(props.group.id);
+    existingUserStories.value = response;
+    console.log('Backlog data:', response);
+  } catch (error) {
+    console.error('Error fetching backlog data:', error);
   }
 };
 
@@ -124,10 +150,10 @@ const handleStoryAction = async () => {
           description: newStory.value.description,
         });
         newUserStories.value.push({ ...newStory.value, id: response.id });
-        
+
         await deleteUserStory(props.group.id, selectedStoryId.value);
         existingUserStories.value = existingUserStories.value.filter(story => story.id !== selectedStoryId.value);
-        
+
         newStory.value = { name: '', description: '' };
         isDividing.value = false;
         selectedStoryId.value = null;
@@ -148,39 +174,27 @@ const handleStoryAction = async () => {
 };
 
 const selectStoryForDivide = (story) => {
-  selectedStoryId.value = story.id; 
+  selectedStoryId.value = story.id;
   console.log('Selected story:', story.id);
   if (!isDividing.value) {
     isDividing.value = true;
     selectedStoryId.value = story.id;
-    divideCounter.value = 0; 
+    divideCounter.value = 0;
   } else if (isDividing.value && selectedStoryId.value !== story.id) {
     isDividing.value = false;
     selectedStoryId.value = null;
     isDividing.value = true;
     selectedStoryId.value = story.id;
-    divideCounter.value = 0; 
+    divideCounter.value = 0;
   }
 };
 
 const fetchCreatedUserStoriesFrontend = async () => {
   try {
     const response = await fetchCreatedUserStories(props.group.id);
-    newUserStories.value = response; 
+    newUserStories.value = response;
   } catch (error) {
     console.error('Erreur lors de la récupération des User Stories créées:', error);
-  }
-};
-
-const fetchInitialUserStoriesToCut = async () => {
-  try {
-    const response = await fetchUserStoriesToCut(props.group.id);
-    if (!response || response.length === 0) {
-    } else {
-      existingUserStories.value = response; 
-    }
-  } catch (error) {
-    console.error('Erreur lors de la récupération des User Stories à découper:', error);
   }
 };
 
@@ -228,14 +242,5 @@ onUnmounted(() => {
   cleanupEvents();
 });
 
-watch(
-  () => props.group,
-  async (newGroup, oldGroup) => {
-    if (newGroup && newGroup.id) {
-      console.log('Group changed:', newGroup.id);
-      await fetchInitialData();
-    }
-  },
-  { immediate: true }
-);
+
 </script>

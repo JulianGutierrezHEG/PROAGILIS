@@ -38,14 +38,14 @@
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-2">Commentaires du Client</h3>
         <div class="bg-white p-4 rounded-lg shadow-md">
-          <p class="text-sm text-gray-600">{{ clientComments }}</p>
+          <p class="text-sm text-gray-600">{{ clientComment.description }}</p>
         </div>
       </div>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-2">Votre réponse</h3>
-        <textarea v-model="studentResponse" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
-                  :class="{ locked: lockedElements.studentResponse && lockedElements.studentResponse !== currentUser }"
-                  @focus="lock('studentResponse')" @blur="unlock('studentResponse')" required></textarea>
+        <textarea v-model="groupResponse" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
+                  :class="{ locked: lockedElements.groupResponse && lockedElements.groupResponse !== currentUser }"
+                  @focus="lock('groupResponse')" @blur="unlock('groupResponse')" required></textarea>
       </div>
       <div v-if="isScrumMaster || isProductOwner">
         <button @click.prevent="submitPhaseSevenAnswer" 
@@ -59,6 +59,7 @@
     </div>
   </div>
 </template>
+
 
 
 <script setup>
@@ -79,6 +80,7 @@ const {
   currentUser, 
   currentPhaseDetails, 
   isLoadingPhaseDetails, 
+  clientComment,
   waiting,
   fetchGroupMembers, 
   setupEvents, 
@@ -90,11 +92,12 @@ const {
   fetchCurrentPhase,
   fetchProjectDetails,
   fetchCompletedUserStories,
-  fetchIncompleteUserStories
+  fetchIncompleteUserStories,
+  fetchSprintRandomClientComment,
+  updateEventAnswer
 } = useGame(props.group.id, props.group);
 
-const clientComments = ref('Client commentaire'); 
-const studentResponse = ref('');
+const groupResponse = ref('');
 const completedUserStories = ref([]);
 const incompleteUserStories = ref([]);
 
@@ -109,14 +112,13 @@ const unlock = (elementId) => {
   unlockElement(elementId);
 };
 
-
 const submitPhaseSevenAnswer = async () => {
   try {
     showWaitingScreen(props.group.id, currentUser.value);
     const answerData = {
-      clientComments: clientComments.value, 
-      studentResponse: studentResponse.value,
+      clientCommentId: clientComment.value.id
     };
+    await updateEventAnswer(props.group.id, clientComment.value.id, groupResponse.value);
     await checkValidationAndSendAnswer(answerData);
   } catch (error) {
     console.error('Error in phase 7:', error);
@@ -136,6 +138,8 @@ onMounted(async () => {
 
   completedUserStories.value = await fetchCompletedUserStories(props.group.id);
   incompleteUserStories.value = await fetchIncompleteUserStories(props.group.id);
+  await fetchSprintRandomClientComment(props.group.id);
+  console.log('clientComment:', clientComment.value);
 });
 
 onUnmounted(() => {

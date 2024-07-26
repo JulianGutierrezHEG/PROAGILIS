@@ -263,6 +263,7 @@ class FetchUserStoriesView(APIView):
                 "description": story.description,
                 "business_value": story.business_value,
                 "time_estimation": story.time_estimation,
+                "original_sprint_number": story.original_sprint_number,
                 "backlog": story.backlog.id,
                 "is_completed": story.is_completed,
                 "sprint": story.sprint.id if story.sprint else None
@@ -577,6 +578,19 @@ class FetchSprintRandomEventView(APIView):
         serializer = EventSerializer(event)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+# Récupère un commentaire client aléatoire pour un groupe
+class FetchSprintRandomClientCommentView(APIView):
+    def get(self, request, group_id):
+        project = get_object_or_404(Project, group_id=group_id)
+        events = Event.objects.filter(project=project, effect__isnull=True)
+        
+        if not events.exists():
+            return Response({"detail": "Pas de commentaire clients trouvés"}, status=status.HTTP_404_NOT_FOUND)
+        
+        event = random.choice(events)
+        serializer = EventSerializer(event)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 # Met à jour la réponse d'un événement pour un groupe
 class UpdateEventAnswerView(APIView):
     def post(self, request, group_id, event_id):
@@ -595,4 +609,16 @@ class GetEventsView(APIView):
         event_ids = request.data.get('eventIds', [])
         events = Event.objects.filter(id__in=event_ids, project__group_id=group_id)
         serializer = EventSerializer(events, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# Retourne les événements répondus pour un groupe
+class FetchAnsweredEventsView(APIView):
+    def get(self, request, group_id):
+        project = get_object_or_404(Project, group_id=group_id)
+        answered_events = Event.objects.filter(project=project, effect__isnull=False, answer__isnull=False)
+
+        if not answered_events.exists():
+            return Response({"detail": "Pas d'événements trouvés"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EventSerializer(answered_events, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
