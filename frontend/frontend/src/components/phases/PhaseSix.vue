@@ -125,7 +125,7 @@ const {
   eventLog,
   fetchSprintRandomEvent,
   updateEventAnswer
-} = useGame(props.group.id);
+} = useGame(props.group.id, props.group);
 
 const isScrumMaster = ref(false);
 const globalProgress = ref(0);

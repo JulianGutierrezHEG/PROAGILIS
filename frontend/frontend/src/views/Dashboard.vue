@@ -77,6 +77,7 @@ import { onMounted, onUnmounted, watch } from 'vue';
 import { useSession } from '@/composables/useSession';
 import GroupInfo from '@/components/dashboard/GroupInfo.vue';
 import websocketService from '@/services/websocketService';
+import EventBus from '@/services/eventBus';
 
 const { 
   sessions, 
@@ -120,6 +121,11 @@ watch(groups, (newGroups) => {
   console.log('Groupes mis à jour:', newGroups);
 });
 
+const handlePhaseStatusUpdate = async () => {
+  console.log('Groupe ejecté');
+  selectedGroup.value = null;
+};
+
 onMounted(async () => {
   await fetchCreatedSessions(); 
   setupEventListeners();
@@ -127,9 +133,11 @@ onMounted(async () => {
     selectedSession.value = sessions.value[0];
     await fetchGroups();
   }
+  EventBus.on('group_ejected_from_session', handlePhaseStatusUpdate);
 });
 
 onUnmounted(() => {
   removeEventListeners();
+  EventBus.off('group_ejected_from_session', handlePhaseStatusUpdate);
 });
 </script>

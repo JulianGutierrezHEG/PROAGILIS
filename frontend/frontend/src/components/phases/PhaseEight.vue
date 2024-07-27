@@ -39,8 +39,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useGame } from '@/composables/useGame';
+import { useSession } from '@/composables/useSession';
 import WaitingScreen from '@/views/WaitingScreen.vue';
-import websocketService from '@/services/websocketService';
+import sessionsService from '@/services/sessionsService';
 
 const props = defineProps({
   group: {
@@ -63,7 +64,7 @@ const {
   checkValidationAndSendAnswer,
   showWaitingScreen,
   fetchCurrentPhase,
-  fetchProjectDetails
+  fetchSprintDetails
 } = useGame(props.group.id, props.group);
 
 const retrospective = ref({
@@ -72,7 +73,6 @@ const retrospective = ref({
   actionItems: ''
 });
 
-
 const lock = (elementId) => {
   lockElement(elementId);
 };
@@ -80,7 +80,6 @@ const lock = (elementId) => {
 const unlock = (elementId) => {
   unlockElement(elementId);
 };
-
 
 const submitPhaseEightAnswer = async () => {
   try {
@@ -102,6 +101,7 @@ onMounted(async () => {
   await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
+  await fetchSprintDetails(props.group.id);
 });
 
 onUnmounted(() => {

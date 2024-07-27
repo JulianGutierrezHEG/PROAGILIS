@@ -125,7 +125,6 @@ const fetchBacklogData = async () => {
   try {
     const response = await fetchBacklog(props.group.id);
     existingUserStories.value = response;
-    console.log('Backlog data:', response);
   } catch (error) {
     console.error('Error fetching backlog data:', error);
   }

@@ -66,7 +66,7 @@ const {
   checkValidationAndSendAnswer,
   showWaitingScreen,
   fetchCurrentPhase,
-  fetchUserStories,
+  fetchBacklog,
   updateUserStoryDetails
 } = useGame(props.group.id, props.group);
 
@@ -112,8 +112,8 @@ const submitPhaseFourData = async () => {
 
 const fetchUserStoriesForPhase = async () => {
   if (!initialUserStoriesFetched.value) {
-    const response = await fetchUserStories(props.group.id);
-    userStories.value = response;
+    const response = await fetchBacklog(props.group.id);
+    userStories.value = response.filter(story => !story.is_completed);
     initialUserStoriesFetched.value = true;
   }
 };

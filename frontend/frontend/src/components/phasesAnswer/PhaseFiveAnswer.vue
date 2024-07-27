@@ -1,7 +1,7 @@
 <template>
     <div>
         <h3 class="font-bold text-xl text-center mb-4">Réponse pour la phase {{ localCurrentPhaseName }}</h3>
-        <h4 class="font-bold text-lg text-center mb-4">User Stories choisie pour Sprint {{ currentSprint }}</h4>
+        <h4 class="font-bold text-lg text-center mb-4">User Stories choisie pour Sprint {{ currentSprintDetails.sprint_number }}</h4>
         <div class="flex justify-center">
             <div class="max-w-2xl w-full">
                 <div class="overflow-y-auto" style="max-height: 300px;">
@@ -30,8 +30,8 @@ const phaseNeedsValidation = inject('phaseNeedsValidation');
 
 const localCurrentPhaseName = ref('');
 const localPhaseAnswer = ref({ userStories: [] });
-const currentSprint = ref(1);
-const { fetchGroupPhaseAnswer, fetchUserStories, fetchProjectDetails } = useGame(groupId.value);
+const currentSprint = ref(null);
+const { fetchGroupPhaseAnswer, fetchUserStories, fetchProjectDetails,currentSprintDetails,fetchSprintDetails } = useGame(groupId.value);
 const preparedPhaseAnswer = ref({});
 
 const preparePhaseAnswer = () => {
@@ -84,6 +84,7 @@ const handlePhaseAnswerUpdate = async (data) => {
 
 onMounted(() => {
     fetchPhaseData();
+    fetchSprintDetails(groupId.value,currentSprint.value);
     EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
 });
 

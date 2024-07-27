@@ -140,6 +140,12 @@ const updateUserStoryDetails = (groupId, storyId, businessValue, user) => {
   sendMessage(groupId, { event: 'user_story_update', storyId, businessValue, user });
 };
 
+// Envoi du message d'éjection du groupe
+const sendGroupEjection = (groupId) => {
+  console.log(`Envoi du message d'éjection du groupe: ${groupId}`);
+  sendMessage(groupId, { event: 'group_ejected_from_session', group_id: groupId });
+};
+
 
 export default {
   connectGroup: (groupId) => connectWebSocket(groupId, 'group'),
@@ -160,5 +166,6 @@ export default {
   sendPhaseAnswerUpdate,
   submitAnswer,
   updateCreatedUserStories,
-  updateUserStoryDetails
+  updateUserStoryDetails,
+  sendGroupEjection,
 };

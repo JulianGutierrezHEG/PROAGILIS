@@ -11,7 +11,6 @@
   
   <script setup>
   import { inject } from 'vue';
-  import gamesService from '@/services/gamesService';
   import websocketService from '@/services/websocketService';
   import { useGame } from '@/composables/useGame';
   
@@ -24,17 +23,6 @@
     const answerData = phaseAnswer.value;
     console.log('Validation:',answerData);
     await validatePhase(groupId.value, phaseId.value, isCorrect, answerData);
-  
-    if (isCorrect) {
-      try {
-        const nextPhaseId = phaseId.value + 1;
-        await gamesService.updatePhaseStatus(groupId.value, nextPhaseId, 'in_progress');
-        websocketService.sendPhaseStatusUpdate(groupId.value, phaseId.value, 'completed');
-        websocketService.sendPhaseStatusUpdate(groupId.value, nextPhaseId, 'in_progress');
-      } catch (error) {
-        console.error('Erreur lors de la validation ou passage à la phase suivante:', error);
-      }
-    }
     websocketService.sendPhaseAnswerUpdate(groupId.value, phaseId.value, answerData);
   };
   </script>

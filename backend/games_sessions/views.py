@@ -258,3 +258,37 @@ class LeaveSessionView(APIView):
             return Response({'success': True}, status=status.HTTP_200_OK)
         return Response({'detail': 'L\'utilisateur n\'est pas dans ce groupe'}, status=status.HTTP_404_NOT_FOUND)
 
+# Retire un groupe d'une session
+class RemoveGroupFromSessionView(APIView):
+    def post(self, request, group_id):
+        group = get_object_or_404(Group, id=group_id)
+        session = group.sessions.first()
+        if not session:
+            return Response({'detail': 'Groupe n\'est pas dans une session'}, status=status.HTTP_404_NOT_FOUND)
+
+        users = group.users.all()
+        for user in users:
+            group.users.remove(user)
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"group_{group.id}",
+                {
+                    'type': 'user_left_group',
+                    'event': 'user_left_group',
+                    'user': user.id,
+                    'group_id': group.id,
+                    'username': user.username
+                }
+            )
+            async_to_sync(channel_layer.group_send)(
+                f"session_{session.id}",
+                {
+                    'type': 'user_left_session',
+                    'event': 'user_left_session',
+                    'user': user.id,
+                    'session_id': session.id,
+                    'username': user.username
+                }
+            )
+
+        return Response({'success': True}, status=status.HTTP_200_OK)

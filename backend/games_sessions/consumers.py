@@ -153,6 +153,21 @@ class GroupConsumer(BaseConsumer):
                 'user': event['user']
             }
         )
+    
+    async def group_ejected_from_session(self, event):
+        await self.channel_layer.group_send(
+            self.get_group_name(),
+            {
+                'type': 'group_ejected_from_session_broadcast',
+                'event': 'group_ejected_from_session',
+                'group_id': event['group_id']
+            }
+        )
+
+    async def group_ejected_from_session_broadcast(self, event):
+        await self.send_message('group_ejected_from_session', {
+            'group_id': event['group_id']
+        })
 
     async def send_group_members_update(self):
         group_id = self.scope['url_route']['kwargs']['group_id']

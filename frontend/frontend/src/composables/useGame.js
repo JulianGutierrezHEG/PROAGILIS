@@ -1,12 +1,18 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import websocketService from '@/services/websocketService';
+import { useSession } from './useSession';
 import gamesService from '@/services/gamesService';
 import usersService from '@/services/usersService';
 import EventBus from '@/services/eventBus';
+import sessionsService from '@/services/sessionsService';
+import { useRouter } from 'vue-router';
+
 
 // COMPOSABLE POUR LES PARTIES, UTILISEE DANS LES VUES
 
 export function useGame(groupId, group) {
+  const router = useRouter();
+  const { ejectGroup } = useSession();
   const groupMembers = ref([]);
   const lockedElements = ref({});
   const currentUser = ref(null);
@@ -39,6 +45,7 @@ export function useGame(groupId, group) {
   const eventLog = ref([]);
   const clientComment = ref([]);
   const answeredEvents = ref([]);
+  const phaseDisplay = ref(null);
 
   // Récupère le contrôle du temps de jeu
   const fetchGameTimeControl = async () => {
@@ -65,7 +72,6 @@ export function useGame(groupId, group) {
     try {
       const data = await gamesService.fetchSprintRandomClientComment(groupId);
       clientComment.value = data;
-      console.log('Commentaire client:', clientComment.value);
     } catch (error) {
       console.error("Erreur lors de la récupération du commentaire clien:", error);
     }
@@ -127,24 +133,28 @@ export function useGame(groupId, group) {
     }
   };
 
+  // Récupère l'affichage de la phase
+  const fetchPhaseDisplay = async () => {
+    try {
+      const data = await gamesService.fetchPhaseDisplay(groupId);
+      phaseDisplay.value = data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'affichage de la phase:', error);
+    }
+  };
+
   // Récupère la phase actuelle
   const fetchCurrentPhase = async () => {
     try {
-      console.log('Récupération de la phase actuelle pour le groupe:', groupId);
       isLoadingPhaseDetails.value = true; 
       const phaseStatus = await gamesService.getGroupCurrentPhase(groupId);
-  
+      currentPhase.value = phaseStatus.phase;
       if (!phaseStatus) {
         console.log('Phase status is null or undefined.');
         return;
       }
   
-      currentPhase.value = phaseStatus;
-      if (phaseStatus.status === 'pending') { 
-        waiting.value = true;
-      } else {
-        waiting.value = false;
-      }
+
       if (phaseStatus.phase) {
         const phaseDetails = await gamesService.getPhaseDetails(phaseStatus.phase);
         currentPhaseDetails.value = phaseDetails;
@@ -201,6 +211,7 @@ export function useGame(groupId, group) {
     EventBus.on('phase_status_update', handlePhaseStatusUpdate);
     EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
     EventBus.on('show_waiting_screen', handleShowWaitingScreen);
+    EventBus.on('group_ejected_from_session', handleGroupEjection);
   };
 
   // Nettoyage des websockets et des événements
@@ -216,12 +227,19 @@ export function useGame(groupId, group) {
     EventBus.off('phase_status_update', handlePhaseStatusUpdate);
     EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
     EventBus.off('show_waiting_screen', handleShowWaitingScreen);
+    EventBus.off('group_ejected_from_session', handleGroupEjection);
 
   };
 
   // Affiche l'écran d'attente
   const handleShowWaitingScreen = () => {
     waiting.value = true;
+  };
+
+  // Groupe éjecté de la session
+  const handleGroupEjection = (data) => {
+    console.log('Groupe éjecté de la session:', data);
+    router.push('/'); 
   };
 
   // Mis à jour du projet
@@ -234,7 +252,7 @@ export function useGame(groupId, group) {
   };
 
   const handleSmartUpdate = (data) => {
-    if (data.group_id === group.id && data.phase_id === currentPhaseDetails.value.id) {
+    if (data.group_id === group.id && data.phase_id === currentPhase.value) {
       smartObjectives.value = data.smart_details;
       console.log(`SMART Objectives mis à jour par: ${data.user}`);
     }
@@ -254,7 +272,7 @@ export function useGame(groupId, group) {
 
   // Mis à jour du statut de la phase
   const handlePhaseStatusUpdate = (data) => {
-      if (data.group_id === group.id && data.phase_id === currentPhaseDetails.value.id) {
+      if (data.group_id === group.id && data.phase_id === currentPhase.value) {
         if (data.status === 'wrong') {
           waiting.value = false;
         }
@@ -324,19 +342,18 @@ export function useGame(groupId, group) {
       handleShowWaitingScreen();
       try {
         await submitGroupAnswer(answerData);
-  
         if (currentPhaseDetails.value.requires_validation) {
-          websocketService.sendPhaseStatusUpdate(groupId, currentPhaseDetails.value.id, 'pending');
-          websocketService.sendPhaseAnswerUpdate(groupId, currentPhaseDetails.value.id, answerData);
+          websocketService.sendPhaseStatusUpdate(groupId, currentPhase.value, 'pending');
+          websocketService.sendPhaseAnswerUpdate(groupId, currentPhase.value, answerData);
         } else {
-          const nextPhaseId = currentPhaseDetails.value.id + 1;
-          await gamesService.updatePhaseStatus(groupId, currentPhaseDetails.value.id, 'completed');
-          websocketService.sendPhaseStatusUpdate(groupId, currentPhaseDetails.value.id, 'completed');
+          const nextPhaseId = currentPhase.value + 1;
+          await gamesService.updatePhaseStatus(groupId, currentPhase.value, 'completed');
+          websocketService.sendPhaseStatusUpdate(groupId, currentPhase.value, 'completed');
   
           await gamesService.updatePhaseStatus(groupId, nextPhaseId, 'in_progress');
           websocketService.sendPhaseStatusUpdate(groupId, nextPhaseId, 'in_progress');
   
-          websocketService.sendPhaseAnswerUpdate(groupId, currentPhaseDetails.value.id, answerData);
+          websocketService.sendPhaseAnswerUpdate(groupId, currentPhase.value, answerData);
           if(nextPhaseId===2){
             await gamesService.createProject(groupId, answerData);
           } 
@@ -379,53 +396,47 @@ export function useGame(groupId, group) {
       if (isCorrect) {
         if (phaseId === 5) {
           const userStoryIds = answerData.userStories; 
-          await gamesService.updateSprintFields(groupId, userStoryIds, 1);
+          await gamesService.updateSprintFields(groupId, userStoryIds);
         }
   
         if (phaseId === 8) {
           const savedGameData = await gamesService.saveGameData(groupId);
-          console.log('Saved game data:', savedGameData);
   
-          const deletedProject = await gamesService.deleteProject(groupId);
-          console.log('Deleted project:', deletedProject);
+          await gamesService.deleteProject(groupId);
   
-          const loopedGame = await gamesService.loopGame(groupId);
-          console.log('Looped game:', loopedGame);
+          await gamesService.loopGame(groupId);
   
           await gamesService.updatePhaseStatus(groupId, phaseId, 'completed');
           websocketService.sendPhaseStatusUpdate(groupId, phaseId, 'completed');
   
-          await gamesService.updatePhaseStatus(groupId, 1, 'completed');
-          websocketService.sendPhaseStatusUpdate(groupId, 1, 'completed');
-  
-          await gamesService.updatePhaseStatus(groupId, 2, 'completed');
-          websocketService.sendPhaseStatusUpdate(groupId, 2, 'completed');
-  
-          await gamesService.updatePhaseStatus(groupId, 3, 'in_progress');
-          websocketService.sendPhaseStatusUpdate(groupId, 3, 'in_progress');
-          console.log('Phase 3 set to in_progress');
-  
-          await gamesService.updatePhaseStatus(groupId, 4, 'not_started');
-          websocketService.sendPhaseStatusUpdate(groupId, 4, 'not_started');
-  
-          await gamesService.updatePhaseStatus(groupId, 5, 'not_started');
-          websocketService.sendPhaseStatusUpdate(groupId, 5, 'not_started');
-  
-          await gamesService.updatePhaseStatus(groupId, 6, 'not_started');
-          websocketService.sendPhaseStatusUpdate(groupId, 6, 'not_started');
-  
-          await gamesService.updatePhaseStatus(groupId, 7, 'not_started');
-          websocketService.sendPhaseStatusUpdate(groupId, 7, 'not_started');
-  
           await gamesService.updatePhaseStatus(groupId, phaseId, 'not_started');
           websocketService.sendPhaseStatusUpdate(groupId, phaseId, 'not_started');
   
-          if (savedGameData.current_sprint === 3) {
-            alert("Fin du jeu");
-            showWaitingScreen();
-            return;
-          }
+          websocketService.sendPhaseStatusUpdate(groupId, 4, 'not_started');
+          await gamesService.updatePhaseStatus(groupId, 4, 'not_started');
   
+          websocketService.sendPhaseStatusUpdate(groupId, 5, 'not_started');
+          await gamesService.updatePhaseStatus(groupId, 5, 'not_started');
+  
+          websocketService.sendPhaseStatusUpdate(groupId, 6, 'not_started');
+          await gamesService.updatePhaseStatus(groupId, 6, 'not_started');
+  
+          websocketService.sendPhaseStatusUpdate(groupId, 7, 'not_started');
+          await gamesService.updatePhaseStatus(groupId, 7, 'not_started');
+  
+          if (savedGameData.current_sprint === 3) {
+            if (savedGameData.current_sprint === 3) {
+              alert(`Fin du jeu pour le groupe ${groupId}`);
+              websocketService.sendMessage(groupId, {
+                event: 'group_ejected_from_session',
+                group_id: groupId
+              });
+              await sessionsService.ejectGroupFromSession(groupId);
+            }
+          } else {
+            websocketService.sendPhaseStatusUpdate(groupId, 3, 'in_progress');
+            await gamesService.updatePhaseStatus(groupId, 3, 'in_progress');
+          }
         } else {
           const nextPhaseId = phaseId + 1;
           await gamesService.updatePhaseStatus(groupId, nextPhaseId, 'in_progress');
@@ -439,6 +450,7 @@ export function useGame(groupId, group) {
       console.error('Erreur lors de la validation de la phase:', error);
     }
   };
+  
 
   // Affiche l'écran d'attente
   const showWaitingScreen = () => {
@@ -467,7 +479,6 @@ export function useGame(groupId, group) {
     const response = await gamesService.fetchUserStories(groupId);
     const filteredBacklog = response.filter(story => !story.is_completed);
     backlog.value = filteredBacklog;
-    console.log('Backlog:', backlog.value);
     return filteredBacklog;
   };
 
@@ -485,7 +496,6 @@ export function useGame(groupId, group) {
   const fetchCreatedUserStories = async () => {
     try {
       const response = await gamesService.fetchCreatedUserStories(groupId);
-      console.log('User stories créées:', response);
       return response;
     } catch (error) {
       console.error('Erreur lors de la récupération des user stories créées:', error);
@@ -646,6 +656,7 @@ export function useGame(groupId, group) {
     sprintUserStories,
     currentSprintProgress,
     isSprintRunning,
+    phaseDisplay,
     fetchGameTimeControl,
     fetchGroupMembers,
     setupEvents,
@@ -684,6 +695,7 @@ export function useGame(groupId, group) {
     fetchEvents,
     fetchAnsweredEvents,
     fetchSprintRandomClientComment,
-    fetchBacklog
+    fetchBacklog,
+    fetchPhaseDisplay
   };
 }

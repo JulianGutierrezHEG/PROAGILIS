@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (SessionCreateView, SessionListView, SessionDeleteView, GroupListView, JoinSessionView, GetJoinedSessionView,
-                GetUserSessionInfoView, LeaveSessionView, SessionDetailView, StartSessionView, StopSessionView, UserCreatedSessionsListView, GroupDetailView)
+                GetUserSessionInfoView, LeaveSessionView, SessionDetailView, StartSessionView, StopSessionView, UserCreatedSessionsListView, GroupDetailView,RemoveGroupFromSessionView)
 
 urlpatterns = [
     path('list/', SessionListView.as_view(), name='listSessions'),
@@ -16,4 +16,5 @@ urlpatterns = [
     path('<int:session_id>/leave/', LeaveSessionView.as_view(), name='leaveSession'),
     path('<int:session_id>/start/', StartSessionView.as_view(), name='startSession'),
     path('<int:session_id>/stop/', StopSessionView.as_view(), name='stopSession'),
+    path('remove-from-session/<int:group_id>/', RemoveGroupFromSessionView.as_view(), name='removeGroupFromSession'),
 ]

@@ -35,7 +35,6 @@ provide('phaseAnswer', localPhaseAnswer);
 const fetchPhaseData = async () => {
   try {
     const answerData = await fetchGroupPhaseAnswer(groupId.value, phaseId.value);
-    console.log('answerData:', answerData);
     if (answerData) {
       localCurrentPhaseName.value = answerData.phase_name;
       if (answerData.answer && answerData.answer.userStories) {

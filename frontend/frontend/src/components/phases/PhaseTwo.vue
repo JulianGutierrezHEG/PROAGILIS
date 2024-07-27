@@ -128,7 +128,6 @@ const submitPhaseTwoAnswer = async () => {
 };
 
 onMounted(async () => {
-  console.log(props.group.id);
   await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();

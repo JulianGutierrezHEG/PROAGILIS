@@ -139,7 +139,6 @@ onMounted(async () => {
   completedUserStories.value = await fetchCompletedUserStories(props.group.id);
   incompleteUserStories.value = await fetchIncompleteUserStories(props.group.id);
   await fetchSprintRandomClientComment(props.group.id);
-  console.log('clientComment:', clientComment.value);
 });
 
 onUnmounted(() => {

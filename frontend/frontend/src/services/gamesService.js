@@ -36,11 +36,20 @@ const getPhaseDetails = async (phaseId) => {
   }
 };
 
+// Ràcupère la phase du jeu pour l'affichage
+const fetchPhaseDisplay = async (groupId) => {
+  try {
+    const response = await axios.get(`/api/games/phase-display/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 // Récupère les membres d'un groupe
 const getGroupMembers = async () => {
   try {
     const response = await axios.get('/api/games/group/members/');
-    console.log('Group members response:', response.data);
     return response.data;
   } catch (error) {
     handleAxiosError(error);
@@ -193,11 +202,10 @@ const updateUserStoryDetails = async (groupId, storyId, storyData) => {
 };
 
 // Met à jour les champs d'un sprint d'une user story
-const updateSprintFields = async (groupId, userStoryIds, originalSprintNumber) => {
+const updateSprintFields = async (groupId, userStoryIds) => {
   try {
     const response = await axios.put(`/api/games/group/${groupId}/update-sprint-fields/`, {
       user_story_ids: userStoryIds,
-      original_sprint_number: originalSprintNumber
     });
     return response.data;
   } catch (error) {
@@ -371,6 +379,7 @@ export default {
   getGroupMembers,
   getGroupCurrentPhase,
   getPhaseDetails,
+  fetchPhaseDisplay,
   submitAnswer,
   getGroupPhaseAnswer,
   getGroupPhasesStatus,

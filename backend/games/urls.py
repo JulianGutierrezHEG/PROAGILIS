@@ -3,6 +3,7 @@ from .views import (
     GroupMembersViewSet,
     GroupCurrentPhaseDetail,
     GamePhaseDetail,
+    PhaseDisplayView,
     SubmitAnswerView,
     GroupPhaseAnswerView,
     GroupPhasesStatusView,
@@ -43,6 +44,7 @@ group_members_list = GroupMembersViewSet.as_view({
 urlpatterns = [
     path('game-time-control/', GameTimeControlView.as_view(), name='gameTimeControl'),
     path('phases/', GamePhaseListView.as_view(), name='phaseList'),
+    path('phase-display/<int:group_id>/', PhaseDisplayView.as_view(), name='phaseDisplay'),
     path('phase/<int:id>/', GamePhaseDetail.as_view(), name='gamePhaseDetail'),
     path('fetch-userstories-to-cut/<int:group_id>/', FetchToCutUserStoriesView.as_view(), name='fetchUSToCut'),
     path('group/members/', group_members_list, name='groupMembersList'),

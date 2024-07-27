@@ -43,6 +43,24 @@ class GamePhaseDetail(RetrieveAPIView):
     serializer_class = GamePhaseSerializer
     lookup_field = 'id'
 
+# Récupère la phase de jeu actuelle pour l'affichage
+class PhaseDisplayView(APIView):
+    def get(self, request, group_id):
+        try:
+            group = Group.objects.get(id=group_id)
+            current_phase = group.current_phase_id
+            current_phase_status = GroupPhaseStatus.objects.filter(group=group,phase=current_phase).first()
+            current_sprint = Sprint.objects.filter(backlog__project=group.project).last()
+            
+            if current_sprint:
+                response_text = f"Le groupe {group_id} est à la phase {current_phase} pour le sprint {current_sprint.sprint_number}, confirmé par le status qui est également à la phase {current_phase_status.phase.id} avec le status {current_phase_status.status}."
+            else:
+                response_text = f"Le groupe {group_id} est à la phase {current_phase} mais pas encore de sprint créé, confirmé par le status qui est également à la phase {current_phase_status.phase.id} avec le status {current_phase_status.status}."
+
+            return Response({"detail": response_text}, status=status.HTTP_200_OK)
+        except Group.DoesNotExist:
+            return Response({"detail": "Groupe non trouvé."}, status=status.HTTP_404_NOT_FOUND)
+
 # Crée un nouveau projet pour un groupe
 # Crée un backlog, des user stories, un sprint et des événements pour le projet
 class CreateProjectView(APIView):
@@ -136,7 +154,10 @@ class GroupMembersViewSet(viewsets.ViewSet):
 class GroupCurrentPhaseDetail(APIView):
     def get(self, request, group_id):
         try:
-            group_phase_status = GroupPhaseStatus.objects.filter(group__id=group_id).order_by('-id').first()
+            group_phase_status = GroupPhaseStatus.objects.filter(
+                group__id=group_id, 
+                status__in=['in_progress', 'pending', 'wrong']
+            ).first()
             if group_phase_status:
                 serializer = GroupPhaseStatusSerializer(group_phase_status)
                 return Response(serializer.data)
@@ -403,18 +424,20 @@ class UpdateSprintFieldsView(APIView):
     def put(self, request, group_id):
         data = request.data
         user_story_ids = data.get('user_story_ids', [])
-        original_sprint_number = data.get('original_sprint_number', 1)
 
         if not user_story_ids:
             return Response({"detail": "User story IDs doit être renseigné"}, status=status.HTTP_400_BAD_REQUEST)
 
         backlog = get_object_or_404(Backlog, project__group__id=group_id)
-        sprint = get_object_or_404(Sprint, backlog=backlog, sprint_number=original_sprint_number)
+        current_sprint = Sprint.objects.filter(backlog=backlog).order_by('-sprint_number').first()
+
+        if not current_sprint:
+            return Response({"detail": "No current sprint found for the group"}, status=status.HTTP_400_BAD_REQUEST)
 
         user_stories = UserStory.objects.filter(id__in=user_story_ids, backlog=backlog)
         for story in user_stories:
-            story.sprint = sprint
-            story.original_sprint_number = original_sprint_number
+            story.sprint = current_sprint
+            story.original_sprint_number = current_sprint.sprint_number
             story.save()
 
         return Response({"detail": "User stories mis à jour"}, status=status.HTTP_200_OK)
@@ -667,13 +690,15 @@ class SaveGameDataView(APIView):
             "current_sprint": project.current_sprint
         }
 
-        SavedGameData.objects.create(
+        SavedGameData.objects.update_or_create(
             group=group,
-            phase_1_answer=phase_1_answer,
-            phase_2_answer=phase_2_answer,
-            completed_user_story_names=completed_user_story_names,
-            created_user_stories=created_user_story_infos,
-            current_sprint=project.current_sprint
+            defaults={
+                'phase_1_answer': phase_1_answer,
+                'phase_2_answer': phase_2_answer,
+                'completed_user_story_names': completed_user_story_names,
+                'created_user_stories': created_user_story_infos,
+                'current_sprint': project.current_sprint
+            }
         )
 
         print("Saved game data:", data)  # Debug print
@@ -733,9 +758,10 @@ class LoopView(APIView):
             defaults={'status': 'in_progress'}
         )
 
+
         # Prepare data for creating a new project
         phase_1_answer = saved_data.phase_1_answer or {}
-        project_name = phase_1_answer.get('projectName', 'Default Project Name')
+        project_name = phase_1_answer.get('projectName')
         roles = phase_1_answer.get('roles', {})
         
         # Create the project
@@ -744,11 +770,20 @@ class LoopView(APIView):
             group=group,
             scrum_master=roles.get('scrumMaster'),
             product_owner=roles.get('productOwner'),
-            developers=roles.get('developers', [])
+            developers=roles.get('developers', []),
+            current_sprint=saved_data.current_sprint +1
         )
 
         # Create the backlog
         backlog = Backlog.objects.create(project=project)
+
+        # Create a new sprint
+        sprint_number = saved_data.current_sprint + 1
+        sprint = Sprint.objects.create(
+            backlog=backlog,
+            sprint_number=sprint_number
+        )
+
 
         # Create user stories from templates
         user_story_templates = UserStoryTemplate.objects.all()
@@ -760,13 +795,6 @@ class LoopView(APIView):
                 time_estimation=template.time_estimation,
                 backlog=backlog
             )
-
-        # Create a new sprint
-        sprint_number = saved_data.current_sprint + 1
-        sprint = Sprint.objects.create(
-            backlog=backlog,
-            sprint_number=sprint_number
-        )
 
         # Create events from templates
         event_templates = EventTemplate.objects.all()

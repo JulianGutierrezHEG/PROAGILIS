@@ -175,6 +175,25 @@ export function useSession() {
     }
   };
 
+  // Enlève un groupe de la session
+  const ejectGroup = async () => {
+    try {
+      if (currentUser.value && currentUser.value.group_id) {
+        const groupId = currentUser.value.group_id;
+        websocketService.disconnectGroup(groupId);
+        websocketService.sendMessage(groupId, {
+          event: 'group_ejected_from_session',
+          group_id: groupId
+        });
+  
+        await ejectGroupFromSession(groupId);
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Erreur: Impossible d\'éjecter le groupe de la session:', error);
+    }
+  };
+
   // Gère le statut de la session
   const handleStatusSession = async (action) => {
     if (!selectedSession.value) return;
@@ -284,7 +303,6 @@ export function useSession() {
     EventBus.off('user_left_group', updateGroupMembers);
     EventBus.off('session_status_changed', updateSessionStatus);
     EventBus.off('session_deleted', handleSessionDeleted);
-   // websocketService.disconnectAll();
   };
 
   return {
@@ -312,6 +330,7 @@ export function useSession() {
     leaveSession,
     fetchUserSessionInfo,
     fetchCreatedSessions,
-    fetchAllSessions
+    fetchAllSessions,
+    ejectGroup
   };
 }

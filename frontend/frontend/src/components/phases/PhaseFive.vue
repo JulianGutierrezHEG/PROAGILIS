@@ -13,7 +13,7 @@
       </div>
       <div class="mb-10">
         <h3 class="text-xl font-semibold mb-2">User Stories Sélectionnées</h3>
-        <span class="mb-5"> Cliquez sur une carte d'User Story pour la séléctionnée pour le prochain sprint.Rappel: {{gameTimeControl.game_hours }}H en jeu = {{gameTimeControl.real_minutes}} minute en réel </span>
+        <span class="mb-5"> Cliquez sur une carte d'User Story pour la séléctionnée pour le prochain sprint. Rappel: {{gameTimeControl.game_hours }}H en jeu = {{gameTimeControl.real_minutes}} minute en réel </span>
         <div class="overflow-y-auto max-h-[45vh] mt-10 ">
           <table class="min-w-full bg-white ">
             <thead>
@@ -77,7 +77,7 @@ const {
   checkValidationAndSendAnswer,
   showWaitingScreen,
   fetchCurrentPhase,
-  fetchUserStories,
+  fetchBacklog,
   updateUserStoryDetails
 } = useGame(props.group.id, props.group);
 
@@ -134,7 +134,7 @@ const submitPhaseFiveData = async () => {
 
 const fetchUserStoriesForPhase = async () => {
   if (!initialUserStoriesFetched.value) {
-    const response = await fetchUserStories(props.group.id);
+    const response = await fetchBacklog(props.group.id);
     userStories.value = response.map(story => {
       const totalMinutes = Math.floor(story.time_estimation / 60);
       const hours = Math.floor(totalMinutes / 60);

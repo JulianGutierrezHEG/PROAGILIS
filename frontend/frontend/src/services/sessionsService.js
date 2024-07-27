@@ -1,4 +1,5 @@
 import axios from '@/axiosConfig';
+import websocketService from './websocketService';
 import userService from '@/services/usersService';
 
 // FONCTIONS POUR LA GESTION DES SESSIONS ET LEUR APPEL API VIA AXIOS
@@ -140,6 +141,17 @@ const leaveSession = async (sessionId, userId) => {
   }
 };
 
+//Enlève un groupe d'une session
+const ejectGroupFromSession = async (groupId) => {
+  try {
+    const response = await axios.post(`/api/sessions/remove-from-session/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error ejecting group from session:', error);
+    handleAxiosError(error);
+  }
+};
+
 // Récupère les sessions rejointes par un utilisateur
 const getJoinedSession = async (userId) => {
   try {
@@ -177,4 +189,5 @@ export default {
   getSessionDetails,
   startSession,
   stopSession,
+  ejectGroupFromSession
 };

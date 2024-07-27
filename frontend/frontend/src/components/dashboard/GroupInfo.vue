@@ -38,7 +38,7 @@ const props = defineProps({
   }
 });
 
-const { fetchPhases, fetchGroupPhasesStatus, fetchPhaseDetails } = useGame(props.group.id);
+const { fetchPhases, fetchGroupPhasesStatus, fetchPhaseDetails, fetchPhaseDisplay, phaseDisplay, currentPhaseIndex } = useGame(props.group.id, props.group);
 
 const phases = ref([]);
 const phaseStatus = ref({});
@@ -89,6 +89,7 @@ const getStatusText = (status) => {
 const fetchPhaseData = async () => {
   console.log('Récupération des données du groupe:', props.group.id);
   try {
+    await fetchPhaseDisplay();
     const fetchedPhases = await fetchPhases();
     phases.value = fetchedPhases;
     phases.value = fetchedPhases.sort((a, b) => a.id - b.id);
@@ -115,8 +116,9 @@ const openPhaseModal = async (phase) => {
   EventBus.emit('open-modal', { modalType });
 };
 
-const handlePhaseStatusUpdate = (data) => {
+const handlePhaseStatusUpdate = async (data) => {
   if (data.group_id === props.group.id) {
+    await fetchPhaseDisplay();
     phaseStatus.value[data.phase_id].status = data.status;
   }
 };
