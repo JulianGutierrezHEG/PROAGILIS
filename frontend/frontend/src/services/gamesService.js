@@ -373,6 +373,17 @@ const loopGame = async (groupId) => {
   }
 };
 
+// Supprime les données
+const deleteSavedData = async (groupId) => {
+  try {
+    const response = await axios.delete(`/api/games/delete-saved-data/${groupId}/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
+
 
 
 export default {
@@ -411,6 +422,7 @@ export default {
   saveGameData,
   deleteProject,
   loopGame,
+  deleteSavedData
 };
 
 

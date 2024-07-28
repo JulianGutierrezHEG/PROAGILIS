@@ -432,7 +432,9 @@ export function useGame(groupId, group) {
                 group_id: groupId
               });
               await sessionsService.ejectGroupFromSession(groupId);
-            }
+              await gamesService.deleteProject(groupId);
+              await gamesService.deleteSavedData(groupId);
+            } 
           } else {
             websocketService.sendPhaseStatusUpdate(groupId, 3, 'in_progress');
             await gamesService.updatePhaseStatus(groupId, 3, 'in_progress');

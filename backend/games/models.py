@@ -113,6 +113,7 @@ class SavedGameData(models.Model):
     completed_user_story_names = models.JSONField()
     created_user_stories = models.JSONField(blank=True, null=True)
     current_sprint = models.IntegerField()
+    original_sprint_numbers = models.JSONField(default=dict)
 
     def __str__(self):
         return f"Saved game data for group {self.group.name} at {self.timestamp}"

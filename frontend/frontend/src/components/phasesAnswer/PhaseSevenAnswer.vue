@@ -12,7 +12,7 @@
         <div class="mb-4">
           <h4 class="font-bold text-lg mb-2">Réponse du groupe</h4>
           <div class="bg-white p-4 rounded-lg shadow-md">
-            <p class="text-sm text-gray-600">{{ localPhaseAnswer.clientComment?.answer || 'Pas de réponse de l\'étudiant' }}</p>
+            <p class="text-sm text-gray-600">{{ localPhaseAnswer.clientComment?.answer || 'Pas de réponse' }}</p>
           </div>
         </div>
       </div>

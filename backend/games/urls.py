@@ -34,7 +34,8 @@ from .views import (
     FetchAnsweredEventsView,
     SaveGameDataView,
     DeleteProjectView,
-    LoopView
+    LoopView,
+    DeleteSavedGameDataView
 )
 
 group_members_list = GroupMembersViewSet.as_view({
@@ -77,5 +78,6 @@ urlpatterns = [
     path('save-game-data/<int:group_id>/', SaveGameDataView.as_view(), name='saveGameData'),
     path('delete-project/<int:group_id>/', DeleteProjectView.as_view(), name='deleteProject'),
     path('loop/<int:group_id>/', LoopView.as_view(), name='loop'),
+    path('delete-saved-data/<int:group_id>/', DeleteSavedGameDataView.as_view(), name='deleteSavedData'),
 
 ]

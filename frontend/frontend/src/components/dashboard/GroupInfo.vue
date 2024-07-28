@@ -55,9 +55,9 @@ provide('phaseNeedsValidation', phaseNeedsValidation);
 const getPhaseClass = (status) => {
   switch (status) {
     case 'completed':
-      return 'flex items-center text-blue-600 dark:text-blue-500 space-x-2.5 rtl:space-x-reverse';
+      return 'flex items-center text-blue-600 dark:text-green-500 space-x-2.5 rtl:space-x-reverse'; 
     case 'in_progress':
-      return 'flex items-center text-green-600 dark:text-green-500 space-x-2.5 rtl:space-x-reverse';
+      return 'flex items-center text-green-600 dark:text-blue-500 space-x-2.5 rtl:space-x-reverse';
     case 'pending':
       return 'flex items-center text-yellow-600 dark:text-yellow-500 space-x-2.5 rtl:space-x-reverse';
     case 'wrong':
@@ -70,9 +70,9 @@ const getPhaseClass = (status) => {
 const getPhaseBorderClass = (status) => {
   switch (status) {
     case 'completed':
-      return 'border-blue-600 dark:border-blue-500';
+      return 'border-blue-600 dark:border-green-500';
     case 'in_progress':
-      return 'border-green-600 dark:border-green-500';
+      return 'border-green-600 dark:border-blue-500';
     case 'pending':
       return 'border-yellow-600 dark:border-yellow-500';
     case 'wrong':
