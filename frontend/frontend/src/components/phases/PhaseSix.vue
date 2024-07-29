@@ -4,7 +4,7 @@
       <WaitingScreen />
     </div>
     <div v-else>
-      <h2 v-if="!isLoadingPhaseDetails" class="text-3xl font-bold">{{ currentPhaseDetails.name }}</h2>
+      <h2 v-if="!isLoadingPhaseDetails" class="text-3xl font-bold mb-6 text-center">{{ currentPhaseDetails.name }}</h2>
       <p v-if="!isLoadingPhaseDetails" class="mb-4">{{ currentPhaseDetails.description }}</p>
       <div v-if="currentSprintDetails && Object.keys(currentSprintDetails).length > 0">
         <p class="mb-4">
@@ -27,7 +27,7 @@
             <h3 class="text-xl font-semibold mb-2">User Stories</h3>
             <p class=" mb-5 items-center"> Appuyer sur l'icon de vu pour terminer une User Story</p>
             <div class="overflow-y-auto max-h-96">
-              <div v-for="(story, index) in sprintUserStories" :key="index" class="mb-4">
+              <div v-for="(story, index) in sortedSprintUserStories" :key="index" class="mb-4">
                 <div class="flex justify-between mb-1 items-center">
                   <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete"
                     class="w-6 h-6 cursor-pointer ml-2" @click="completeUserStoryHandler(story.id)">
@@ -45,6 +45,7 @@
 
           <div class="mt-4">
             <h3 class="text-xl font-semibold mb-2">Journal des événements</h3>
+            <p class="text-sm mb-2 text-gray-500">{{ eventEffectText }}</p>
             <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
               <div v-for="(event, index) in sortedEvents" :key="index" class="mb-2">
                 <table class="w-full">
@@ -132,8 +133,9 @@ const globalProgress = ref(0);
 const globalProgressPercent = ref(0);
 const isSprintRunning = ref(false);
 const sprintDurationRealTime = ref(0); 
-const userStoryInterval = ref(null); // Separate interval for user story progress
-const eventFetchInterval = ref(null); // Separate interval for event fetching
+const userStoryInterval = ref(null); 
+const eventFetchInterval = ref(null); 
+const eventEffectText = ref('');
 
 const resetProgress = () => {
   globalProgress.value = 0;
@@ -225,7 +227,7 @@ const SprintStart = async () => {
   isSprintRunning.value = true;
   resetProgress();
   await startSprint(props.group.id, currentSprintDetails.value.id);
-  userStoryInterval.value = setInterval(updateProgress, 1000); // Use userStoryInterval for user story progress
+  userStoryInterval.value = setInterval(updateProgress, 1000); 
 };
 
 const fetchSprintDetailsPhase = async () => {
@@ -272,11 +274,34 @@ const sendSprintData = async () => {
 const handleEventResponse = async (event) => {
   await updateEventAnswer(props.group.id, event.id, event.answer);
   event.answered = true; 
+
+  applyEventEffect(event.effect);
+  
   await sendData(false);
-  setTimeout(() => {
-    eventLog.value = eventLog.value.filter(e => e.id !== event.id);
-    eventLog.value.push(event); 
-  }, 3000);
+};
+
+const applyEventEffect = (effect) => {
+  const randomValue = Math.random();
+  let timeChange = 0;
+  
+  if (randomValue < 0.5) {
+    timeChange = 60; // 1 hour
+  } else {
+    timeChange = 1440; // 1 day
+  }
+  
+  if (effect === 'positive') {
+    globalProgress.value += timeChange;
+  } else {
+    globalProgress.value -= timeChange;
+    if (globalProgress.value < 0) globalProgress.value = 0;
+  }
+  
+  if (effect === 'positive') {
+    eventEffectText.value = `${timeChange}m ajouté au sprint`;
+  } else {
+    eventEffectText.value = `${timeChange}m enlevé au sprint`;
+  }
 };
 
 const fetchInitialData = async () => {
@@ -302,8 +327,12 @@ const fetchInitialData = async () => {
     SprintStart(); 
   }
 
-  eventFetchInterval.value = setInterval(() => fetchSprintRandomEvent(props.group.id), 10000 ); 
+  eventFetchInterval.value = setInterval(() => fetchSprintRandomEvent(props.group.id), 20000); 
 };
+
+const sortedSprintUserStories = computed(() => {
+  return sprintUserStories.value.slice().sort((a, b) => a.id - b.id);
+});
 
 const sortedEvents = computed(() => {
   return [...eventLog.value.filter(event => !event.answered), ...eventLog.value.filter(event => event.answered)];
@@ -325,3 +354,4 @@ onUnmounted(() => {
   }
 });
 </script>
+

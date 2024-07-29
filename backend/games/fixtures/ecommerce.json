@@ -59,7 +59,7 @@
         "fields": {
             "name": "Sprint",
             "description": "Exécuter le sprint",
-            "requires_validation": true
+            "requires_validation": false
         }
     },
     {

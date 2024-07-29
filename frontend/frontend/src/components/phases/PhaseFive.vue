@@ -36,7 +36,10 @@
             </tbody>
           </table>
         </div>
-          <button @click.prevent="submitPhaseFiveData" 
+        <div v-if="selectedUserStoryIds.length === 0" class="text-red-500 text-center mt-4">
+          Au moins une User Story doit être sélectionnée pour continuer
+        </div>
+        <button v-else @click.prevent="submitPhaseFiveData" 
                 class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mt-4">
           Soumettre
         </button>
@@ -128,6 +131,7 @@ const submitPhaseFiveData = async () => {
   const answerData = {
     userStories: selectedUserStoryIds.value
   };
+  
   console.log('Answer Data:', answerData);
   await checkValidationAndSendAnswer(answerData);
 };

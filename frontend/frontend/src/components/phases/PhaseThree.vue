@@ -23,8 +23,10 @@
           <div class="overflow-y-auto max-h-80">
             <div v-for="(story, index) in newUserStories" :key="index" class="flex items-center">
               <UserStoryCard :story="story" class="flex-1" />
+              <div v-if="isScrumMaster || isProductOwner">
               <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete"
                 class="w-6 h-6 cursor-pointer ml-2" @click="confirmDeleteStory(story.id)">
+              </div>
             </div>
           </div>
         </div>
@@ -200,9 +202,8 @@ const fetchCreatedUserStoriesFrontend = async () => {
 const submitPhaseThreeAnswer = async () => {
   try {
     showWaitingScreen(props.group.id, currentUser.value);
-    const answerData = {
-      userStories: newUserStories.value.map(story => story.id)
-    };
+    const answerData = newUserStories.value.length > 0 ? { userStories: newUserStories.value.map(story => story.id) } : { userStories: null };
+
     await checkValidationAndSendAnswer(answerData);
   } catch (error) {
     console.error('Erreur lors de la soumission de la réponse pour la phase 3:', error);
