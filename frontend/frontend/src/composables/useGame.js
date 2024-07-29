@@ -46,6 +46,7 @@ export function useGame(groupId, group) {
   const clientComment = ref([]);
   const answeredEvents = ref([]);
   const phaseDisplay = ref(null);
+  const eventEffectText = ref('');
 
   // Récupère le contrôle du temps de jeu
   const fetchGameTimeControl = async () => {
@@ -129,7 +130,12 @@ export function useGame(groupId, group) {
       answeredEvents.value = data;
       console.log('Evénements répondus:', answeredEvents.value);
     } catch (error) {
-      console.error("Erreur lors de la récupération des événements répondus:", error);
+      if (error.response && error.response.status === 404) {
+        answeredEvents.value = []; 
+        console.log("Pas d'événements trouvés");
+      } else {
+        console.error("Erreur lors de la récupération des événements répondus:", error);
+      }
     }
   };
 
@@ -615,6 +621,17 @@ export function useGame(groupId, group) {
     }
   };
 
+  // Applique l'effet de l'événement
+  const applyEventEffect = async (groupId, eventId) => {
+    try {
+      const response = await gamesService.applyEventEffect(groupId, eventId);
+      return response;
+    } catch (error) {
+      console.error('Erreur lors de l\'application de l\'effet de l\'événement:', error);
+      throw error;
+    }
+  };
+
   // Termine une user story
   const completeUserStory = async (groupId, sprintId, storyId) => {
     await gamesService.completeUserStory(groupId, sprintId, storyId);
@@ -659,6 +676,7 @@ export function useGame(groupId, group) {
     currentSprintProgress,
     isSprintRunning,
     phaseDisplay,
+    eventEffectText,
     fetchGameTimeControl,
     fetchGroupMembers,
     setupEvents,
@@ -689,6 +707,7 @@ export function useGame(groupId, group) {
     updateUserStoryProgress,
     fetchSprintProgress,
     fetchUserStoriesProgress,
+    applyEventEffect,
     completeUserStory,
     fetchCompletedUserStories,
     fetchIncompleteUserStories,

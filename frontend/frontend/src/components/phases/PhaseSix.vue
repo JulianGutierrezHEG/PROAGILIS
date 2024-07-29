@@ -15,66 +15,82 @@
           <div class="relative mb-4">
             <div class="flex justify-between mb-1">
               <span class="text-base font-medium text-blue-700 dark:text-black">Progression Globale</span>
-              <span class="text-sm font-medium text-blue-700 dark:text-black">{{ convertSprintProgress(globalProgress,
-                sprintDurationRealTime) }}</span>
+              <span class="text-sm font-medium text-blue-700 dark:text-black">{{ convertSprintProgress(globalProgress, sprintDurationRealTime) }}</span>
             </div>
             <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
-              <div class="h-6 bg-green-800 rounded-full dark:bg-yellow-500"
-                :style="{ width: globalProgressPercent + '%' }"></div>
+              <div class="h-6 bg-green-800 rounded-full dark:bg-yellow-500" :style="{ width: globalProgressPercent + '%' }"></div>
             </div>
           </div>
           <div class="mb-4">
             <h3 class="text-xl font-semibold mb-2">User Stories</h3>
-            <p class=" mb-5 items-center"> Appuyer sur l'icon de vu pour terminer une User Story</p>
+            <p class="mb-5 items-center"> Appuyer sur l'icon de vu pour terminer une User Story</p>
             <div class="overflow-y-auto max-h-96">
               <div v-for="(story, index) in sortedSprintUserStories" :key="index" class="mb-4">
                 <div class="flex justify-between mb-1 items-center">
-                  <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete"
-                    class="w-6 h-6 cursor-pointer ml-2" @click="completeUserStoryHandler(story.id)">
-                  <span class="text-sm font-medium">{{ story.name }} ({{ convertUserStoryTime(story.time_estimation) }}
-                    )</span>
-                  <span class="text-xs text-gray-600">({{ Math.round(story.progress) }} %)</span>
+                  <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete" class="w-6 h-6 cursor-pointer ml-2" @click="completeUserStoryHandler(story.id)">
+                  <span class="text-sm font-medium">{{ story.name }} ({{ convertUserStoryTime(story.time_estimation) }})</span>
+                  <span class="text-xs text-gray-600">({{ Math.min(100, Math.round(story.progress)) }} %)</span>
                 </div>
                 <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
-                  <div :class="{'bg-green-500': story.is_completed, 'bg-yellow-500': !story.is_completed}"
-                    class="h-6 rounded-full" :style="{ width: story.progress + '%' }"></div>
+                  <div :class="{'bg-green-500': story.is_completed, 'bg-yellow-500': !story.is_completed}" class="h-6 rounded-full" :style="{ width: Math.min(100, story.progress) + '%' }"></div>
                 </div>
               </div>
             </div>
           </div>
-
-          <div class="mt-4">
-            <h3 class="text-xl font-semibold mb-2">Journal des événements</h3>
-            <p class="text-sm mb-2 text-gray-500">{{ eventEffectText }}</p>
-            <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
-              <div v-for="(event, index) in sortedEvents" :key="index" class="mb-2">
-                <table class="w-full">
-                  <tr>
-                    <td class="text-sm">{{ event.description }}</td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <textarea v-model="event.answer" class="text-sm w-full mb-2" :disabled="event.answered" :class="{ 'bg-gray-200': event.answered }"></textarea>
-                    </td>
-                  </tr>
-                  <tr v-if="!event.answered">
-                    <td class="text-right">
-                      <button @click="handleEventResponse(event)"
-                        class="bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 custom-button">
-                        Envoyer
-                      </button>
-                    </td>
-                  </tr>
-                </table>
-                <hr class="my-4 border-black" />
+          <div class="flex justify-between mt-4">
+            <div class="w-1/2 pr-2">
+              <h3 class="text-xl font-semibold mb-2">Journal des événements</h3>
+              <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
+                <div v-if="sortedEvents.length === 0" class="text-center text-gray-500">
+                  Pas d'événements trouvés
+                </div>
+                <div v-else v-for="(event, index) in sortedEvents" :key="index" class="mb-2">
+                  <table class="w-full">
+                    <tr>
+                      <td class="text-sm">{{ event.description }}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <textarea v-model="event.answer" class="text-sm w-full mb-2" :disabled="event.answered" :class="{ 'bg-gray-200': event.answered }"></textarea>
+                      </td>
+                    </tr>
+                    <tr v-if="!event.answered">
+                      <td class="text-right">
+                        <button @click="handleEventResponse(event)" class="bg-blue-500 text-white px-2 py-1 rounded-md hover:bg-blue-600 custom-button">Envoyer</button>
+                      </td>
+                    </tr>
+                  </table>
+                  <hr class="my-4 border-black" />
+                </div>
+              </div>
+            </div>
+            <div class="w-1/2 pl-2">
+              <h3 class="text-xl font-semibold mb-2">Événements Répondus</h3>
+              <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
+                <div v-if="answeredEvents && answeredEvents.length === 0" class="text-center text-gray-500">
+                  Pas d'événements répondus
+                </div>
+                <div v-else v-for="(event, index) in answeredEvents" :key="index" class="mb-2">
+                  <table class="w-full">
+                    <tr>
+                      <td class="text-sm">{{ event.description }}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <textarea v-model="event.answer" class="text-sm w-full mb-2 bg-gray-200" disabled></textarea>
+                      </td>
+                    </tr>
+                  </table>
+                  <hr class="my-4 border-black" />
+                </div>
               </div>
             </div>
           </div>
+          <div class="mt-4 text-center">
+            <p class="text-sm mb-2 text-gray-500">{{ eventEffectText }}</p>
+          </div>
           <div v-if="isScrumMaster" class="mt-10">
-            <button @click.prevent="sendSprintData"
-              class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">
-              Terminer le Sprint
-            </button>
+            <button @click.prevent="sendSprintData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">Terminer le Sprint</button>
           </div>
           <div v-else>
             <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
@@ -106,6 +122,7 @@ const {
   currentSprintDetails,
   isLoadingPhaseDetails, 
   currentPhaseDetails,
+  answeredEvents,
   fetchGameTimeControl,
   fetchCurrentPhase, 
   setupEvents, 
@@ -125,7 +142,9 @@ const {
   waiting,
   eventLog,
   fetchSprintRandomEvent,
-  updateEventAnswer
+  updateEventAnswer,
+  fetchAnsweredEvents,
+  applyEventEffect
 } = useGame(props.group.id, props.group);
 
 const isScrumMaster = ref(false);
@@ -136,6 +155,7 @@ const sprintDurationRealTime = ref(0);
 const userStoryInterval = ref(null); 
 const eventFetchInterval = ref(null); 
 const eventEffectText = ref('');
+const firstEventAnswered = ref(false); 
 
 const resetProgress = () => {
   globalProgress.value = 0;
@@ -148,15 +168,13 @@ const resetProgress = () => {
   }));
 };
 
-const convertSprintProgress = (progress, sprintDuration) => {
-  const totalSprintDays = sprintDuration / (24 * 60);
-
+const convertSprintProgress = (progress) => {
   const gameMinutesProgress = progress; 
   const gameDaysProgress = Math.floor(gameMinutesProgress / (24 * 60));
   const gameHoursProgress = Math.floor((gameMinutesProgress % (24 * 60)) / 60);
   const gameMinutesRemaining = gameMinutesProgress % 60;
 
-  return `${gameDaysProgress}j${gameHoursProgress}h${gameMinutesRemaining}m/${totalSprintDays}j`;
+  return `${gameDaysProgress}j${gameHoursProgress}h${gameMinutesRemaining}m`;
 };
 
 const convertUserStoryTime = (timeSeconds) => {
@@ -196,19 +214,16 @@ const updateUserStoryProgressOnly = async () => {
       const progressTimeSeconds = parseFloat(story.progress_time);
       const timeEstimationSeconds = parseFloat(story.time_estimation);
       const progressPercentage = (progressTimeSeconds / timeEstimationSeconds) * 100;
-      console.log(`User Story: ${story.name}, Progress Time: ${progressTimeSeconds}, Time Estimation: ${timeEstimationSeconds}, Progress: ${progressPercentage}%`);
       return {
         ...story,
-        progress: progressPercentage
+        progress: Math.min(progressPercentage, 100) 
       };
     });
 
     if (sprintUserStories.value.every(story => story.is_completed)) {
-      console.log('All user stories are completed. Stopping user story interval.');
     } else {
       for (const story of sprintUserStories.value) {
         if (!story.is_completed) {
-          console.log(`Updating user story progress for story ID: ${story.id}`);
           await updateUserStoryProgress(props.group.id, currentSprintDetails.value.id, story.id);
         }
       }
@@ -236,7 +251,6 @@ const fetchSprintDetailsPhase = async () => {
 
 const fetchSprintUserStoriesPhase = async () => {
   await fetchSprintUserStories(props.group.id);
-  console.log('Fetched User Stories:', sprintUserStories.value);
   sprintUserStories.value = sprintUserStories.value.map(story => ({
     ...story,
     progress: (timeStringToSeconds(story.progress_time) / timeStringToSeconds(story.time_estimation)) * 100
@@ -272,35 +286,32 @@ const sendSprintData = async () => {
 };
 
 const handleEventResponse = async (event) => {
-  await updateEventAnswer(props.group.id, event.id, event.answer);
-  event.answered = true; 
+  try {
+    await updateEventAnswer(props.group.id, event.id, event.answer);
+    event.answered = true;
 
-  applyEventEffect(event.effect);
-  
-  await sendData(false);
-};
+    const response = await applyEventEffect(props.group.id, event.id);
+    
+    if (response.time_change_seconds) {
+      const timeChange = response.time_change_seconds;
+      const effectType = response.effect_type === 'positif' ? 'Effet positif' : 'Effet négatif';
+      const affectedEntity = response.affected_entity;
 
-const applyEventEffect = (effect) => {
-  const randomValue = Math.random();
-  let timeChange = 0;
-  
-  if (randomValue < 0.5) {
-    timeChange = 60; // 1 hour
-  } else {
-    timeChange = 1440; // 1 day
-  }
-  
-  if (effect === 'positive') {
-    globalProgress.value += timeChange;
-  } else {
-    globalProgress.value -= timeChange;
-    if (globalProgress.value < 0) globalProgress.value = 0;
-  }
-  
-  if (effect === 'positive') {
-    eventEffectText.value = `${timeChange}m ajouté au sprint`;
-  } else {
-    eventEffectText.value = `${timeChange}m enlevé au sprint`;
+      if (affectedEntity.includes("user story")) {
+        eventEffectText.value = `${effectType} - l'User story ${affectedEntity.split(' ')[2]} ${response.effect_type === 'positif' ? 'avance' : 'recule'} de ${convertUserStoryTime(timeChange)}`;
+      } else {
+        eventEffectText.value = `${effectType} - ${convertSprintProgress(timeChange / 60)} ${response.effect_type === 'positif' ? 'ajouté au sprint' : 'retiré du sprint'}`;
+      }
+    }
+
+    const updatedEventLog = eventLog.value.filter(e => e.id !== event.id);
+    eventLog.value = updatedEventLog;
+
+    await fetchAnsweredEvents(props.group.id);
+
+    await sendData(false);
+  } catch (error) {
+    console.error('Error handling event response:', error);
   }
 };
 
@@ -313,6 +324,7 @@ const fetchInitialData = async () => {
   await fetchSprintUserStoriesPhase();
   await fetchSprintProgress(props.group.id, currentSprintDetails.value.id);
   await fetchUserStoriesProgress(props.group.id, currentSprintDetails.value.id);
+  await fetchAnsweredEvents(props.group.id);
 
   sprintDurationRealTime.value = gameTimeControl.value.sprint_duration * 24 * 60;
   globalProgress.value = currentSprintProgress.value.current_progress;
@@ -335,7 +347,7 @@ const sortedSprintUserStories = computed(() => {
 });
 
 const sortedEvents = computed(() => {
-  return [...eventLog.value.filter(event => !event.answered), ...eventLog.value.filter(event => event.answered)];
+  return eventLog.value.filter(event => !event.answered);
 });
 
 onMounted(async () => {
@@ -354,4 +366,3 @@ onUnmounted(() => {
   }
 });
 </script>
-

@@ -157,7 +157,7 @@ class GroupCurrentPhaseDetail(APIView):
             group_phase_status = GroupPhaseStatus.objects.filter(
                 group__id=group_id, 
                 status__in=['in_progress', 'pending', 'wrong']
-            ).first()
+            ).order_by('-phase_id').first() 
             if group_phase_status:
                 serializer = GroupPhaseStatusSerializer(group_phase_status)
                 return Response(serializer.data)
@@ -647,6 +647,70 @@ class FetchAnsweredEventsView(APIView):
 
         serializer = EventSerializer(answered_events, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+# Applique l'effet d'un événement pour un groupe
+class ApplyEventEffectView(APIView):
+    def post(self, request, group_id, event_id):
+        event = get_object_or_404(Event, id=event_id, project__group_id=group_id)
+        effect = event.effect
+
+        if effect is not None:
+            project = event.project
+            sprint = Sprint.objects.filter(backlog__project=project, is_completed=False).first()
+            game_time_control = GameTimeControl.objects.first()
+
+            if not sprint:
+                return Response({"detail": "Pas de sprint actif pour ce projet"}, status=status.HTTP_400_BAD_REQUEST)
+
+            user_stories = UserStory.objects.filter(sprint=sprint, is_completed=False)
+            time_change = timedelta(minutes=60) if random.random() < 0.5 else timedelta(days=1)
+            time_change_seconds = int(time_change.total_seconds())
+            actual_time_change = time_change_seconds
+            affected_entity = ""
+
+            # Sprint time is in minutes
+            if not user_stories.exists() or random.random() < 0.5:
+                max_sprint_duration_minutes = game_time_control.sprint_duration * 24 * 60
+                current_progress_minutes = sprint.current_progress.total_seconds() / 60
+                time_change_minutes = time_change_seconds / 60
+
+                if effect == 'positif':
+                    if current_progress_minutes + time_change_minutes > max_sprint_duration_minutes:
+                        actual_time_change = int((max_sprint_duration_minutes - current_progress_minutes) * 60)
+                    sprint.current_progress += timedelta(seconds=actual_time_change)
+                else:
+                    if current_progress_minutes - time_change_minutes < 0:
+                        actual_time_change = int(current_progress_minutes * 60)
+                    sprint.current_progress -= timedelta(seconds=actual_time_change)
+                    if sprint.current_progress < timedelta():
+                        sprint.current_progress = timedelta()
+                sprint.save()
+                affected_entity = "sprint"
+            else:
+                # User story time is in seconds
+                story = random.choice(user_stories)
+                if effect == 'positif':
+                    if story.progress_time + timedelta(seconds=time_change_seconds) > story.time_estimation:
+                        actual_time_change = int((story.time_estimation - story.progress_time).total_seconds())
+                    story.progress_time += timedelta(seconds=actual_time_change)
+                else:
+                    if story.progress_time - timedelta(seconds=time_change_seconds) < timedelta():
+                        actual_time_change = int(story.progress_time.total_seconds())
+                    story.progress_time -= timedelta(seconds=actual_time_change)
+                    if story.progress_time < timedelta():
+                        story.progress_time = timedelta()
+                story.save()
+                affected_entity = f"user story {story.name}"
+
+            return Response({
+                "detail": "Effet appliqué avec succès",
+                "effect_type": effect,
+                "affected_entity": affected_entity,
+                "time_change_seconds": actual_time_change
+            }, status=status.HTTP_200_OK)
+
+        return Response({"detail": "Pas d'effet trouvé pour cet événement"}, status=status.HTTP_404_NOT_FOUND)
+
 
 # Sauvegarde les données du jeu pour un groupe
 class SaveGameDataView(APIView):

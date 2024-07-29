@@ -343,6 +343,16 @@ const fetchAnsweredEvents = async (groupId) => {
   }
 };
 
+// Applique l'effet d'un événement
+const applyEventEffect = async (groupId, eventId) => {
+  try {
+    const response = await axios.post(`/api/games/group/${groupId}/event/${eventId}/apply-effect/`);
+    return response.data;
+  } catch (error) {
+    handleAxiosError(error);
+  }
+};
+
 // Sauvegarde les données de la partie
 const saveGameData = async (groupId) => {
   try {
@@ -419,6 +429,7 @@ export default {
   updateEventAnswer,
   getEvents,
   fetchAnsweredEvents,
+  applyEventEffect,
   saveGameData,
   deleteProject,
   loopGame,
