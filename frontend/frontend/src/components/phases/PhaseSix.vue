@@ -12,13 +12,14 @@
         </p>
         <div class="mb-4">
           <h3 class="text-xl font-semibold mb-2">Timeline du Sprint</h3>
+          <h4 class="mb-2">(Infos: Temps réel | Temps en jeu )</h4>
           <div class="relative mb-4">
             <div class="flex justify-between mb-1">
               <span class="text-base font-medium text-blue-700 dark:text-black">
-                Progression Globale ({{ gameTimeControl.sprint_duration }}j en jeu ou {{ convertGameDaysToRealTime(gameTimeControl.sprint_duration) }} en temps réel)
+                Progression Globale ({{ convertGameDaysToRealTime(gameTimeControl.sprint_duration) }} | {{ gameTimeControl.sprint_duration }}j )
               </span>
               <span class="text-sm font-medium text-blue-700 dark:text-black">
-                {{ convertSecondsToHMS(globalProgress) }} | {{ convertToGameTime(globalProgress) }}
+                {{ convertSecondsToHM(globalProgress) }} | {{ convertToGameTime(globalProgress) }}
               </span>
             </div>
             <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
@@ -33,10 +34,10 @@
                 <div class="flex justify-between mb-1 items-center">
                   <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete" class="w-6 h-6 cursor-pointer ml-2" @click="completeUserStoryHandler(story.id)">
                   <span class="text-sm font-medium">
-                    {{ story.name }} ({{ convertSecondsToHMS(story.time_estimation) }} | {{ convertToGameTime(story.time_estimation) }})
+                    {{ story.name }} ({{ convertSecondsToHM(story.time_estimation) }} | {{ convertToGameTime(story.time_estimation) }})
                   </span>
                   <span class="text-xs text-gray-600">
-                    {{ convertSecondsToHMS(story.progress_time) }} | {{ convertToGameTime(story.progress_time) }}
+                    {{ convertSecondsToHM(story.progress_time) }} | {{ convertToGameTime(story.progress_time) }}
                   </span>
                 </div>
                 <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
@@ -109,6 +110,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useGame } from '@/composables/useGame';
@@ -171,18 +173,20 @@ const resetProgress = () => {
   sprintUserStories.value = sprintUserStories.value.map(story => ({
     ...story,
     progress: 0,
-    progress_time: '00:00:00',
+    progress_time: '0h00m',
     is_completed: false,
   }));
 };
 
-const convertSecondsToHMS = (seconds) => {
+const convertSecondsToHM = (seconds) => {
   if (isNaN(seconds) || seconds === undefined || seconds === null) {
-    return '00:00:00';
+    return '0h00m';
   }
   const date = new Date(0);
   date.setSeconds(seconds);
-  return date.toISOString().substr(11, 8);
+  const hours = date.getUTCHours();
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  return `${hours}h${minutes}m`;
 };
 
 const convertToGameTime = (realTimeSeconds) => {
@@ -192,9 +196,8 @@ const convertToGameTime = (realTimeSeconds) => {
   const days = Math.floor(gameHours / 24);
   const hours = Math.floor(gameHours % 24);
   const minutes = Math.floor((gameHours * 60) % 60);
-  const seconds = Math.floor((gameHours * 3600) % 60);
 
-  return `${days}j${hours}h${minutes}m${seconds}s`;
+  return `${days}j${hours}h${minutes}m`;
 };
 
 const convertGameDaysToRealTime = (gameDays) => {
@@ -225,9 +228,7 @@ const updateSprintProgressOnly = async () => {
   } catch (error) {
     console.error("Error updating sprint progress:", error);
   }
-  console.log('sprint interval:', sprintprogress.value);
 };
-
 
 const updateUserStoryProgressOnly = async () => {
   try {
@@ -323,9 +324,9 @@ const handleEventResponse = async (event) => {
       const affectedEntity = response.affected_entity;
 
       if (affectedEntity.includes("user story")) {
-        eventEffectText.value = `${effectType} - l'User story ${affectedEntity} ${response.effect_type === 'positif' ? 'avance' : 'recule'} de ${convertSecondsToHMS(timeChange)} / ${convertToGameTime(timeChange)}`;
+        eventEffectText.value = `${effectType} - l'User story ${affectedEntity} ${response.effect_type === 'positif' ? 'avance' : 'recule'} de ${convertSecondsToHM(timeChange)} / ${convertToGameTime(timeChange)}`;
       } else {
-        eventEffectText.value = `${effectType} - ${convertSecondsToHMS(timeChange)} / ${convertToGameTime(timeChange)} ${response.effect_type === 'positif' ? 'ajouté au sprint' : 'retiré du sprint'}`;
+        eventEffectText.value = `${effectType} - ${convertSecondsToHM(timeChange)} / ${convertToGameTime(timeChange)} ${response.effect_type === 'positif' ? 'ajouté au sprint' : 'retiré du sprint'}`;
       }
     }
 

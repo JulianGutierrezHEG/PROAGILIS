@@ -676,6 +676,8 @@ class ApplyEventEffectView(APIView):
                     sprint.current_progress -= time_change
                     if sprint.current_progress < timedelta():
                         sprint.current_progress = timedelta()
+                if sprint.current_progress.total_seconds() >= sprint_max_time:
+                    sprint.is_completed = True
                 sprint.save()
                 affected_entity = "sprint"
             else:
@@ -691,6 +693,8 @@ class ApplyEventEffectView(APIView):
                     story.progress_time -= time_change
                     if story.progress_time < timedelta():
                         story.progress_time = timedelta()
+                if story.progress_time.total_seconds() >= story_max_time:
+                    story.is_completed = True
                 story.save()
                 affected_entity = f"user story {story.name}"
 

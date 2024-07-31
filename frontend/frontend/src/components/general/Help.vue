@@ -19,18 +19,58 @@
           <div v-show="isOpen[1]" class="py-5 border-b border-gray-200 dark:border-gray-700">
             <p>Le jeu se déroule en 8 phases suivant le processus de création d'un projet selon la méthodologie SCRUM (3 sprints).</p>
             <p>Demandez le mot de passe et le nom de la session à l'enseignant et rejoignez celle-ci, puis formez des groupes.</p>
-            <p class="mb-2">Attendez le début de la partie.</p>
+            <p class="mb-2">Attendez le début de la partie. Vou serez éjecté automatiquement à la fin de celle-ci.</p>
             <ul class="list-none pl-5">
-              <li>Phase 1</li>
-              <li>Phase 2</li>
-              <li>Phase 3</li>
-              <li>Phase 4</li>
-              <li>Phase 5</li>
-              <li>Phase 6</li>
-              <li>Phase 7</li>
-              <li>Phase 8</li>
+              <li>
+                <strong>Phase 1:</strong> Nommer les rôles du projet.
+                <ul class="list-disc pl-5">
+                  <li>Choisissez un Scrum Master et un Product Owner parmi les membres du groupe.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Phase 2:</strong> Définir les objectifs SMART.
+                <ul class="list-disc pl-5">
+                  <li>Décrivez les objectifs spécifiques, mesurables, atteignables, pertinents, et temporels du projet.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Phase 3:</strong> Créer et diviser les user stories.
+                <ul class="list-disc pl-5">
+                  <li>Ajoutez des user stories au backlog et divisez-les si nécessaire.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Phase 4:</strong> Assigner des valeurs métier aux user stories.
+                <ul class="list-disc pl-5">
+                  <li>Attribuez des valeurs métier aux user stories pour prioriser les tâches.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Phase 5:</strong> Sélectionner les user stories pour le sprint.
+                <ul class="list-disc pl-5">
+                  <li>Sélectionnez les user stories à compléter lors du prochain sprint.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Phase 6:</strong> Exécution du sprint.
+                <ul class="list-disc pl-5">
+                  <li>Travaillez sur les user stories sélectionnées et suivez leur progression.</li>
+                  <li>Répondez aux événements aléatoires qui peuvent affecter le sprint.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Phase 7:</strong> Réception et réponse aux commentaires du client.
+                <ul class="list-disc pl-5">
+                  <li>Recevez des feedbacks du client et répondez en conséquence.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>Phase 8:</strong> Réaliser la rétrospective.
+                <ul class="list-disc pl-5">
+                  <li>Identifiez ce qui a bien fonctionné, ce qui peut être amélioré, et les actions à entreprendre.</li>
+                </ul>
+              </li>
             </ul>
-  
           </div>
         </div>
         <div>
@@ -48,7 +88,6 @@
               <li>Profs: Perrotte Sonia (sonia.perrotte@hesge.ch) et Bayat-Ricard Marianne (marianne.bayat-ricard@hesge.ch)</li>
               <li>Admin: Gutierrez Julian ( julian.gutierrez@etu.hesge.ch)</li>
               <li>Cyberlearn: <a href="https://cyberlearn.hes-so.ch/" class="text-blue-500">https://cyberlearn.hes-so.ch/</a></li>
-              <li>Bachelor: Lien vers le bachelor</li>
             </ul>
           </div>
         </div>

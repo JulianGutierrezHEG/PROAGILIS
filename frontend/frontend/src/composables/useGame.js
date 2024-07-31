@@ -12,7 +12,6 @@ import { useRouter } from 'vue-router';
 
 export function useGame(groupId, group) {
   const router = useRouter();
-  const { ejectGroup } = useSession();
   const groupMembers = ref([]);
   const lockedElements = ref({});
   const currentUser = ref(null);
