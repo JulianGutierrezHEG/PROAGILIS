@@ -505,15 +505,13 @@ class UpdateSprintProgressView(APIView):
             group = Group.objects.get(id=group_id)
             sprint = Sprint.objects.get(id=sprint_id, backlog__project__group=group)
             game_time_control = GameTimeControl.objects.first()
-            sprint_duration_real_time = game_time_control.sprint_duration * 24 * 60 
+            sprint_duration_real_time = game_time_control.sprint_duration * 24 * 60 * 60  
 
             if not sprint.is_completed:
                 sprint.current_progress += timedelta(seconds=1)
-                sprint.save()
-
-                if sprint.current_progress.total_seconds() / 60 >= sprint_duration_real_time:
+                if sprint.current_progress.total_seconds() >= sprint_duration_real_time:
                     sprint.is_completed = True
-                    sprint.save()
+                sprint.save()
 
             return Response({"detail": "Sprint progrès mis à jour"}, status=status.HTTP_200_OK)
         except (Sprint.DoesNotExist, Group.DoesNotExist, GameTimeControl.DoesNotExist):
@@ -663,40 +661,34 @@ class ApplyEventEffectView(APIView):
                 return Response({"detail": "Pas de sprint actif pour ce projet"}, status=status.HTTP_400_BAD_REQUEST)
 
             user_stories = UserStory.objects.filter(sprint=sprint, is_completed=False)
-            time_change = timedelta(minutes=60) if random.random() < 0.5 else timedelta(days=1)
-            time_change_seconds = int(time_change.total_seconds())
-            actual_time_change = time_change_seconds
+            time_change = timedelta(hours=random.randint(1, 3))
             affected_entity = ""
 
-            # Sprint time is in minutes
             if not user_stories.exists() or random.random() < 0.5:
-                max_sprint_duration_minutes = game_time_control.sprint_duration * 24 * 60
-                current_progress_minutes = sprint.current_progress.total_seconds() / 60
-                time_change_minutes = time_change_seconds / 60
+                sprint_max_time = game_time_control.sprint_duration * 24 * 3600
+                current_time = sprint.current_progress.total_seconds()
+                time_to_end = sprint_max_time - current_time
 
                 if effect == 'positif':
-                    if current_progress_minutes + time_change_minutes > max_sprint_duration_minutes:
-                        actual_time_change = int((max_sprint_duration_minutes - current_progress_minutes) * 60)
-                    sprint.current_progress += timedelta(seconds=actual_time_change)
+                    time_change = min(time_change, timedelta(seconds=time_to_end))
+                    sprint.current_progress += time_change
                 else:
-                    if current_progress_minutes - time_change_minutes < 0:
-                        actual_time_change = int(current_progress_minutes * 60)
-                    sprint.current_progress -= timedelta(seconds=actual_time_change)
+                    sprint.current_progress -= time_change
                     if sprint.current_progress < timedelta():
                         sprint.current_progress = timedelta()
                 sprint.save()
                 affected_entity = "sprint"
             else:
-                # User story time is in seconds
                 story = random.choice(user_stories)
+                story_max_time = story.time_estimation.total_seconds()
+                current_time = story.progress_time.total_seconds()
+                time_to_end = story_max_time - current_time
+
                 if effect == 'positif':
-                    if story.progress_time + timedelta(seconds=time_change_seconds) > story.time_estimation:
-                        actual_time_change = int((story.time_estimation - story.progress_time).total_seconds())
-                    story.progress_time += timedelta(seconds=actual_time_change)
+                    time_change = min(time_change, timedelta(seconds=time_to_end))
+                    story.progress_time += time_change
                 else:
-                    if story.progress_time - timedelta(seconds=time_change_seconds) < timedelta():
-                        actual_time_change = int(story.progress_time.total_seconds())
-                    story.progress_time -= timedelta(seconds=actual_time_change)
+                    story.progress_time -= time_change
                     if story.progress_time < timedelta():
                         story.progress_time = timedelta()
                 story.save()
@@ -706,7 +698,7 @@ class ApplyEventEffectView(APIView):
                 "detail": "Effet appliqué avec succès",
                 "effect_type": effect,
                 "affected_entity": affected_entity,
-                "time_change_seconds": actual_time_change
+                "time_change_seconds": time_change.total_seconds()
             }, status=status.HTTP_200_OK)
 
         return Response({"detail": "Pas d'effet trouvé pour cet événement"}, status=status.HTTP_404_NOT_FOUND)
