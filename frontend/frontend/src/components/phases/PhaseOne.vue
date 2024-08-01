@@ -13,7 +13,7 @@
           <label for="projectName" class="block text-gray-700 text-lg">Nom du projet</label>
           <input type="text" id="projectName" v-model="projectName" class="mt-2 block w-full p-3 border rounded-md"
                  :class="{ locked: lockedElements.projectName && lockedElements.projectName !== currentUser }"
-                 @focus="lock('projectName')" @blur="unlock('projectName')" @input="updateProject" required />
+                 @focus="lock('projectName')" @blur="unlock('projectName')" @input="updateProjectName" required />
         </div>
         <div class="mb-6" :class="{ locked: lockedElements.scrumMaster && lockedElements.scrumMaster !== currentUser }"
              @mouseover="lock('scrumMaster')" @mouseout="unlock('scrumMaster')">
@@ -68,21 +68,22 @@ const props = defineProps({
   }
 });
 
-const { 
-  groupMembers, 
-  lockedElements, 
-  currentUser, 
-  currentPhaseDetails, 
-  isLoadingPhaseDetails, 
+const {
+  groupMembers,
+  lockedElements,
+  currentUser,
+  currentPhaseDetails,
+  isLoadingPhaseDetails,
   waiting,
-  fetchGroupMembers, 
-  setupEvents, 
-  cleanupEvents, 
-  lockElement, 
-  unlockElement, 
+  fetchGroupMembers,
+  setupEvents,
+  cleanupEvents,
+  lockElement,
+  unlockElement,
   checkValidationAndSendAnswer,
   showWaitingScreen,
   fetchCurrentPhase,
+  setPhaseHandler
 } = useGame(props.group.id, props.group);
 
 const projectName = ref('');
@@ -105,28 +106,28 @@ const unlock = (elementId) => {
   unlockElement(elementId);
 };
 
-const updateProject = () => {
-  websocketService.updateProjectDetails(props.group.id, projectName.value, roles.value, currentUser.value);
+const updateProjectName = () => {
+  websocketService.updateInterface(props.group.id, { field: 'projectName', value: projectName.value });
 };
 
 const selectScrumMaster = (username) => {
   roles.value.scrumMaster = username;
-  updateProject();
+  websocketService.updateInterface(props.group.id, { field: 'roles', value: roles.value });
 };
 
 const selectProductOwner = (username) => {
   roles.value.productOwner = username;
-  updateProject();
+  websocketService.updateInterface(props.group.id, { field: 'roles', value: roles.value });
 };
 
 const clearScrumMaster = () => {
   roles.value.scrumMaster = '';
-  updateProject();
+  websocketService.updateInterface(props.group.id, { field: 'roles', value: roles.value });
 };
 
 const clearProductOwner = () => {
   roles.value.productOwner = '';
-  updateProject();
+  websocketService.updateInterface(props.group.id, { field: 'roles', value: roles.value });
 };
 
 const submitForm = () => {
@@ -153,14 +154,24 @@ const submitProjectData = async () => {
   await checkValidationAndSendAnswer(answerData);
 };
 
+const handlePhaseInterfaceChange = (data) => {
+  console.log('Received interface change:', data);
+  if (data.field === 'projectName') {
+    projectName.value = data.value;
+  } else if (data.field === 'roles') {
+    roles.value = { ...data.value };
+  }
+};
 
 onMounted(async () => {
   await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
+  setPhaseHandler(handlePhaseInterfaceChange);
 });
 
 onUnmounted(() => {
   cleanupEvents();
+  setPhaseHandler(null); 
 });
 </script>

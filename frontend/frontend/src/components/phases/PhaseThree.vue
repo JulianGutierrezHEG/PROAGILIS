@@ -24,8 +24,8 @@
             <div v-for="(story, index) in newUserStories" :key="index" class="flex items-center">
               <UserStoryCard :story="story" class="flex-1" />
               <div v-if="isScrumMaster || isProductOwner">
-              <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete"
-                class="w-6 h-6 cursor-pointer ml-2" @click="confirmDeleteStory(story.id)">
+                <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete"
+                  class="w-6 h-6 cursor-pointer ml-2" @click="confirmDeleteStory(story.id)">
               </div>
             </div>
           </div>
@@ -33,15 +33,14 @@
       </div>
       <div class="mb-4" :class="{ locked: lockedElements.storyName && lockedElements.storyName !== currentUser }">
         <label for="storyName" class="block text-gray-700">Nom de la User Story</label>
-        <input type="text" id="storyName" v-model="newStory.name" class="mt-1 block w-full p-2 border rounded-md"
-          @focus="lock('storyName')" @blur="unlock('storyName')" />
+        <input type="text" id="storyName" v-model="newStory.name" class="mt-1 block w-full p-2 border rounded-md"/>
       </div>
       <div class="mb-4"
         :class="{ locked: lockedElements.storyDescription && lockedElements.storyDescription !== currentUser }">
         <label for="storyDescription" class="block text-gray-700">Description</label>
-        <textarea id="storyDescription" v-model="newStory.description" class="mt-1 block w-full p-2 border rounded-md"
-          rows="3" @focus="lock('storyDescription')" @blur="unlock('storyDescription')"></textarea>
+        <textarea id="storyDescription" v-model="newStory.description" class="mt-1 block w-full p-2 border rounded-md" rows="3"></textarea>
       </div>
+      <div v-if="errorMessage" class="text-red-500 mb-4">{{ errorMessage }}</div>
       <button @click="handleStoryAction"
         class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 mt-2 mb-10">
         {{ isDividing ? (divideCounter === 1 ? 'Valider et créer la deuxième' : 'Diviser la User Story') : 'Ajouter une User Story' }}
@@ -53,17 +52,18 @@
         </button>
       </div>
       <div v-else>
-        <p class="text-center text-lg mb-10">Seul le Product Owner peut soumettre la réponse (enlever a la fin Scrum master dans le code)</p>
+        <p class="text-center text-lg mb-10">Seul le Product Owner  ou Scrum Master peut soumettre la réponse</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useGame } from '@/composables/useGame';
 import WaitingScreen from '@/views/WaitingScreen.vue';
 import UserStoryCard from '@/components/interactables/UserStoryCard.vue';
+import websocketService from '@/services/websocketService';
 
 const props = defineProps({
   group: {
@@ -88,8 +88,7 @@ const {
   deleteUserStory,
   checkValidationAndSendAnswer,
   showWaitingScreen,
-  lockElement,
-  unlockElement,
+  setPhaseHandler,
 } = useGame(props.group.id, props.group);
 
 const existingUserStories = ref([]);
@@ -101,6 +100,7 @@ const divideCounter = ref(0);
 const lockedElements = ref({});
 const isProductOwner = ref(false);
 const isScrumMaster = ref(false);
+const errorMessage = ref('');
 
 const fetchInitialData = async () => {
   if (!props.group || !props.group.id) {
@@ -133,6 +133,11 @@ const fetchBacklogData = async () => {
 };
 
 const handleStoryAction = async () => {
+  if (!newStory.value.name.trim()) {
+    errorMessage.value = 'Le nom de la User Story ne doit pas être vide.';
+    return;
+  }
+  errorMessage.value = '';
   try {
     if (isDividing.value && selectedStoryId.value) {
       if (divideCounter.value === 0) {
@@ -169,25 +174,33 @@ const handleStoryAction = async () => {
       newUserStories.value.push({ ...newStory.value, id: response.id });
       newStory.value = { name: '', description: '' };
     }
+    websocketService.updateInterface(props.group.id, {
+      field: 'newUserStories',
+      value: newUserStories.value,
+    });
+    websocketService.updateInterface(props.group.id, {
+      field: 'existingUserStories',
+      value: existingUserStories.value,
+    });
   } catch (error) {
     console.error('Erreur lors de la création de la User Story:', error);
   }
 };
 
 const selectStoryForDivide = (story) => {
-  selectedStoryId.value = story.id;
-  console.log('Selected story:', story.id);
-  if (!isDividing.value) {
-    isDividing.value = true;
-    selectedStoryId.value = story.id;
-    divideCounter.value = 0;
-  } else if (isDividing.value && selectedStoryId.value !== story.id) {
-    isDividing.value = false;
+  if (selectedStoryId.value === story.id) {
     selectedStoryId.value = null;
-    isDividing.value = true;
+    isDividing.value = false;
+    divideCounter.value = 0;
+  } else {
     selectedStoryId.value = story.id;
+    isDividing.value = true;
     divideCounter.value = 0;
   }
+  websocketService.updateInterface(props.group.id, {
+    field: 'selectedStory',
+    value: selectedStoryId.value,
+  });
 };
 
 const fetchCreatedUserStoriesFrontend = async () => {
@@ -210,14 +223,6 @@ const submitPhaseThreeAnswer = async () => {
   }
 };
 
-const lock = (elementId) => {
-  lockElement(elementId);
-};
-
-const unlock = (elementId) => {
-  unlockElement(elementId);
-};
-
 const confirmDeleteStory = (storyId) => {
   if (confirm('Êtes-vous sûr de vouloir supprimer cette User Story?')) {
     deleteStory(storyId);
@@ -228,19 +233,47 @@ const deleteStory = async (storyId) => {
   try {
     await deleteUserStory(props.group.id, storyId);
     newUserStories.value = newUserStories.value.filter(story => story.id !== storyId);
+    existingUserStories.value = existingUserStories.value.filter(story => story.id !== storyId);
+    websocketService.updateInterface(props.group.id, {
+      field: 'newUserStories',
+      value: newUserStories.value,
+    });
+    websocketService.updateInterface(props.group.id, {
+      field: 'existingUserStories',
+      value: existingUserStories.value,
+    });
   } catch (error) {
-    console.error('Error in deleteStory:', error);
+    console.error('Erreur lors de la suppression de la User Story:', error);
+  }
+};
+
+const handlePhaseInterfaceChange = (data) => {
+  console.log('Received interface change:', data);
+  if (data.field === 'newUserStories') {
+    newUserStories.value = [...data.value];
+  } else if (data.field === 'existingUserStories') {
+    existingUserStories.value = [...data.value];
+  } else if (data.field === 'selectedStory') {
+    selectedStoryId.value = data.value;
   }
 };
 
 onMounted(async () => {
   await fetchInitialData();
   setupEvents();
+  setPhaseHandler(handlePhaseInterfaceChange);
 });
 
 onUnmounted(() => {
   cleanupEvents();
+  setPhaseHandler(null);
 });
 
-
 </script>
+
+<style scoped>
+.custom-button {
+  display: block;
+  margin: 0 auto;
+}
+</style>

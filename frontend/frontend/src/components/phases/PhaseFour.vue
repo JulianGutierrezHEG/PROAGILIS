@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 overflow-auto">
+  <div class="p-4 overflow-auto" @click="handleClickOutside">
     <div v-if="waiting">
       <WaitingScreen />
     </div>
@@ -27,7 +27,7 @@
             </div>
           </div>
         </div>
-          <button @click.prevent="submitPhaseFourData" 
+        <button @click.prevent="submitPhaseFourData" 
                 class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button mb-10">
           Soumettre
         </button>
@@ -67,7 +67,8 @@ const {
   showWaitingScreen,
   fetchCurrentPhase,
   fetchBacklog,
-  updateUserStoryDetails
+  updateUserStoryDetails,
+  setPhaseHandler,
 } = useGame(props.group.id, props.group);
 
 const userStories = ref([]);
@@ -93,7 +94,10 @@ const updateUserStory = async (storyId) => {
   const story = userStories.value.find(story => story.id === storyId);
   if (story) {
     await updateUserStoryDetails(storyId, { business_value: story.business_value });
-    websocketService.updateUserStoryDetails(props.group.id, storyId, story.business_value, currentUser.value);
+    websocketService.updateInterface(props.group.id, {
+      field: 'userStories',
+      value: userStories.value,
+    });
   }
 };
 
@@ -118,16 +122,26 @@ const fetchUserStoriesForPhase = async () => {
   }
 };
 
+const handlePhaseInterfaceChange = (data) => {
+  console.log('Received interface change:', data);
+  if (data.field === 'userStories') {
+    userStories.value = [...data.value];
+  }
+};
+
 onMounted(async () => {
   await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
+  setPhaseHandler(handlePhaseInterfaceChange);
   await fetchUserStoriesForPhase();
 });
 
 onUnmounted(() => {
   cleanupEvents();
+  setPhaseHandler(null);
 });
+
 </script>
 
 <style scoped>

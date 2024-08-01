@@ -1,6 +1,5 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import websocketService from '@/services/websocketService';
-import { useSession } from './useSession';
 import gamesService from '@/services/gamesService';
 import usersService from '@/services/usersService';
 import EventBus from '@/services/eventBus';
@@ -22,18 +21,7 @@ export function useGame(groupId, group) {
   const waiting = ref(false);
   const phases = ref([]);
   const phasesStatus = ref([]);
-  const roles = ref({
-    scrumMaster: '',
-    productOwner: '',
-    developers: []
-  });
-  const smartObjectives = ref({
-    specific: '',
-    measurable: '',
-    achievable: '',
-    relevant: '',
-    timeBound: ''
-  });
+  const phaseSpecificHandlers = ref({});
   const existingUserStories = ref([]);
   const backlog = ref([]);
   const currentSprintDetails = ref({});
@@ -43,7 +31,7 @@ export function useGame(groupId, group) {
   const isSprintRunning = ref(false);
   const eventLog = ref([]);
   const clientComment = ref([]);
-  const answeredEvents = ref([]);
+  const answeredEvents = ref(null);
   const phaseDisplay = ref(null);
   const eventEffectText = ref('');
 
@@ -203,78 +191,30 @@ export function useGame(groupId, group) {
     }
   };
 
-  // Mise en place des websockets et des événements
-  const setupEvents = () => {
-    EventBus.on('lock_element', handleLockElement);
-    EventBus.on('unlock_element', handleUnlockElement);
-    EventBus.on('project_update', handleProjectUpdate);
-    EventBus.on('smart_update', handleSmartUpdate);
-    EventBus.on('user_story_created_update', handleUserStoryUpdate);
-    EventBus.on('user_story_update', handleUserStoryUpdate);
-    EventBus.on('user_joined_group', handleUserJoinedGroup);
-    EventBus.on('user_left_group', handleUserLeftGroup);
-    EventBus.on('phase_status_update', handlePhaseStatusUpdate);
-    EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
-    EventBus.on('show_waiting_screen', handleShowWaitingScreen);
-    EventBus.on('group_ejected_from_session', handleGroupEjection);
+  // Verrouille un élément
+  const handleLockElement = (data) => {
+      lockedElements.value = { ...lockedElements.value, [data.element_id]: data.user };
   };
 
-  // Nettoyage des websockets et des événements
-  const cleanupEvents = () => {
-    EventBus.off('lock_element', handleLockElement);
-    EventBus.off('unlock_element', handleUnlockElement);
-    EventBus.off('project_update', handleProjectUpdate);
-    EventBus.off('smart_update', handleSmartUpdate);
-    EventBus.off('user_story_created_update', handleUserStoryUpdate);
-    EventBus.off('user_story_update', handleUserStoryUpdate);
-    EventBus.off('user_joined_group', handleUserJoinedGroup);
-    EventBus.off('user_left_group', handleUserLeftGroup);
-    EventBus.off('phase_status_update', handlePhaseStatusUpdate);
-    EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
-    EventBus.off('show_waiting_screen', handleShowWaitingScreen);
-    EventBus.off('group_ejected_from_session', handleGroupEjection);
-
+  // Déverrouille un élément
+  const handleUnlockElement = (data) => {
+      const updatedLockedElements = { ...lockedElements.value };
+      delete updatedLockedElements[data.element_id];
+      lockedElements.value = updatedLockedElements;
   };
 
-  // Affiche l'écran d'attente
-  const handleShowWaitingScreen = () => {
-    waiting.value = true;
+  // Utilisateur rejoint le groupe
+  const handleUserJoinedGroup = (data) => {
+      console.log('Un utilisateur a rejoint le groupe:', data);
+      fetchGroupMembers();
   };
-
-  // Groupe éjecté de la session
-  const handleGroupEjection = (data) => {
-    console.log('Groupe éjecté de la session:', data);
-    router.push('/'); 
+    
+  // Utilisateur quitte le groupe
+  const handleUserLeftGroup = (data) => {
+      console.log('Un utilisateur a quitté le groupe:', data);
+      fetchGroupMembers();
   };
-
-  // Mis à jour du projet
-  const handleProjectUpdate = (data) => {
-    projectName.value = data.projectName;
-    roles.value.scrumMaster = data.roles.scrumMaster;
-    roles.value.productOwner = data.roles.productOwner;
-    roles.value.developers = data.roles.developers;
-    console.log(`Projet mis à jour par: ${data.user}`);
-  };
-
-  const handleSmartUpdate = (data) => {
-    if (data.group_id === group.id && data.phase_id === currentPhase.value) {
-      smartObjectives.value = data.smart_details;
-      console.log(`SMART Objectives mis à jour par: ${data.user}`);
-    }
-  };
-
-  const handleUserStoryUpdate = (data) => {
-    const updatedStory = data.storyData;
-    const index = userStories.value.findIndex(story => story.id === data.storyId);
-    if (index !== -1) {
-      userStories.value[index] = { ...userStories.value[index], ...updatedStory };
-    }
-  };
-
-  const updateCreatedUserStories = (userStories, user) => {
-    websocketService.updateCreatedUserStories(groupId, userStories, user);
-  };
-
+  
   // Mis à jour du statut de la phase
   const handlePhaseStatusUpdate = (data) => {
       if (data.group_id === group.id && data.phase_id === currentPhase.value) {
@@ -283,36 +223,64 @@ export function useGame(groupId, group) {
         }
       }
   };
-    
+
   // Mis à jour de la réponse de la phase
   const handlePhaseAnswerUpdate = (data) => {
       console.log('Websocket envoie de la réponse de la phase:', data);
   };
+
+  // Affiche l'écran d'attente
+  const handleShowWaitingScreen = () => {
+      waiting.value = true;
+  };
+
+  // Groupe éjecté de la session
+  const handleGroupEjection = (data) => {
+      console.log('Groupe éjecté de la session:', data);
+      router.push('/'); 
+  };
+
+  const setPhaseHandler = (handler) => {
+    phaseSpecificHandlers.value.interfacechange = handler;
+  };
   
-  // Utilisateur rejoint le groupe
-  const handleUserJoinedGroup = (data) => {
-    console.log('Un utilisateur a rejoint le groupe:', data);
-    fetchGroupMembers();
-  };
-  
-  // Utilisateur quitte le groupe
-  const handleUserLeftGroup = (data) => {
-    console.log('Un utilisateur a quitté le groupe:', data);
-    fetchGroupMembers();
+  const handleInterfaceChange = (data) => {
+    const handler = phaseSpecificHandlers.value.interfacechange;
+    if (handler) {
+      handler(data);
+    }
   };
 
-  // Verrouille un élément
-  const handleLockElement = (data) => {
-    lockedElements.value = { ...lockedElements.value, [data.element_id]: data.user };
+  // Mise en place des websockets et des événements
+  const setupEvents = () => {
+    EventBus.on('lock_element', handleLockElement);
+    EventBus.on('unlock_element', handleUnlockElement);
+    EventBus.on('user_joined_group', handleUserJoinedGroup);
+    EventBus.on('user_left_group', handleUserLeftGroup);
+    EventBus.on('phase_status_update', handlePhaseStatusUpdate);
+    EventBus.on('phase_answer_update', handlePhaseAnswerUpdate);
+    EventBus.on('show_waiting_screen', handleShowWaitingScreen);
+    EventBus.on('group_ejected_from_session', handleGroupEjection);
+    EventBus.on('interfacechange', handleInterfaceChange);
   };
 
-  // Déverrouille un élément
-  const handleUnlockElement = (data) => {
-    const updatedLockedElements = { ...lockedElements.value };
-    delete updatedLockedElements[data.element_id];
-    lockedElements.value = updatedLockedElements;
+  // Nettoyage des websockets et des événements
+  const cleanupEvents = () => {
+    EventBus.off('lock_element', handleLockElement);
+    EventBus.off('unlock_element', handleUnlockElement);
+    EventBus.off('user_joined_group', handleUserJoinedGroup);
+    EventBus.off('user_left_group', handleUserLeftGroup);
+    EventBus.off('phase_status_update', handlePhaseStatusUpdate);
+    EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
+    EventBus.off('show_waiting_screen', handleShowWaitingScreen);
+    EventBus.off('group_ejected_from_session', handleGroupEjection);
+    EventBus.off('interfacechange', handleInterfaceChange);
   };
 
+  const updateCreatedUserStories = (userStories, user) => {
+    websocketService.updateCreatedUserStories(groupId, userStories, user);
+  };
+    
   // Verrouille un élément (websockets)
   const lockElement = (elementId) => {
     if (currentUser.value) {
@@ -716,6 +684,7 @@ export function useGame(groupId, group) {
     fetchAnsweredEvents,
     fetchSprintRandomClientComment,
     fetchBacklog,
-    fetchPhaseDisplay
+    fetchPhaseDisplay,
+    setPhaseHandler
   };
 }

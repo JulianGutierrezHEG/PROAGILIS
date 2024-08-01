@@ -10,7 +10,7 @@ cd backend
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
-# Données (ecommerce.json et evenements.json peut être modifié pour changer le type de données):
+# Données (ecommerce.json et evenements.json peut être modifié pour changer les données):
 python manage.py makemigrations
 python manage.py migrate
 python manage.py loaddata ecommerce.json

@@ -80,7 +80,8 @@ const {
   checkValidationAndSendAnswer,
   showWaitingScreen,
   fetchCurrentPhase,
-  fetchProjectDetails
+  fetchProjectDetails,
+  setPhaseHandler
 } = useGame(props.group.id, props.group);
 
 const smartObjectives = ref({
@@ -102,8 +103,7 @@ const unlock = (elementId) => {
 };
 
 const updateSmart = () => {
-  console.log('SMART Objectives:', smartObjectives.value);
-  websocketService.updateSmartDetails(props.group.id, currentPhaseDetails.value.id, smartObjectives.value, currentUser.value);
+  websocketService.updateInterface(props.group.id, { field: 'smartObjectives', value: smartObjectives.value });
 };
 
 const submitForm = async () => {
@@ -127,11 +127,19 @@ const submitPhaseTwoAnswer = async () => {
   }
 };
 
+const handlePhaseInterfaceChange = (data) => {
+  console.log('Received interface change:', data);
+  if (data.field === 'smartObjectives') {
+    smartObjectives.value = { ...data.value };
+  }
+};
+
 onMounted(async () => {
   await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
-  
+  setPhaseHandler(handlePhaseInterfaceChange);
+
   const projectDetails = await fetchProjectDetails(props.group.id);
   if (projectDetails) {
     isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
@@ -140,5 +148,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupEvents();
+  setPhaseHandler(null);
 });
 </script>

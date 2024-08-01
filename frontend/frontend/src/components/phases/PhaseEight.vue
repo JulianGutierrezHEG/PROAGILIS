@@ -13,19 +13,19 @@
           <label for="wentWell" class="block text-gray-700 text-lg">Ce qui a bien fonctionné</label>
           <textarea id="wentWell" v-model="retrospective.wentWell" class="mt-1 block w-full p-4 border rounded-md" rows="5" 
                     :class="{ locked: lockedElements.wentWell && lockedElements.wentWell !== currentUser }"
-                    @focus="lock('wentWell')" @blur="unlock('wentWell')"  required></textarea>
+                    @focus="lock('wentWell')" @blur="unlock('wentWell')" @input="updateRetrospective" required></textarea>
         </div>
         <div class="mb-6">
           <label for="couldBeImproved" class="block text-gray-700 text-lg">Ce qui pourrait être amélioré</label>
           <textarea id="couldBeImproved" v-model="retrospective.couldBeImproved" class="mt-1 block w-full p-4 border rounded-md" rows="5" 
                     :class="{ locked: lockedElements.couldBeImproved && lockedElements.couldBeImproved !== currentUser }"
-                    @focus="lock('couldBeImproved')" @blur="unlock('couldBeImproved')" required></textarea>
+                    @focus="lock('couldBeImproved')" @blur="unlock('couldBeImproved')" @input="updateRetrospective" required></textarea>
         </div>
         <div class="mb-6">
           <label for="actionItems" class="block text-gray-700 text-lg">Actions à entreprendre</label>
           <textarea id="actionItems" v-model="retrospective.actionItems" class="mt-1 block w-full p-4 border rounded-md" rows="5" 
                     :class="{ locked: lockedElements.actionItems && lockedElements.actionItems !== currentUser }"
-                    @focus="lock('actionItems')" @blur="unlock('actionItems')" required></textarea>
+                    @focus="lock('actionItems')" @blur="unlock('actionItems')" @input="updateRetrospective" required></textarea>
         </div>
         <div v-if="currentSprintDetails && currentSprintDetails.sprint_number === 3" class="mb-6 text-center">
           <p class="text-red-500 font-bold">Vous êtes sur le point de finir le dernier sprint, vous serez éjecté de la partie après validation de cette phase.</p>
@@ -44,6 +44,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useGame } from '@/composables/useGame';
 import { useSession } from '@/composables/useSession';
 import WaitingScreen from '@/views/WaitingScreen.vue';
+import websocketService from '@/services/websocketService';
 
 const props = defineProps({
   group: {
@@ -57,6 +58,7 @@ const {
   currentUser, 
   currentPhaseDetails, 
   isLoadingPhaseDetails, 
+  currentSprintDetails,
   waiting,
   fetchGroupMembers, 
   setupEvents, 
@@ -67,7 +69,7 @@ const {
   showWaitingScreen,
   fetchCurrentPhase,
   fetchSprintDetails,
-  currentSprintDetails
+  setPhaseHandler
 } = useGame(props.group.id, props.group);
 
 const { leaveSession } = useSession();
@@ -84,6 +86,10 @@ const lock = (elementId) => {
 
 const unlock = (elementId) => {
   unlockElement(elementId);
+};
+
+const updateRetrospective = () => {
+  websocketService.updateInterface(props.group.id, { field: 'retrospective', value: retrospective.value });
 };
 
 const submitPhaseEightAnswer = async () => {
@@ -106,16 +112,25 @@ const submitPhaseEightAnswer = async () => {
   }
 };
 
+const handlePhaseInterfaceChange = (data) => {
+  console.log('Received interface change:', data);
+  if (data.field === 'retrospective') {
+    retrospective.value = { ...data.value };
+  }
+};
+
 onMounted(async () => {
   console.log(props.group.id);
   await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
+  setPhaseHandler(handlePhaseInterfaceChange);
   await fetchSprintDetails(props.group.id);
 });
 
 onUnmounted(() => {
   cleanupEvents();
+  setPhaseHandler(null);
 });
 </script>
 

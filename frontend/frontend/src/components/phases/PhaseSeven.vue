@@ -45,7 +45,7 @@
         <h3 class="text-xl font-semibold mb-2">Votre réponse</h3>
         <textarea v-model="groupResponse" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
                   :class="{ locked: lockedElements.groupResponse && lockedElements.groupResponse !== currentUser }"
-                  @focus="lock('groupResponse')" @blur="unlock('groupResponse')" required></textarea>
+                  @focus="lock('groupResponse')" @blur="unlock('groupResponse')" @input="updateGroupResponse" required></textarea>
       </div>
       <div v-if="isScrumMaster || isProductOwner">
         <button @click.prevent="submitPhaseSevenAnswer" 
@@ -59,8 +59,6 @@
     </div>
   </div>
 </template>
-
-
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
@@ -94,7 +92,8 @@ const {
   fetchCompletedUserStories,
   fetchIncompleteUserStories,
   fetchSprintRandomClientComment,
-  updateEventAnswer
+  updateEventAnswer,
+  setPhaseHandler
 } = useGame(props.group.id, props.group);
 
 const groupResponse = ref('');
@@ -112,6 +111,10 @@ const unlock = (elementId) => {
   unlockElement(elementId);
 };
 
+const updateGroupResponse = () => {
+  websocketService.updateInterface(props.group.id, { field: 'groupResponse', value: groupResponse.value });
+};
+
 const submitPhaseSevenAnswer = async () => {
   try {
     showWaitingScreen(props.group.id, currentUser.value);
@@ -125,10 +128,18 @@ const submitPhaseSevenAnswer = async () => {
   }
 };
 
+const handlePhaseInterfaceChange = (data) => {
+  console.log('Received interface change:', data);
+  if (data.field === 'groupResponse') {
+    groupResponse.value = data.value;
+  }
+};
+
 onMounted(async () => {
   await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();
+  setPhaseHandler(handlePhaseInterfaceChange);
   
   const projectDetails = await fetchProjectDetails(props.group.id);
   if (projectDetails) {
@@ -143,5 +154,19 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupEvents();
+  setPhaseHandler(null);
 });
 </script>
+
+<style scoped>
+.custom-button {
+  display: block;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+</style>

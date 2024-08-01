@@ -32,7 +32,7 @@
             <div class="overflow-y-auto max-h-96">
               <div v-for="(story, index) in sortedSprintUserStories" :key="index" class="mb-4">
                 <div class="flex justify-between mb-1 items-center">
-                  <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete" class="w-6 h-6 cursor-pointer ml-2" @click="completeUserStoryHandler(story.id)">
+                  <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete" class="w-6 h-6 cursor-pointer ml-2" :class="{ locked: lockedElements['completeIcon' + story.id] && lockedElements['completeIcon' + story.id] !== currentUser }" @mouseover="lock('completeIcon' + story.id)" @mouseout="unlock('completeIcon' + story.id)" @click="completeUserStoryHandler(story.id)">
                   <span class="text-sm font-medium">
                     {{ story.name }} ({{ convertSecondsToHM(story.time_estimation) }} | {{ convertToGameTime(story.time_estimation) }})
                   </span>
@@ -76,10 +76,10 @@
             <div class="w-1/2 pl-2">
               <h3 class="text-xl font-semibold mb-2">Événements Répondus</h3>
               <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
-                <div v-if="answeredEvents && answeredEvents.length === 0" class="text-center text-gray-500">
+                <div v-if="sortedAnsweredEvents && sortedAnsweredEvents.length === 0" class="text-center text-gray-500">
                   Pas d'événements répondus
                 </div>
-                <div v-else v-for="(event, index) in answeredEvents" :key="index" class="mb-2">
+                <div v-else v-for="(event, index) in sortedAnsweredEvents" :key="index" class="mb-2">
                   <table class="w-full">
                     <tr>
                       <td class="text-sm">{{ event.description }}</td>
@@ -135,6 +135,7 @@ const {
   answeredEvents,
   waiting,
   eventLog,
+  lockedElements,
   fetchGameTimeControl,
   fetchCurrentPhase, 
   setupEvents, 
@@ -154,7 +155,10 @@ const {
   fetchSprintRandomEvent,
   updateEventAnswer,
   fetchAnsweredEvents,
-  applyEventEffect
+  applyEventEffect,
+  setPhaseHandler,
+  lockElement, 
+  unlockElement,
 } = useGame(props.group.id, props.group);
 
 const isScrumMaster = ref(false);
@@ -166,6 +170,14 @@ const sprintInterval = ref(null);
 const eventFetchInterval = ref(null); 
 const eventEffectText = ref('');
 const sprintprogress = ref(0);
+
+const lock = (elementId) => {
+  lockElement(elementId);
+};
+
+const unlock = (elementId) => {
+  unlockElement(elementId);
+};
 
 const resetProgress = () => {
   globalProgress.value = '';
@@ -286,10 +298,15 @@ const fetchSprintUserStoriesPhase = async () => {
 const completeUserStoryHandler = async (storyId) => {
   await completeUserStory(props.group.id, currentSprintDetails.value.id, storyId);
   await fetchUserStoriesProgress(props.group.id, currentSprintDetails.value.id);
+  await fetchAnsweredEvents(props.group.id);
+  websocketService.updateInterface(props.group.id, {
+    field: 'answeredEvents',
+    value: answeredEvents.value,
+  });
 };
 
 const sendData = async (isSprintCompletion = false) => {
-  const answeredEventIds = eventLog.value.filter(event => event.answer).map(event => event.id);
+  const answeredEventIds = answeredEvents.value ? answeredEvents.value.map(event => event.id) : [];
 
   const answerData = {
     answeredEvents: answeredEventIds
@@ -324,7 +341,7 @@ const handleEventResponse = async (event) => {
       const affectedEntity = response.affected_entity;
 
       if (affectedEntity.includes("user story")) {
-        eventEffectText.value = `${effectType} - l'User story ${affectedEntity} ${response.effect_type === 'positif' ? 'avance' : 'recule'} de ${convertSecondsToHM(timeChange)} / ${convertToGameTime(timeChange)}`;
+        eventEffectText.value = `${effectType} - l'${affectedEntity} ${response.effect_type === 'positif' ? 'avance' : 'recule'} de ${convertSecondsToHM(timeChange)} / ${convertToGameTime(timeChange)}`;
       } else {
         eventEffectText.value = `${effectType} - ${convertSecondsToHM(timeChange)} / ${convertToGameTime(timeChange)} ${response.effect_type === 'positif' ? 'ajouté au sprint' : 'retiré du sprint'}`;
       }
@@ -334,6 +351,11 @@ const handleEventResponse = async (event) => {
     eventLog.value = [event, ...updatedEventLog]; 
 
     await fetchAnsweredEvents(props.group.id);
+
+    websocketService.updateInterface(props.group.id, {
+      field: 'answeredEvents',
+      value: answeredEvents.value,
+    });
 
     await sendData(false);
   } catch (error) {
@@ -374,8 +396,20 @@ const sortedEvents = computed(() => {
   return eventLog.value.filter(event => !event.answered).reverse(); 
 });
 
+const sortedAnsweredEvents = computed(() => {
+  return answeredEvents.value ? answeredEvents.value.slice().reverse() : [];
+});
+
+const handlePhaseInterfaceChange = (data) => {
+  console.log('Received interface change:', data);
+  if (data.field === 'answeredEvents') {
+    answeredEvents.value = [...data.value];
+  }
+};
+
 onMounted(async () => {
   await fetchInitialData();
+  setPhaseHandler(handlePhaseInterfaceChange);
   if (currentSprintProgress.value.current_progress < gameTimeControl.value.sprint_duration * 24 * 3600) { 
     SprintStart(); 
   }
@@ -383,6 +417,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupEvents();
+  setPhaseHandler(null);
   if (userStoryInterval.value) {
     clearInterval(userStoryInterval.value);
     userStoryInterval.value = null;
@@ -397,3 +432,9 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<style scoped>
+.locked {
+  display: none;
+}
+</style>

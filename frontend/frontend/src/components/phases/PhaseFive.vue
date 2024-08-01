@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 overflow-auto">
+  <div class="p-4 overflow-auto" @click="handleClickOutside">
     <div v-if="waiting">
       <WaitingScreen />
     </div>
@@ -14,8 +14,8 @@
       <div class="mb-10">
         <h3 class="text-xl font-semibold mb-2">User Stories Sélectionnées</h3>
         <span class="mb-5"> Cliquez sur une carte d'User Story pour la séléctionnée pour le prochain sprint. Rappel: {{gameTimeControl.game_hours }}H en jeu = {{gameTimeControl.real_minutes}} minute en réel </span>
-        <div class="overflow-y-auto max-h-[45vh] mt-10 ">
-          <table class="min-w-full bg-white ">
+        <div class="overflow-y-auto max-h-[45vh] mt-10 mb-5 ">
+          <table class="min-w-full bg-white">
             <thead>
               <tr>
                 <th class="py-2 px-4 bg-gray-100 border-b text-left text-sm font-semibold text-gray-700">User Story</th>
@@ -23,14 +23,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(story, index) in userStories" :key="index" :class="{ 'bg-white': selectedUserStoryIds.includes(story.id) }">
+              <tr v-for="(story, index) in userStories" :key="index" :class="{ 'bg-white': selectedUserStoryIds.includes(story.id), locked: lockedElements['storyRow' + story.id] && lockedElements['storyRow' + story.id] !== currentUser }" @mouseover="lock('storyRow' + story.id)" @mouseout="unlock('storyRow' + story.id)">
                 <td class="py-2 px-4 border-b">
                   <UserStoryCard :story="story" :isSelected="selectedUserStoryIds.includes(story.id)" @click="toggleStorySelection(story.id)" />
                 </td>
-                <td class="py-2 px-4 border-b"
-                  :class="{ locked: lockedElements['timeEstimate' + story.id] && lockedElements['timeEstimate' + story.id] !== currentUser }"
-                  >
-                  <input type="time" v-model="story.time_estimation" class="mt-1 block w-full p-2 border rounded-md" min="00:00" max="23:59" @blur="validateAndUpdateTimeEstimation(story)" />
+                <td class="py-2 px-4 border-b">
+                  <input type="time" v-model="story.time_estimation_string" class="mt-1 block w-full p-2 border rounded-md" min="00:00" max="23:59" @blur="validateAndUpdateTimeEstimation(story)" />
                 </td>
               </tr>
             </tbody>
@@ -62,17 +60,15 @@ const props = defineProps({
   }
 });
 
-const { 
-  groupMembers, 
+const {  
   gameTimeControl,
-  fetchGameTimeControl,
   lockedElements, 
   currentUser, 
   currentPhaseDetails, 
   isLoadingPhaseDetails, 
   waiting,
+  fetchGameTimeControl,
   fetchGroupMembers, 
-  fetchProjectDetails,
   setupEvents, 
   cleanupEvents, 
   lockElement, 
@@ -81,7 +77,8 @@ const {
   showWaitingScreen,
   fetchCurrentPhase,
   fetchBacklog,
-  updateUserStoryDetails
+  updateUserStoryDetails,
+  setPhaseHandler,
 } = useGame(props.group.id, props.group);
 
 const userStories = ref([]);
@@ -97,7 +94,7 @@ const unlock = (elementId) => {
 };
 
 const validateAndUpdateTimeEstimation = async (story) => {
-  const [hours, minutes] = story.time_estimation.split(':').map(part => parseInt(part, 10));
+  const [hours, minutes] = story.time_estimation_string.split(':').map(part => parseInt(part, 10));
   const totalSeconds = (hours * 3600) + (minutes * 60);
 
   story.time_estimation = totalSeconds;
@@ -112,7 +109,10 @@ const updateUserStory = async (storyId) => {
   const story = userStories.value.find(story => story.id === storyId);
   if (story) {
     await updateUserStoryDetails(storyId, { time_estimation: story.time_estimation });
-    websocketService.updateUserStoryDetails(props.group.id, storyId, story.time_estimation, currentUser.value);
+    websocketService.updateInterface(props.group.id, {
+      field: 'userStories',
+      value: userStories.value,
+    });
   }
 };
 
@@ -122,7 +122,10 @@ const toggleStorySelection = (storyId) => {
   } else {
     selectedUserStoryIds.value.push(storyId);
   }
-  console.log('Selected User Stories for Sprint:', selectedUserStoryIds.value);
+  websocketService.updateInterface(props.group.id, {
+    field: 'selectedUserStoryIds',
+    value: selectedUserStoryIds.value,
+  });
 };
 
 const submitPhaseFiveData = async () => {
@@ -131,8 +134,6 @@ const submitPhaseFiveData = async () => {
   const answerData = {
     userStories: selectedUserStoryIds.value
   };
-  
-  console.log('Answer Data:', answerData);
   await checkValidationAndSendAnswer(answerData);
 };
 
@@ -150,9 +151,19 @@ const fetchUserStoriesForPhase = async () => {
   }
 };
 
+const handlePhaseInterfaceChange = (data) => {
+  console.log('Received interface change:', data);
+  if (data.field === 'userStories') {
+    userStories.value = [...data.value];
+  } else if (data.field === 'selectedUserStoryIds') {
+    selectedUserStoryIds.value = [...data.value];
+  }
+};
+
 onMounted(async () => {
   await fetchGroupMembers();
   setupEvents();
+  setPhaseHandler(handlePhaseInterfaceChange);
   await fetchCurrentPhase();
   await fetchUserStoriesForPhase();
   await fetchGameTimeControl();
@@ -160,5 +171,20 @@ onMounted(async () => {
 
 onUnmounted(() => {
   cleanupEvents();
+  setPhaseHandler(null);
 });
+
 </script>
+
+<style scoped>
+.custom-button {
+  display: block;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+</style>
