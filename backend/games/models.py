@@ -18,6 +18,8 @@ class Project(models.Model):
     product_owner = models.CharField(max_length=100, blank=True, null=True)
     developers = models.JSONField(default=list)
     current_sprint = models.IntegerField(default=1)
+    current_event = models.ForeignKey('Event', on_delete=models.SET_NULL, null=True, blank=True, related_name='current_event_project')
+    current_client_comment = models.ForeignKey('Event', null=True, blank=True, on_delete=models.SET_NULL, related_name='client_comments')
 
     def __str__(self):
         return self.name

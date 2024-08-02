@@ -592,12 +592,19 @@ class CompleteUserStoryView(APIView):
 class FetchSprintRandomEventView(APIView):
     def get(self, request, group_id):
         project = get_object_or_404(Project, group_id=group_id)
-        events = Event.objects.filter(project=project, effect__isnull=False)
         
-        if not events.exists():
-            return Response({"detail": "Pas d'événements trouvés"}, status=status.HTTP_404_NOT_FOUND)
-        
-        event = random.choice(events)
+        if project.current_event and not project.current_event.answer:
+            event = project.current_event
+        else:
+            events = Event.objects.filter(project=project, effect__isnull=False, answer__isnull=True)
+            
+            if not events.exists():
+                return Response({"detail": "Pas d'événements trouvés"}, status=status.HTTP_404_NOT_FOUND)
+            
+            event = random.choice(events)
+            project.current_event = event
+            project.save()
+
         serializer = EventSerializer(event)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -605,12 +612,18 @@ class FetchSprintRandomEventView(APIView):
 class FetchSprintRandomClientCommentView(APIView):
     def get(self, request, group_id):
         project = get_object_or_404(Project, group_id=group_id)
+        if project.current_client_comment:
+            serializer = EventSerializer(project.current_client_comment)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
         events = Event.objects.filter(project=project, effect__isnull=True)
         
         if not events.exists():
             return Response({"detail": "Pas de commentaire clients trouvés"}, status=status.HTTP_404_NOT_FOUND)
         
         event = random.choice(events)
+        project.current_client_comment = event
+        project.save()
         serializer = EventSerializer(event)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -1,29 +1,43 @@
 <template>
-  <div>
+  <div class="p-4">
     <h3 class="font-bold text-xl text-center mb-4">Réponse pour la phase {{ localCurrentPhaseName }}</h3>
-    <div class="flex justify-center">
-      <table class="table-auto border-collapse border border-gray-300 w-full max-w-2xl">
-        <thead>
-          <tr>
-            <th class="border bg-slate-400 border-gray-300 px-4 py-2 text-center">S</th>
-            <th class="border bg-slate-400 border-gray-300 px-4 py-2 text-center">M</th>
-            <th class="border bg-slate-400 border-gray-300 px-4 py-2 text-center">A</th>
-            <th class="border bg-slate-400 border-gray-300 px-4 py-2 text-center">R</th>
-            <th class="border bg-slate-400 border-gray-300 px-4 py-2 text-center">T</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="border border-gray-300 px-4 py-2 text-center">{{ localPhaseAnswer.specific }}</td>
-            <td class="border border-gray-300 px-4 py-2 text-center">{{ localPhaseAnswer.measurable }}</td>
-            <td class="border border-gray-300 px-4 py-2 text-center">{{ localPhaseAnswer.achievable }}</td>
-            <td class="border border-gray-300 px-4 py-2 text-center">{{ localPhaseAnswer.relevant }}</td>
-            <td class="border border-gray-300 px-4 py-2 text-center">{{ localPhaseAnswer.timeBound }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="overflow-y-auto max-h-screen p-4">
+      <div class="flex justify-center">
+        <div class="w-full max-w-2xl">
+          <div class="mb-4">
+            <h4 class="font-bold text-lg mb-2">Spécifique</h4>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+              <p class="text-sm text-gray-600">{{ localPhaseAnswer.specific || 'Pas de réponse' }}</p>
+            </div>
+          </div>
+          <div class="mb-4">
+            <h4 class="font-bold text-lg mb-2">Mesurable</h4>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+              <p class="text-sm text-gray-600">{{ localPhaseAnswer.measurable || 'Pas de réponse' }}</p>
+            </div>
+          </div>
+          <div class="mb-4">
+            <h4 class="font-bold text-lg mb-2">Atteignable</h4>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+              <p class="text-sm text-gray-600">{{ localPhaseAnswer.achievable || 'Pas de réponse' }}</p>
+            </div>
+          </div>
+          <div class="mb-4">
+            <h4 class="font-bold text-lg mb-2">Pertinent</h4>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+              <p class="text-sm text-gray-600">{{ localPhaseAnswer.relevant || 'Pas de réponse' }}</p>
+            </div>
+          </div>
+          <div class="mb-4">
+            <h4 class="font-bold text-lg mb-2">Délimité dans le temps</h4>
+            <div class="bg-white p-4 rounded-lg shadow-md">
+              <p class="text-sm text-gray-600">{{ localPhaseAnswer.timeBound || 'Pas de réponse' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div v-if="phaseNeedsValidation">
+    <div v-if="phaseNeedsValidation" class="flex justify-center mt-4">
       <ValidationButtons />
     </div>
   </div>
@@ -71,3 +85,10 @@ onUnmounted(() => {
   EventBus.off('phase_answer_update', handlePhaseAnswerUpdate);
 });
 </script>
+
+<style scoped>
+.overflow-y-auto {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+</style>

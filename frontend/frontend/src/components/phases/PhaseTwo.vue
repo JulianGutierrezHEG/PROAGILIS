@@ -8,7 +8,8 @@
       <p v-if="!isLoadingPhaseDetails" class="mb-6 text-center">
         {{ currentPhaseDetails.description }}
       </p>
-      <form @submit.prevent="submitForm" class="max-w-lg mx-auto">
+      <form @submit.prevent="submitPhaseTwoAnswer" class="max-w-lg mx-auto">
+        <div v-if="showWarning" class="text-center text-red-500 mb-4">Certaines réponses sont vides.</div>
         <div class="mb-6">
           <label for="specific" class="block text-gray-700 text-lg">Spécifique</label>
           <textarea id="specific" v-model="smartObjectives.specific" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
@@ -91,6 +92,7 @@ const smartObjectives = ref({
   relevant: '',
   timeBound: ''
 });
+const showWarning = ref(false);
 
 const isScrumMaster = ref(false);
 
@@ -106,11 +108,12 @@ const updateSmart = () => {
   websocketService.updateInterface(props.group.id, { field: 'smartObjectives', value: smartObjectives.value });
 };
 
-const submitForm = async () => {
-  console.log('SMART Objectives:', smartObjectives.value);
-};
-
 const submitPhaseTwoAnswer = async () => {
+  if (!smartObjectives.value.specific.trim() || !smartObjectives.value.measurable.trim() || !smartObjectives.value.achievable.trim() || !smartObjectives.value.relevant.trim() || !smartObjectives.value.timeBound.trim()) {
+    showWarning.value = true;
+    return;
+  }
+  showWarning.value = false;
   try {
     showWaitingScreen(props.group.id, currentUser.value);
     const answerData = {

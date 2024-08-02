@@ -9,6 +9,7 @@
         {{ currentPhaseDetails.description }}
       </p>
       <form @submit.prevent="submitPhaseEightAnswer" class="max-w-lg mx-auto">
+        <div v-if="showWarning" class="text-center text-red-500 mb-4">Certaines réponses sont vides.</div>
         <div class="mb-6">
           <label for="wentWell" class="block text-gray-700 text-lg">Ce qui a bien fonctionné</label>
           <textarea id="wentWell" v-model="retrospective.wentWell" class="mt-1 block w-full p-4 border rounded-md" rows="5" 
@@ -79,6 +80,7 @@ const retrospective = ref({
   couldBeImproved: '',
   actionItems: ''
 });
+const showWarning = ref(false);
 
 const lock = (elementId) => {
   lockElement(elementId);
@@ -93,6 +95,11 @@ const updateRetrospective = () => {
 };
 
 const submitPhaseEightAnswer = async () => {
+  if (!retrospective.value.wentWell.trim() || !retrospective.value.couldBeImproved.trim() || !retrospective.value.actionItems.trim()) {
+    showWarning.value = true;
+    return;
+  }
+  showWarning.value = false;
   try {
     showWaitingScreen(props.group.id, currentUser.value);
     const answerData = {
@@ -138,9 +145,5 @@ onUnmounted(() => {
 .custom-button {
   display: block;
   margin: 0 auto;
-}
-
-textarea {
-  resize: none;
 }
 </style>

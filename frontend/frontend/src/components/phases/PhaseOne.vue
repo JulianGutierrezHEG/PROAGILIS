@@ -155,7 +155,6 @@ const submitProjectData = async () => {
 };
 
 const handlePhaseInterfaceChange = (data) => {
-  console.log('Received interface change:', data);
   if (data.field === 'projectName') {
     projectName.value = data.value;
   } else if (data.field === 'roles') {

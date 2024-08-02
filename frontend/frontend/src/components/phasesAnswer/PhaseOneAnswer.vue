@@ -1,7 +1,7 @@
 <template>
   <div>
     <h3 class="font-bold text-xl text-center mb-4">Réponse pour la phase {{ localCurrentPhaseName }}</h3>
-    <div class="flex justify-center">
+    <div class="flex justify-center overflow-y-auto max-h-96">
       <table class="table-auto border-collapse border border-gray-300 w-full max-w-2xl">
         <thead>
           <tr>
@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, inject, onMounted,provide,onUnmounted } from 'vue';
+import { ref, inject, onMounted, provide, onUnmounted } from 'vue';
 import ValidationButtons from '@/components/interactables/ValidationButtons.vue';
 import { useGame } from '@/composables/useGame';
 import EventBus from '@/services/eventBus';

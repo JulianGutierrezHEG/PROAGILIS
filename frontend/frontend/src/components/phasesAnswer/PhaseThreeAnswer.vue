@@ -4,8 +4,13 @@
     <div class="flex justify-center">
       <div class="max-w-2xl w-full">
         <div class="overflow-y-auto" style="max-height: 300px;">
-          <div v-for="(story, index) in localPhaseAnswer.userStories" :key="index" class="mb-4">
-            <UserStoryCard :story="story" />
+          <div v-if="localPhaseAnswer.userStories.length === 0" class="text-center text-gray-500">
+            Aucune User Story ajoutée ou découpée
+          </div>
+          <div v-else>
+            <div v-for="(story, index) in localPhaseAnswer.userStories" :key="index" class="mb-4">
+              <UserStoryCard :story="story" />
+            </div>
           </div>
         </div>
       </div>

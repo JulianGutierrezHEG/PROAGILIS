@@ -37,7 +37,9 @@
       </div>
       <div class="mb-4">
         <h3 class="text-xl font-semibold mb-2">Commentaires du Client</h3>
-        <div class="bg-white p-4 rounded-lg shadow-md">
+        <div class="bg-white p-4 rounded-lg shadow-md"
+             :class="{ locked: lockedElements['clientComment'] && lockedElements['clientComment'] !== currentUser }"
+             @mouseover="lock('clientComment')" @mouseout="unlock('clientComment')">
           <p class="text-sm text-gray-600">{{ clientComment.description }}</p>
         </div>
       </div>
@@ -46,6 +48,7 @@
         <textarea v-model="groupResponse" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
                   :class="{ locked: lockedElements.groupResponse && lockedElements.groupResponse !== currentUser }"
                   @focus="lock('groupResponse')" @blur="unlock('groupResponse')" @input="updateGroupResponse" required></textarea>
+        <p v-if="showWarning" class="text-red-500 mt-2">Vous devez répondre au client avant de continuer</p>
       </div>
       <div v-if="isScrumMaster || isProductOwner">
         <button @click.prevent="submitPhaseSevenAnswer" 
@@ -99,6 +102,7 @@ const {
 const groupResponse = ref('');
 const completedUserStories = ref([]);
 const incompleteUserStories = ref([]);
+const showWarning = ref(false);
 
 const isScrumMaster = ref(false);
 const isProductOwner = ref(false);
@@ -116,6 +120,11 @@ const updateGroupResponse = () => {
 };
 
 const submitPhaseSevenAnswer = async () => {
+  if (!groupResponse.value.trim()) {
+    showWarning.value = true;
+    return;
+  }
+  
   try {
     showWaitingScreen(props.group.id, currentUser.value);
     const answerData = {
@@ -169,4 +178,5 @@ onUnmounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
 }
+
 </style>

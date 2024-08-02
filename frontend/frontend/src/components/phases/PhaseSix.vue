@@ -32,7 +32,7 @@
             <div class="overflow-y-auto max-h-96">
               <div v-for="(story, index) in sortedSprintUserStories" :key="index" class="mb-4">
                 <div class="flex justify-between mb-1 items-center">
-                  <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete" class="w-6 h-6 cursor-pointer ml-2" :class="{ locked: lockedElements['completeIcon' + story.id] && lockedElements['completeIcon' + story.id] !== currentUser }" @mouseover="lock('completeIcon' + story.id)" @mouseout="unlock('completeIcon' + story.id)" @click="completeUserStoryHandler(story.id)">
+                  <img src="https://cdn-icons-png.flaticon.com/512/16105/16105013.png" alt="complete" class="w-6 h-6 cursor-pointer ml-2" :class="{ lockedimg: lockedElements['completeIcon' + story.id] && lockedElements['completeIcon' + story.id] !== currentUser }" @mouseover="lock('completeIcon' + story.id)" @mouseout="unlock('completeIcon' + story.id)" @click="completeUserStoryHandler(story.id)">
                   <span class="text-sm font-medium">
                     {{ story.name }} ({{ convertSecondsToHM(story.time_estimation) }} | {{ convertToGameTime(story.time_estimation) }})
                   </span>
@@ -48,19 +48,19 @@
           </div>
           <div class="flex justify-between mt-4">
             <div class="w-1/2 pr-2">
-              <h3 class="text-xl font-semibold mb-2">Journal des événements</h3>
+              <h3 class="text-xl font-semibold mb-2">Evénement en cours</h3>
               <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
                 <div v-if="sortedEvents.length === 0" class="text-center text-gray-500">
                   Pas d'événements en attente
                 </div>
-                <div v-else v-for="(event, index) in sortedEvents" :key="index" class="mb-2">
+                <div v-else v-for="(event, index) in sortedEvents" :key="index" class="mb-2" :class="{ locked: lockedElements['event' + event.id] && lockedElements['event' + event.id] !== currentUser }" @mouseover="lock('event' + event.id)" @mouseout="unlock('event' + event.id)">
                   <table class="w-full">
                     <tr>
                       <td class="text-sm">{{ event.description }}</td>
                     </tr>
                     <tr>
                       <td>
-                        <textarea v-model="event.answer" class="text-sm w-full mb-2" :disabled="event.answered" :class="{ 'bg-gray-200': event.answered }"></textarea>
+                        <textarea v-model="event.answer" class="text-sm w-full mb-2" :disabled="event.answered" :class="{ 'bg-gray-200': event.answered }" @input="updateEventAnswerInterface(event.id, event.answer)"></textarea>
                       </td>
                     </tr>
                     <tr v-if="!event.answered">
@@ -99,6 +99,7 @@
             <p class="text-sm mb-2 text-gray-500">{{ eventEffectText }}</p>
           </div>
           <div v-if="isScrumMaster" class="mt-10">
+            <div v-if="showWarning" class="text-center text-red-500 mb-4">L'événement n'a pas été répondu</div>
             <button @click.prevent="sendSprintData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">Terminer le Sprint</button>
           </div>
           <div v-else>
@@ -109,7 +110,6 @@
     </div>
   </div>
 </template>
-
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
@@ -170,6 +170,7 @@ const sprintInterval = ref(null);
 const eventFetchInterval = ref(null); 
 const eventEffectText = ref('');
 const sprintprogress = ref(0);
+const showWarning = ref(false);
 
 const lock = (elementId) => {
   lockElement(elementId);
@@ -263,7 +264,7 @@ const updateUserStoryProgressOnly = async () => {
       }
     }
   } catch (error) {
-    console.error('Error updating user story progress:', error);
+    console.error('Erreur lors de la mise à jour de la progression de l\'histoire utilisateur:', error);
   }
 };
 
@@ -305,6 +306,13 @@ const completeUserStoryHandler = async (storyId) => {
   });
 };
 
+const updateEventAnswerInterface = (eventId, answer) => {
+  websocketService.updateInterface(props.group.id, {
+    field: `event${eventId}Answer`,
+    value: answer,
+  });
+};
+
 const sendData = async (isSprintCompletion = false) => {
   const answeredEventIds = answeredEvents.value ? answeredEvents.value.map(event => event.id) : [];
 
@@ -315,6 +323,11 @@ const sendData = async (isSprintCompletion = false) => {
   websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
 
   if (isSprintCompletion) {
+    if (sortedEvents.value.length > 0 || !sortedEvents.value.every(event => event.answer.trim())) {
+      showWarning.value = true;
+      return;
+    }
+
     if (confirm("Êtes-vous sûr de vouloir terminer le sprint ?")) {
       showWaitingScreen(props.group.id, currentUser.value);
       await checkValidationAndSendAnswer(answerData);
@@ -329,6 +342,11 @@ const sendSprintData = async () => {
 };
 
 const handleEventResponse = async (event) => {
+  if (!event.answer.trim()) {
+    showWarning.value = true;
+    return;
+  }
+
   try {
     await updateEventAnswer(props.group.id, event.id, event.answer);
     event.answered = true;
@@ -355,6 +373,11 @@ const handleEventResponse = async (event) => {
     websocketService.updateInterface(props.group.id, {
       field: 'answeredEvents',
       value: answeredEvents.value,
+    });
+
+    websocketService.updateInterface(props.group.id, {
+      field: `event${event.id}Answered`,
+      value: true,
     });
 
     await sendData(false);
@@ -385,7 +408,11 @@ const fetchInitialData = async () => {
     SprintStart(); 
   }
 
-  eventFetchInterval.value = setInterval(() => fetchSprintRandomEvent(props.group.id), 20000); 
+  eventFetchInterval.value = setInterval(() => {
+    if (sortedEvents.value.length === 0) {
+      fetchSprintRandomEvent(props.group.id);
+    }
+  }, 20000); 
 };
 
 const sortedSprintUserStories = computed(() => {
@@ -404,6 +431,20 @@ const handlePhaseInterfaceChange = (data) => {
   console.log('Received interface change:', data);
   if (data.field === 'answeredEvents') {
     answeredEvents.value = [...data.value];
+  } else if (data.field.startsWith('event') && data.field.endsWith('Answer')) {
+    const eventId = parseInt(data.field.replace('event', '').replace('Answer', ''));
+    const event = eventLog.value.find(e => e.id === eventId);
+    if (event) {
+      event.answer = data.value;
+    }
+  } else if (data.field.startsWith('event') && data.field.endsWith('Answered')) {
+    const eventId = parseInt(data.field.replace('event', '').replace('Answered', ''));
+    const event = eventLog.value.find(e => e.id === eventId);
+    if (event) {
+      event.answered = true;
+      const updatedEventLog = eventLog.value.filter(e => e.id !== eventId);
+      eventLog.value = [event, ...updatedEventLog]; 
+    }
   }
 };
 
@@ -434,7 +475,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.locked {
+.lockedimg {
   display: none;
 }
 </style>
