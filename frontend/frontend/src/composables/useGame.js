@@ -35,6 +35,7 @@ export function useGame(groupId, group) {
   const phaseDisplay = ref(null);
   const eventEffectText = ref('');
 
+
   // Récupère le contrôle du temps de jeu
   const fetchGameTimeControl = async () => {
     try {
@@ -240,16 +241,19 @@ export function useGame(groupId, group) {
       router.push('/'); 
   };
 
+  // Mise en place des gestionnaires de phase
   const setPhaseHandler = (handler) => {
     phaseSpecificHandlers.value.interfacechange = handler;
   };
   
+  // Changement d'interface
   const handleInterfaceChange = (data) => {
     const handler = phaseSpecificHandlers.value.interfacechange;
     if (handler) {
       handler(data);
     }
   };
+
 
   // Mise en place des websockets et des événements
   const setupEvents = () => {
@@ -277,6 +281,7 @@ export function useGame(groupId, group) {
     EventBus.off('interfacechange', handleInterfaceChange);
   };
 
+  // Met à jour les user stories créées
   const updateCreatedUserStories = (userStories, user) => {
     websocketService.updateCreatedUserStories(groupId, userStories, user);
   };

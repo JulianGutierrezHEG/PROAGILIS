@@ -23,7 +23,7 @@
               </span>
             </div>
             <div class="w-full h-6 bg-gray-200 rounded-full dark:bg-gray-700">
-              <div class="h-6 bg-green-800 rounded-full dark:bg-yellow-500" :style="{ width: sprintprogress + '%' }"></div>
+              <div :class="{'bg-green-500': sprintCompleted, 'bg-yellow-500': !sprintCompleted}" class="h-6 rounded-full" :style="{ width: sprintprogress + '%' }"></div>
             </div>
           </div>
           <div class="mb-4">
@@ -48,7 +48,7 @@
           </div>
           <div class="flex justify-between mt-4">
             <div class="w-1/2 pr-2">
-              <h3 class="text-xl font-semibold mb-2">Evénement en cours</h3>
+              <h3 class="text-xl font-semibold mb-2">Événement en cours</h3>
               <div class="overflow-y-auto max-h-48 bg-gray-100 p-4 rounded-lg">
                 <div v-if="sortedEvents.length === 0" class="text-center text-gray-500">
                   Pas d'événements en attente
@@ -171,6 +171,7 @@ const eventFetchInterval = ref(null);
 const eventEffectText = ref('');
 const sprintprogress = ref(0);
 const showWarning = ref(false);
+const sprintCompleted = ref(false);
 
 const lock = (elementId) => {
   lockElement(elementId);
@@ -232,11 +233,17 @@ const updateSprintProgressOnly = async () => {
       globalProgress.value = response.current_progress;
       const totalSprintDurationSeconds = gameTimeControl.value.sprint_duration * 24 * 3600; 
       sprintprogress.value = Math.min((response.current_progress / totalSprintDurationSeconds) * 6000, 100); 
+      const gameTime = convertToGameTime(globalProgress.value);
+      const days = parseInt(gameTime.split('j')[0], 10);
 
-      if (globalProgress.value >= totalSprintDurationSeconds) {
-        globalProgress.value = totalSprintDurationSeconds; 
+      if (days >= gameTimeControl.value.sprint_duration) {
+        sprintCompleted.value = true;
+        alert('Le sprint est terminé. Le temps est écoulé ou un effet appliqué à mis fin au sprint.');
+        sendData(true);
         clearInterval(sprintInterval.value);
+        clearInterval(userStoryInterval.value);
       }
+
     }
   } catch (error) {
     console.error("Error updating sprint progress:", error);
@@ -256,6 +263,7 @@ const updateUserStoryProgressOnly = async () => {
     });
 
     if (sprintUserStories.value.every(story => story.is_completed)) {
+      clearInterval(userStoryInterval.value);
     } else {
       for (const story of sprintUserStories.value) {
         if (!story.is_completed) {
@@ -327,11 +335,9 @@ const sendData = async (isSprintCompletion = false) => {
       showWarning.value = true;
       return;
     }
-
-    if (confirm("Êtes-vous sûr de vouloir terminer le sprint ?")) {
-      showWaitingScreen(props.group.id, currentUser.value);
-      await checkValidationAndSendAnswer(answerData);
-    }
+    showWaitingScreen(props.group.id, currentUser.value);
+    await checkValidationAndSendAnswer(answerData);
+    
   } else {
     websocketService.sendPhaseAnswerUpdate(props.group.id, currentPhaseDetails.value.id, answerData);
   }

@@ -130,9 +130,11 @@ const sendGroupEjection = (groupId) => {
   sendMessage(groupId, { event: 'group_ejected_from_session', group_id: groupId });
 };
 
+// Envoi du message de mise à jour de l'interface
 const updateInterface = (groupId, data) => {
   sendMessage(groupId, { event: 'interfacechange', data });
 };
+
 
 
 export default {
@@ -153,5 +155,5 @@ export default {
   submitAnswer,
   updateUserStoryDetails,
   sendGroupEjection,
-  updateInterface,
+  updateInterface
 };

@@ -56,24 +56,23 @@ const handlePhaseAnswerUpdate = async (data) => {
     const { answeredEvents } = data.answer || {};
     if (answeredEvents) {
       console.debug('Fetching events for answered events:', answeredEvents);
-      localPhaseAnswer.value.answeredEvents = await fetchEvents(groupId.value, answeredEvents);
-      console.debug('Updated answered events:', localPhaseAnswer.value.answeredEvents);
+      const events = await fetchEvents(groupId.value, answeredEvents);
+      if (events && events.length) {
+        localPhaseAnswer.value.answeredEvents = events;
+        console.debug('Updated answered events:', localPhaseAnswer.value.answeredEvents);
+      }
     }
   }
 };
 
 const fetchPhaseData = async () => {
   try {
-    console.debug('Fetching phase data for group:', groupId.value, 'phase:', phaseId.value);
     const answerData = await fetchGroupPhaseAnswer(groupId.value, phaseId.value);
-    console.debug('Fetched phase data:', answerData);
     if (answerData) {
       localCurrentPhaseName.value = answerData.phase_name;
       const { answeredEvents } = answerData.answer || {};
       if (answeredEvents) {
-        console.debug('Fetching events for answered events:', answeredEvents);
         localPhaseAnswer.value.answeredEvents = await fetchEvents(groupId.value, answeredEvents);
-        console.debug('Updated answered events:', localPhaseAnswer.value.answeredEvents);
       }
     }
   } catch (error) {

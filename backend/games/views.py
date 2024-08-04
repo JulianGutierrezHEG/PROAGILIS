@@ -674,7 +674,7 @@ class ApplyEventEffectView(APIView):
                 return Response({"detail": "Pas de sprint actif pour ce projet"}, status=status.HTTP_400_BAD_REQUEST)
 
             user_stories = UserStory.objects.filter(sprint=sprint, is_completed=False)
-            time_change = timedelta(hours=random.randint(1, 3))
+            time_change = timedelta(hours=random.randint(1, 4))
             affected_entity = ""
 
             if not user_stories.exists() or random.random() < 0.5:
@@ -690,6 +690,7 @@ class ApplyEventEffectView(APIView):
                     if sprint.current_progress < timedelta():
                         sprint.current_progress = timedelta()
                 if sprint.current_progress.total_seconds() >= sprint_max_time:
+                    sprint.current_progress = timedelta(seconds=sprint_max_time)
                     sprint.is_completed = True
                 sprint.save()
                 affected_entity = "sprint"
@@ -707,6 +708,7 @@ class ApplyEventEffectView(APIView):
                     if story.progress_time < timedelta():
                         story.progress_time = timedelta()
                 if story.progress_time.total_seconds() >= story_max_time:
+                    story.progress_time = timedelta(seconds=story_max_time)
                     story.is_completed = True
                 story.save()
                 affected_entity = f"user story {story.name}"
@@ -719,6 +721,7 @@ class ApplyEventEffectView(APIView):
             }, status=status.HTTP_200_OK)
 
         return Response({"detail": "Pas d'effet trouvé pour cet événement"}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 # Sauvegarde les données du jeu pour un groupe
