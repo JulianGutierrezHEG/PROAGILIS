@@ -8,7 +8,8 @@
       <p v-if="!isLoadingPhaseDetails" class="mb-6 text-center">
         {{ currentPhaseDetails.description }}
       </p>
-      <form class="max-w-lg mx-auto">
+      <form class="max-w-lg mx-auto" @submit.prevent="submitProjectData">
+        <div v-if="showWarning" class="text-center text-red-500 mb-4">Le nom du projet, le Scrum Master et le Product Owner doivent être sélectionnés.</div>
         <div class="mb-6">
           <label for="projectName" class="block text-gray-700 text-lg">Nom du projet</label>
           <input type="text" id="projectName" v-model="projectName" class="mt-2 block w-full p-3 border rounded-md"
@@ -91,6 +92,7 @@ const roles = ref({
   productOwner: '',
   developers: []
 });
+const showWarning = ref(false);
 
 const availableMembers = computed(() => {
   const assignedMembers = new Set([roles.value.scrumMaster, roles.value.productOwner, ...roles.value.developers]);
@@ -131,6 +133,12 @@ const clearProductOwner = () => {
 
 
 const submitProjectData = async () => {
+  if (!projectName.value.trim() || !roles.value.scrumMaster || !roles.value.productOwner) {
+    showWarning.value = true;
+    return;
+  }
+  showWarning.value = false;
+  
   if (!roles.value.scrumMaster && !roles.value.productOwner) {
     roles.value.developers = groupMembers.value.map(member => member.username);
   } else {

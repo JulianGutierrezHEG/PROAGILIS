@@ -103,6 +103,7 @@
             <button @click.prevent="sendSprintData" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 custom-button">Terminer le Sprint</button>
           </div>
           <div v-else>
+            <p class="text-center text-xs text-red-500">Attention: Si le Scrum Master quitte la session, le progrès s'arrêtera</p>
             <p class="text-center text-lg mb-10">Seul le Scrum Master peut soumettre la réponse</p>
           </div>
         </div>
@@ -398,12 +399,10 @@ const fetchInitialData = async () => {
   await fetchSprintProgress(props.group.id, currentSprintDetails.value.id);
   await fetchUserStoriesProgress(props.group.id, currentSprintDetails.value.id);
   await fetchAnsweredEvents(props.group.id);
-  await fetchSprintRandomEvent(props.group.id);
 
   globalProgress.value = currentSprintProgress.value.current_progress;
 
   const projectDetails = await fetchProjectDetails(props.group.id);
-  console.log('Project details:', projectDetails);
   if (projectDetails) {
     isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
   }
@@ -416,7 +415,7 @@ const fetchInitialData = async () => {
     if (sortedEvents.value.length === 0) {
       fetchSprintRandomEvent(props.group.id);
     }
-  }, 20000); 
+  }, 10000); 
 };
 
 const fetchProgressData = () => {
