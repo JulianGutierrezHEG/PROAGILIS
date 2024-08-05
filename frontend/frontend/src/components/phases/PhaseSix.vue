@@ -167,6 +167,8 @@ const isSprintRunning = ref(false);
 const userStoryInterval = ref(null); 
 const sprintInterval = ref(null); 
 const eventFetchInterval = ref(null); 
+const eventFetchProgressInterval = ref(null); 
+const eventFetchUserStoriesProgressInterval = ref(null); 
 const eventEffectText = ref('');
 const sprintprogress = ref(0);
 const showWarning = ref(false);
@@ -224,8 +226,6 @@ const convertGameDaysToRealTime = (gameDays) => {
 const updateSprintProgressOnly = async () => {
   try {
     await updateSprintProgress(props.group.id, currentSprintDetails.value.id);
-    await fetchSprintProgress(props.group.id, currentSprintDetails.value.id);
-
     const response = currentSprintProgress.value;
 
     if (response && response.current_progress) {
@@ -251,13 +251,11 @@ const updateSprintProgressOnly = async () => {
 
 const updateUserStoryProgressOnly = async () => {
   try {
-    await fetchUserStoriesProgress(props.group.id, currentSprintDetails.value.id);
-
     sprintUserStories.value = sprintUserStories.value.map(story => {
       const progressTime = story.progress_time;
       return {
         ...story,
-        progress: Math.min((progressTime / story.time_estimation) * 100, 100) 
+        progress: Math.min((progressTime / story.time_estimation) * 100, 100)
       };
     });
 
@@ -400,15 +398,17 @@ const fetchInitialData = async () => {
   await fetchSprintProgress(props.group.id, currentSprintDetails.value.id);
   await fetchUserStoriesProgress(props.group.id, currentSprintDetails.value.id);
   await fetchAnsweredEvents(props.group.id);
+  await fetchSprintRandomEvent(props.group.id);
 
   globalProgress.value = currentSprintProgress.value.current_progress;
 
   const projectDetails = await fetchProjectDetails(props.group.id);
+  console.log('Project details:', projectDetails);
   if (projectDetails) {
     isScrumMaster.value = projectDetails.scrum_master === currentUser.value;
   }
 
-  if (currentSprintProgress.value.current_progress < gameTimeControl.value.sprint_duration * 24 * 3600) { 
+  if (isScrumMaster.value && currentSprintProgress.value.current_progress < gameTimeControl.value.sprint_duration * 24 * 3600) { 
     SprintStart(); 
   }
 
@@ -417,6 +417,32 @@ const fetchInitialData = async () => {
       fetchSprintRandomEvent(props.group.id);
     }
   }, 20000); 
+};
+
+const fetchProgressData = () => {
+  eventFetchProgressInterval.value = setInterval(async () => {
+    await fetchSprintProgress(props.group.id, currentSprintDetails.value.id);
+    if (currentSprintProgress.value && currentSprintProgress.value.current_progress !== undefined) {
+      globalProgress.value = currentSprintProgress.value.current_progress;
+      const totalSprintDurationSeconds = gameTimeControl.value.sprint_duration * 24 * 3600;
+      sprintprogress.value = Math.min((currentSprintProgress.value.current_progress / totalSprintDurationSeconds) * 6000, 100);
+    }
+  }, 1000);
+};
+
+const fetchUserStoryProgressData = () => {
+  eventFetchUserStoriesProgressInterval.value = setInterval(async () => {
+    await fetchUserStoriesProgress(props.group.id, currentSprintDetails.value.id);
+    if (sprintUserStories.value && sprintUserStories.value.length > 0) {
+      sprintUserStories.value = sprintUserStories.value.map(story => {
+        const progressTime = story.progress_time;
+        return {
+          ...story,
+          progress: Math.min((progressTime / story.time_estimation) * 100, 100)
+        };
+      });
+    }
+  }, 1000);
 };
 
 const sortedSprintUserStories = computed(() => {
@@ -432,7 +458,6 @@ const sortedAnsweredEvents = computed(() => {
 });
 
 const handlePhaseInterfaceChange = (data) => {
-  console.log('Received interface change:', data);
   if (data.field === 'answeredEvents') {
     answeredEvents.value = [...data.value];
   } else if (data.field.startsWith('event') && data.field.endsWith('Answer')) {
@@ -455,9 +480,8 @@ const handlePhaseInterfaceChange = (data) => {
 onMounted(async () => {
   await fetchInitialData();
   setPhaseHandler(handlePhaseInterfaceChange);
-  if (currentSprintProgress.value.current_progress < gameTimeControl.value.sprint_duration * 24 * 3600) { 
-    SprintStart(); 
-  }
+  fetchProgressData();
+  fetchUserStoryProgressData();
 });
 
 onUnmounted(() => {
@@ -474,6 +498,14 @@ onUnmounted(() => {
   if (eventFetchInterval.value) {
     clearInterval(eventFetchInterval.value);
     eventFetchInterval.value = null;
+  }
+  if (eventFetchProgressInterval.value) {
+    clearInterval(eventFetchProgressInterval.value);
+    eventFetchProgressInterval.value = null;
+  }
+  if (eventFetchUserStoriesProgressInterval.value) {
+    clearInterval(eventFetchUserStoriesProgressInterval.value);
+    eventFetchUserStoriesProgressInterval.value = null;
   }
 });
 </script>

@@ -315,11 +315,19 @@ export function useGame(groupId, group) {
     }
   };
 
+  // Vérifie le statut en attente
+  const checkPendingStatus = async () => {
+    const phaseStatuses = await fetchGroupPhasesStatus(groupId);
+    const currentPhaseStatus = phaseStatuses.phase_statuses.find(phase => phase.phase.id === currentPhase.value)?.status;
+    if (currentPhaseStatus === 'pending') {
+      waiting.value = true;
+    }
+  };
+
   // Check si besoin validation et soumet les données de la phase
   const checkValidationAndSendAnswer = async (answerData) => {
       handleShowWaitingScreen();
       showWaitingScreen();
-      console.log('Waiting', waiting.value);
       try {
         await submitGroupAnswer(answerData);
         if (currentPhaseDetails.value.requires_validation) {
@@ -404,17 +412,21 @@ export function useGame(groupId, group) {
           await gamesService.updatePhaseStatus(groupId, 7, 'not_started');
   
           if (savedGameData.current_sprint === 3) {
-            if (savedGameData.current_sprint === 3) {
-              alert(`Fin du jeu pour le groupe ${groupId}`);
-              websocketService.sendMessage(groupId, {
+            alert(`Fin du jeu pour le groupe ${groupId}`);
+            websocketService.sendMessage(groupId, {
                 event: 'group_ejected_from_session',
                 group_id: groupId
-              });
-              await sessionsService.ejectGroupFromSession(groupId);
-              await gamesService.deleteProject(groupId);
-              await gamesService.deleteSavedData(groupId);
-            } 
-          } else {
+            });
+            await sessionsService.ejectGroupFromSession(groupId);
+            await gamesService.deleteProject(groupId);
+            await gamesService.deleteSavedData(groupId);
+            for (let i = 2; i <= 8; i++) {
+                websocketService.sendPhaseStatusUpdate(groupId, i, 'not_started');
+                await gamesService.updatePhaseStatus(groupId, i, 'not_started');
+            }
+            websocketService.sendPhaseStatusUpdate(groupId, 1, 'in_progress');
+            await gamesService.updatePhaseStatus(groupId, 1, 'in_progress');
+        } else {
             websocketService.sendPhaseStatusUpdate(groupId, 3, 'in_progress');
             await gamesService.updatePhaseStatus(groupId, 3, 'in_progress');
           }
@@ -624,6 +636,7 @@ export function useGame(groupId, group) {
 
   onMounted(() => {
     fetchCurrentUser();
+    checkPendingStatus();
   });
 
   return {
@@ -690,6 +703,7 @@ export function useGame(groupId, group) {
     fetchSprintRandomClientComment,
     fetchBacklog,
     fetchPhaseDisplay,
-    setPhaseHandler
+    setPhaseHandler,
+    checkPendingStatus
   };
 }

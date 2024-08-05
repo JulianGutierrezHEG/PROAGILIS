@@ -79,7 +79,7 @@ const {
   lockElement, 
   unlockElement, 
   checkValidationAndSendAnswer,
-  showWaitingScreen,
+  checkPendingStatus,
   fetchCurrentPhase,
   fetchProjectDetails,
   setPhaseHandler

@@ -84,7 +84,6 @@ const fetchCurrentPhase = async () => {
   try {
     const phaseStatus = await gamesService.getGroupCurrentPhase(group.value.id);
     currentPhaseIndex.value = phaseStatus.phase -1;
-    console.log('LA PHASE ACTUELLE EST LA PHASE: ', phaseStatus.phase);
   } catch (error) {
     console.error('Erreur lors de la récupération de la phase actuelle:', error);
   }
