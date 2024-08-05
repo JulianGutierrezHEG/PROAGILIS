@@ -87,7 +87,6 @@ const {
   addUserStory,
   deleteUserStory,
   checkValidationAndSendAnswer,
-  showWaitingScreen,
   setPhaseHandler,
 } = useGame(props.group.id, props.group);
 
@@ -214,7 +213,6 @@ const fetchCreatedUserStoriesFrontend = async () => {
 
 const submitPhaseThreeAnswer = async () => {
   try {
-    showWaitingScreen(props.group.id, currentUser.value);
     const answerData = newUserStories.value.length > 0 ? { userStories: newUserStories.value.map(story => story.id) } : { userStories: null };
 
     await checkValidationAndSendAnswer(answerData);
@@ -248,7 +246,6 @@ const deleteStory = async (storyId) => {
 };
 
 const handlePhaseInterfaceChange = (data) => {
-  console.log('Received interface change:', data);
   if (data.field === 'newUserStories') {
     newUserStories.value = [...data.value];
   } else if (data.field === 'existingUserStories') {

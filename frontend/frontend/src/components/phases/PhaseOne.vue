@@ -8,7 +8,7 @@
       <p v-if="!isLoadingPhaseDetails" class="mb-6 text-center">
         {{ currentPhaseDetails.description }}
       </p>
-      <form @submit.prevent="submitForm" class="max-w-lg mx-auto">
+      <form class="max-w-lg mx-auto">
         <div class="mb-6">
           <label for="projectName" class="block text-gray-700 text-lg">Nom du projet</label>
           <input type="text" id="projectName" v-model="projectName" class="mt-2 block w-full p-3 border rounded-md"
@@ -81,7 +81,6 @@ const {
   lockElement,
   unlockElement,
   checkValidationAndSendAnswer,
-  showWaitingScreen,
   fetchCurrentPhase,
   setPhaseHandler
 } = useGame(props.group.id, props.group);
@@ -130,14 +129,8 @@ const clearProductOwner = () => {
   websocketService.updateInterface(props.group.id, { field: 'roles', value: roles.value });
 };
 
-const submitForm = () => {
-  console.log('Nom du projet:', projectName.value);
-  console.log('Rôles:', roles.value);
-};
 
 const submitProjectData = async () => {
-  showWaitingScreen(props.group.id, currentUser.value);
-
   if (!roles.value.scrumMaster && !roles.value.productOwner) {
     roles.value.developers = groupMembers.value.map(member => member.username);
   } else {
@@ -150,7 +143,6 @@ const submitProjectData = async () => {
     projectName: projectName.value,
     roles: roles.value,
   };
-  console.log('Answer Data:', answerData);
   await checkValidationAndSendAnswer(answerData);
 };
 

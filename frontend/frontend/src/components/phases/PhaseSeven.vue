@@ -89,7 +89,6 @@ const {
   lockElement, 
   unlockElement, 
   checkValidationAndSendAnswer,
-  showWaitingScreen,
   fetchCurrentPhase,
   fetchProjectDetails,
   fetchCompletedUserStories,
@@ -125,20 +124,16 @@ const submitPhaseSevenAnswer = async () => {
     return;
   }
   
-  try {
-    showWaitingScreen(props.group.id, currentUser.value);
-    const answerData = {
+
+  const answerData = {
       clientCommentId: clientComment.value.id
-    };
-    await updateEventAnswer(props.group.id, clientComment.value.id, groupResponse.value);
-    await checkValidationAndSendAnswer(answerData);
-  } catch (error) {
-    console.error('Error in phase 7:', error);
-  }
+  };
+  await updateEventAnswer(props.group.id, clientComment.value.id, groupResponse.value);
+  await checkValidationAndSendAnswer(answerData);
+
 };
 
 const handlePhaseInterfaceChange = (data) => {
-  console.log('Received interface change:', data);
   if (data.field === 'groupResponse') {
     groupResponse.value = data.value;
   }

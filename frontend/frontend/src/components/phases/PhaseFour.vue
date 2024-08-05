@@ -51,20 +51,17 @@ const props = defineProps({
 });
 
 const { 
-  groupMembers, 
   lockedElements, 
   currentUser, 
   currentPhaseDetails, 
   isLoadingPhaseDetails, 
   waiting,
   fetchGroupMembers, 
-  fetchProjectDetails,
   setupEvents, 
   cleanupEvents, 
   lockElement, 
   unlockElement, 
   checkValidationAndSendAnswer,
-  showWaitingScreen,
   fetchCurrentPhase,
   fetchBacklog,
   updateUserStoryDetails,
@@ -102,15 +99,12 @@ const updateUserStory = async (storyId) => {
 };
 
 const submitPhaseFourData = async () => {
-  showWaitingScreen(props.group.id, currentUser.value);
-
   const answerData = {
     userStories: userStories.value.map(story => ({
       id: story.id,
       business_value: story.business_value
     }))
   };
-  console.log('Answer Data:', answerData);
   await checkValidationAndSendAnswer(answerData);
 };
 
@@ -123,7 +117,6 @@ const fetchUserStoriesForPhase = async () => {
 };
 
 const handlePhaseInterfaceChange = (data) => {
-  console.log('Received interface change:', data);
   if (data.field === 'userStories') {
     userStories.value = [...data.value];
   }

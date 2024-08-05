@@ -318,6 +318,8 @@ export function useGame(groupId, group) {
   // Check si besoin validation et soumet les données de la phase
   const checkValidationAndSendAnswer = async (answerData) => {
       handleShowWaitingScreen();
+      showWaitingScreen();
+      console.log('Waiting', waiting.value);
       try {
         await submitGroupAnswer(answerData);
         if (currentPhaseDetails.value.requires_validation) {
@@ -369,7 +371,6 @@ export function useGame(groupId, group) {
       const status = isCorrect ? 'completed' : 'wrong';
       await gamesService.updatePhaseStatus(groupId, phaseId, status);
       websocketService.sendPhaseStatusUpdate(groupId, phaseId, status);
-      console.log(`Phase ${phaseId} set to ${status}`);
   
       if (isCorrect) {
         if (phaseId === 5) {
@@ -421,7 +422,6 @@ export function useGame(groupId, group) {
           const nextPhaseId = phaseId + 1;
           await gamesService.updatePhaseStatus(groupId, nextPhaseId, 'in_progress');
           websocketService.sendPhaseStatusUpdate(groupId, nextPhaseId, 'in_progress');
-          console.log(`Phase ${nextPhaseId} set to in_progress`);
         }
       } else {
         waiting.value = false;

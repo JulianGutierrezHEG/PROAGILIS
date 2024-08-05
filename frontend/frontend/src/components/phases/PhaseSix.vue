@@ -151,7 +151,6 @@ const {
   updateUserStoryProgress,
   fetchUserStoriesProgress,
   completeUserStory,
-  showWaitingScreen,
   fetchSprintRandomEvent,
   updateEventAnswer,
   fetchAnsweredEvents,
@@ -335,7 +334,6 @@ const sendData = async (isSprintCompletion = false) => {
       showWarning.value = true;
       return;
     }
-    showWaitingScreen(props.group.id, currentUser.value);
     await checkValidationAndSendAnswer(answerData);
     
   } else {
@@ -388,7 +386,7 @@ const handleEventResponse = async (event) => {
 
     await sendData(false);
   } catch (error) {
-    console.error('Error handling event response:', error);
+    console.error('Erreur réponse événements:', error);
   }
 };
 

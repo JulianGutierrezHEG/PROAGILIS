@@ -67,7 +67,6 @@ const {
   lockElement, 
   unlockElement, 
   checkValidationAndSendAnswer,
-  showWaitingScreen,
   fetchCurrentPhase,
   fetchSprintDetails,
   setPhaseHandler
@@ -100,34 +99,27 @@ const submitPhaseEightAnswer = async () => {
     return;
   }
   showWarning.value = false;
-  try {
-    showWaitingScreen(props.group.id, currentUser.value);
-    const answerData = {
+
+  const answerData = {
       wentWell: retrospective.value.wentWell,
       couldBeImproved: retrospective.value.couldBeImproved,
       actionItems: retrospective.value.actionItems
-    };
-    await checkValidationAndSendAnswer(answerData);
-    console.log('Answer submitted for phase 8:', answerData);
-
-    if (currentSprintDetails && currentSprintDetails.sprint_number === 3) {
+  };
+  await checkValidationAndSendAnswer(answerData);
+  if (currentSprintDetails && currentSprintDetails.sprint_number === 3) {
       alert("Vous avez terminé le dernier sprint. Vous serez éjecté de la session.");
       await leaveSession();
-    }
-  } catch (error) {
-    console.error('Error in phase 8:', error);
   }
+
 };
 
 const handlePhaseInterfaceChange = (data) => {
-  console.log('Received interface change:', data);
   if (data.field === 'retrospective') {
     retrospective.value = { ...data.value };
   }
 };
 
 onMounted(async () => {
-  console.log(props.group.id);
   await fetchCurrentPhase();
   fetchGroupMembers();
   setupEvents();

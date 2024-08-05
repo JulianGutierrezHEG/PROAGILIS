@@ -114,24 +114,18 @@ const submitPhaseTwoAnswer = async () => {
     return;
   }
   showWarning.value = false;
-  try {
-    showWaitingScreen(props.group.id, currentUser.value);
-    const answerData = {
+
+  const answerData = {
       specific: smartObjectives.value.specific,
       measurable: smartObjectives.value.measurable,
       achievable: smartObjectives.value.achievable,
       relevant: smartObjectives.value.relevant,
       timeBound: smartObjectives.value.timeBound
-    };
-    await checkValidationAndSendAnswer(answerData);
-    console.log('Answer submitted for phase 2:', answerData);
-  } catch (error) {
-    console.error('Error in phase 2:', error);
-  }
+  };
+  await checkValidationAndSendAnswer(answerData);
 };
 
 const handlePhaseInterfaceChange = (data) => {
-  console.log('Received interface change:', data);
   if (data.field === 'smartObjectives') {
     smartObjectives.value = { ...data.value };
   }

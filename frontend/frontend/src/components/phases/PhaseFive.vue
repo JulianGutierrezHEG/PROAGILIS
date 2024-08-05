@@ -74,7 +74,6 @@ const {
   lockElement, 
   unlockElement, 
   checkValidationAndSendAnswer,
-  showWaitingScreen,
   fetchCurrentPhase,
   fetchBacklog,
   updateUserStoryDetails,
@@ -129,8 +128,6 @@ const toggleStorySelection = (storyId) => {
 };
 
 const submitPhaseFiveData = async () => {
-  showWaitingScreen(props.group.id, currentUser.value);
-
   const answerData = {
     userStories: selectedUserStoryIds.value
   };
@@ -152,7 +149,6 @@ const fetchUserStoriesForPhase = async () => {
 };
 
 const handlePhaseInterfaceChange = (data) => {
-  console.log('Received interface change:', data);
   if (data.field === 'userStories') {
     userStories.value = [...data.value];
   } else if (data.field === 'selectedUserStoryIds') {
