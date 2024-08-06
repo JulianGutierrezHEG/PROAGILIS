@@ -167,6 +167,13 @@ onMounted(async () => {
   fetchGroupMembers();
   setupEvents();
   setPhaseHandler(handlePhaseInterfaceChange);
+  const hasRefreshed = sessionStorage.getItem('hasRefreshed');
+  if (!hasRefreshed) {
+    sessionStorage.setItem('hasRefreshed', 'true');
+    location.reload();
+  } else {
+    sessionStorage.removeItem('hasRefreshed');
+  }
 });
 
 onUnmounted(() => {

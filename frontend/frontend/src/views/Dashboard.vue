@@ -1,7 +1,7 @@
 <template>
   <div class="w-4/5 max-h-screen overflow-hidden bg-gray-200 shadow-lg rounded-lg p-2 mx-auto my-8">
     <div class="flex justify-between items-center mb-8">
-      <div v-if="sessions.length > 0" >
+      <div v-if="sessions.length > 0">
         <select v-model="selectedSession" @change="fetchGroups"
           class="bg-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500">
           <option v-for="session in sessions" :key="session.id" :value="session">{{ session.name }}</option>
@@ -17,17 +17,12 @@
         <h2 class="font-bold text-xl mb-4 text-center">{{ selectedSession.name }} </h2>
         <p class="text-center mb-10">Mot de passe: {{ selectedSession.password }}</p>
         <div class="flex justify-center mb-4 space-x-10">
-          <img v-if="selectedSession.status !== 'active'"
-               src="https://cdn-icons-png.flaticon.com/512/727/727245.png" 
-               alt="start" 
-               class="w-6 h-6 cursor-pointer" 
-               @click="handleStatusSession('start')">
-          <img v-else
-               src="https://cdn-icons-png.flaticon.com/512/3669/3669483.png" 
-               alt="paused" 
-               class="w-6 h-6 cursor-pointer" 
-               @click="handleStatusSession('paused')">
-          <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete" class="w-6 h-6 cursor-pointer" @click="handleDeleteSession(selectedSession.id)">
+          <img v-if="selectedSession.status !== 'active'" src="https://cdn-icons-png.flaticon.com/512/727/727245.png"
+            alt="start" class="w-6 h-6 cursor-pointer" @click="handleStatusSession('start')">
+          <img v-else src="https://cdn-icons-png.flaticon.com/512/3669/3669483.png" alt="paused"
+            class="w-6 h-6 cursor-pointer" @click="handleStatusSession('paused')">
+          <img src="https://cdn-icons-png.flaticon.com/512/6861/6861362.png" alt="delete" class="w-6 h-6 cursor-pointer"
+            @click="handleDeleteSession(selectedSession.id)">
         </div>
         <div class="text-center mb-4 flex justify-around">
           <div class="w-1/2">
@@ -45,7 +40,9 @@
             <table class="mx-auto w-3/4">
               <tbody>
                 <tr v-for="group in selectedSession.groups.filter(group => group.users.length > 0) || []"
-                  :key="group.id" class="hover:bg-gray-100 cursor-pointer" @click="selectGroup(group)">
+                  :key="group.id"
+                  :class="{ 'bg-gray-100': selectedGroup && selectedGroup.id === group.id, 'hover:bg-gray-100': true, 'cursor-pointer': true }"
+                  @click="selectGroup(group)">
                   <td class="px-4 py-2 text-center">
                     {{ group.name }}
                   </td>
@@ -79,17 +76,17 @@ import GroupInfo from '@/components/dashboard/GroupInfo.vue';
 import websocketService from '@/services/websocketService';
 import EventBus from '@/services/eventBus';
 
-const { 
-  sessions, 
-  selectedSession, 
-  groups, 
-  selectedGroup, 
-  fetchCreatedSessions, 
-  fetchGroups, 
-  handleStatusSession, 
-  handleDeleteSession, 
-  setupEventListeners, 
-  removeEventListeners 
+const {
+  sessions,
+  selectedSession,
+  groups,
+  selectedGroup,
+  fetchCreatedSessions,
+  fetchGroups,
+  handleStatusSession,
+  handleDeleteSession,
+  setupEventListeners,
+  removeEventListeners
 } = useSession();
 
 
@@ -127,7 +124,7 @@ const handlePhaseStatusUpdate = async () => {
 };
 
 onMounted(async () => {
-  await fetchCreatedSessions(); 
+  await fetchCreatedSessions();
   setupEventListeners();
   if (sessions.value.length > 0) {
     selectedSession.value = sessions.value[0];
