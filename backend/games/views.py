@@ -743,11 +743,11 @@ class SaveGameDataView(APIView):
         completed_user_story_names = list(completed_user_stories.values_list('name', flat=True))
 
         created_user_stories = UserStory.objects.filter(backlog__project__group=group, has_been_created=True, is_completed=False)
-        created_user_story_infos = list(created_user_stories.values('id', 'name', 'description', 'business_value', 'is_completed', 'sprint_id', 'original_sprint_number', 'time_estimation', 'progress_time'))
+        created_user_story_infos = list(created_user_stories.values('name', 'description', 'business_value', 'is_completed', 'original_sprint_number', 'time_estimation'))
 
         for story in created_user_story_infos:
             story['time_estimation'] = story['time_estimation'].total_seconds()
-            story['progress_time'] = story['progress_time'].total_seconds()
+            
 
         original_sprint_numbers = {story.name: story.original_sprint_number for story in UserStory.objects.filter(backlog__project__group=group)}
 
@@ -885,9 +885,7 @@ class LoopView(APIView):
                 time_estimation=timedelta(seconds=story_data['time_estimation']),
                 backlog=backlog,
                 is_completed=story_data['is_completed'],
-                sprint_id=sprint.id,
-                original_sprint_number=project.current_sprint,
-                progress_time=timedelta(seconds=story_data['progress_time'])
+                original_sprint_number=project.current_sprint
             )
 
         original_sprint_numbers = saved_data.original_sprint_numbers or {}
