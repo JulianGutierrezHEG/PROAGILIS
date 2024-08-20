@@ -743,7 +743,7 @@ class SaveGameDataView(APIView):
         completed_user_story_names = list(completed_user_stories.values_list('name', flat=True))
 
         created_user_stories = UserStory.objects.filter(backlog__project__group=group, has_been_created=True, is_completed=False)
-        created_user_story_infos = list(created_user_stories.values('name', 'description', 'business_value', 'is_completed', 'original_sprint_number', 'time_estimation'))
+        created_user_story_infos = list(created_user_stories.values('name', 'description', 'business_value', 'is_completed','original_sprint_number', 'time_estimation'))
 
         for story in created_user_story_infos:
             story['time_estimation'] = story['time_estimation'].total_seconds()

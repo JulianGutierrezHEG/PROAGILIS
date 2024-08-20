@@ -241,7 +241,7 @@ export function useGame(groupId, group) {
       router.push('/'); 
   };
 
-  // Mise en place des gestionnaires de phase
+  // Mise en place des gestionnaires d'interface de phase
   const setPhaseHandler = (handler) => {
     phaseSpecificHandlers.value.interfacechange = handler;
   };

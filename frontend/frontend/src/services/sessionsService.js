@@ -1,5 +1,4 @@
 import axios from '@/axiosConfig';
-import websocketService from './websocketService';
 import userService from '@/services/usersService';
 
 // FONCTIONS POUR LA GESTION DES SESSIONS ET LEUR APPEL API VIA AXIOS

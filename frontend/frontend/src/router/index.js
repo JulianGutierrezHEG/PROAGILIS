@@ -37,6 +37,7 @@ const routes = [
       },
       {
         path: 'game/:sessionId',
+        name: 'Game',
         component: Game,
         meta: { requiresAuth: true }
       },

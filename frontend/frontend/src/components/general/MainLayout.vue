@@ -12,3 +12,4 @@ import Header from '@/components/general/Header.vue';
 import Footer from '@/components/general/Footer.vue';
 import Help from '@/components/general/Help.vue';
 </script>
+
