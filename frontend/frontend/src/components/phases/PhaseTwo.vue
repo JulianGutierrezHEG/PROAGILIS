@@ -29,7 +29,7 @@
                     @focus="lock('achievable')" @blur="unlock('achievable')" @input="updateSmart" required></textarea>
         </div>
         <div class="mb-6">
-          <label for="relevant" class="block text-gray-700 text-lg">Pertinent</label>
+          <label for="relevant" class="block text-gray-700 text-lg">Réalisable</label>
           <textarea id="relevant" v-model="smartObjectives.relevant" class="mt-1 block w-full p-2 border rounded-md" rows="3" 
                     :class="{ locked: lockedElements.relevant && lockedElements.relevant !== currentUser }"
                     @focus="lock('relevant')" @blur="unlock('relevant')" @input="updateSmart" required></textarea>
