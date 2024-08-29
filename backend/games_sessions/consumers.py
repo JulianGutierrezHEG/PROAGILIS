@@ -136,9 +136,6 @@ class GroupConsumer(BaseConsumer):
 
 
 # Consumer pour les sessions
-# Evenements : 
-# - session_status_update : envoi de l'état de la session
-# - session_deleted : envoi de la suppression de la session
 class SessionConsumer(BaseConsumer):
     def get_group_name(self):
         return f"session_{self.scope['url_route']['kwargs']['session_id']}"

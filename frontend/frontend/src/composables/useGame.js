@@ -116,11 +116,9 @@ export function useGame(groupId, group) {
     try {
       const data = await gamesService.fetchAnsweredEvents(groupId);
       answeredEvents.value = data;
-      console.log('Evénements répondus:', answeredEvents.value);
     } catch (error) {
       if (error.response && error.response.status === 404) {
         answeredEvents.value = []; 
-        console.log("Pas d'événements trouvés");
       } else {
         console.error("Erreur lors de la récupération des événements répondus:", error);
       }
@@ -144,7 +142,7 @@ export function useGame(groupId, group) {
       const phaseStatus = await gamesService.getGroupCurrentPhase(groupId);
       currentPhase.value = phaseStatus.phase;
       if (!phaseStatus) {
-        console.log('Phase status is null or undefined.');
+        console.log('Phase actuelle non définie.');
         return;
       }
   
@@ -188,7 +186,7 @@ export function useGame(groupId, group) {
       const projectDetails = await gamesService.fetchProjectDetails(groupId);
       return projectDetails;
     } catch (error) {
-      console.error('Error fetching project details:', error);
+      console.error('Erreur lors de la récupération des détails du projet:', error);
     }
   };
 
@@ -510,7 +508,6 @@ export function useGame(groupId, group) {
   // Supprime une user story
   const deleteUserStory = async (groupId, storyId) => {
     try {
-      console.log(`Deleting user story with ID ${storyId} for group ${groupId}`); // Debugging
       const response = await gamesService.deleteUserStory(groupId, storyId);
       return response;
     } catch (error) {
@@ -601,7 +598,7 @@ export function useGame(groupId, group) {
       const response = await gamesService.getUserStoriesProgress(groupId, sprintId);
       sprintUserStories.value = response;
     } catch (error) {
-      console.error('Error fetching user stories progress:', error);
+      console.error('Erreur lors de la récupération de la progression des user stories:', error);
     }
   };
 

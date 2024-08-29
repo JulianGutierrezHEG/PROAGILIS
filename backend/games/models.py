@@ -118,4 +118,4 @@ class SavedGameData(models.Model):
     original_sprint_numbers = models.JSONField(default=dict)
 
     def __str__(self):
-        return f"Saved game data for group {self.group.name} at {self.timestamp}"
+        return f"Sauvegarde pour {self.group.name}"

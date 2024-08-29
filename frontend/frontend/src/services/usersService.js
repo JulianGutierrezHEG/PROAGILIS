@@ -6,8 +6,8 @@ const getCurrentUser = async () => {
     const response = await axios.get('/api/users/auth/users/me/');
     return response.data;
   } catch (error) {
-    console.error('Error fetching current user:', error.response);
-    throw new Error('Error fetching current user: ' + (error.response?.data?.detail || 'Unknown error occurred'));
+    console.error('Erreur lors de la récupération de l\'utilisateur connecté: ', error.response?.data?.detail || error.message);
+    throw new Error('Erreur lors de la récupération de l\'utilisateur connecté');
   }
 };
 
